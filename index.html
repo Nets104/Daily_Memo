@@ -10,14 +10,14 @@
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" />
   <link rel="stylesheet" href="./style.css" />
-  <title>일상 기록 — 나의 일상 기록</title>
+  <title>일상 기록</title>
 </head>
 <body>
   <div class="app-shell">
     <aside class="sidebar" id="sidebar" aria-label="기록 목록">
       <div class="sidebar-top">
         <div class="brand"><span class="brand-mark" aria-hidden="true">✦</span><span>일상 기록<span class="brand-dot">.</span></span></div>
-        <button class="icon-button mobile-close" id="closeSidebar" title="목록 닫기" aria-label="목록 닫기">✕</button>
+        <button class="icon-button mobile-close" id="closeSidebar" title="메뉴 닫기" aria-label="메뉴 닫기">☰</button>
       </div>
       <p class="brand-subtitle">평범한 날의 작은 조각들</p>
       <button class="primary-button full" id="newEntrySidebar"><span>＋</span> 새로운 기록</button>
@@ -31,7 +31,7 @@
         </div>
         <div class="calendar-weekdays" aria-hidden="true"><span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span></div>
         <div class="calendar-grid" id="calendarGrid" role="group" aria-label="날짜 선택"></div>
-        <p class="calendar-legend"><span class="calendar-legend-dot"></span> 기록이 있는 날 · 날짜를 누르면 기록 열기</p>
+        <p class="calendar-legend"><span class="calendar-legend-dot"></span> 저장된 날 · 빈 날짜는 저장 전까지 추가되지 않아요</p>
       </section>
       <div class="list-heading"><span>나의 기록</span><span class="list-count" id="entryCount">0</span></div>
       <div class="entry-list" id="entryList" aria-label="저장된 기록"></div>
@@ -51,6 +51,7 @@
         </div>
         <div class="topbar-right">
           <span class="save-state" id="saveState" role="status"><span class="save-dot"></span> 저장됨</span>
+          <button type="button" class="outlined-button save-entry-btn" id="saveEntryBtn">저장</button>
           <button class="outlined-button top-new" id="newEntryTop">＋ 새 기록</button>
           <button class="primary-button export-main" id="openExportBtn">내보내기 <span>↗</span></button>
         </div>
