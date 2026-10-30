@@ -1,0 +1,76 @@
+(() => {
+  'use strict';
+  const cfg = window.DAILY_RECORD_SUPABASE || {};
+  const url = String(cfg.url || '').trim();
+  const key = String(cfg.publishableKey || '').trim();
+  const configured = /^https:\/\/[\w.-]+\.supabase\.co\/?$/.test(url) && /^(sb_publishable_|eyJ)/.test(key);
+  if (!configured) { window.DiaryCloud = {configured:false}; return; }
+  if (!window.supabase?.createClient) { window.DiaryCloud={configured:false, error:'Supabase 라이브러리를 불러오지 못했어요.'};return; }
+  const client=window.supabase.createClient(url,key,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+  let user=null;
+  const fail=(result)=>{if(result.error)throw result.error;return result.data;};
+  const own=()=>{if(!user)throw Error('로그인 정보가 없어요.');return user.id;};
+  const entryRow=e=>({user_id:own(),id:e.id,entry_date:e.date,title:e.title||'',body:e.body||'',created_at:e.createdAt,updated_at:e.updatedAt});
+  const toEntry=r=>({id:r.id,date:r.entry_date,title:r.title,body:r.body,createdAt:r.created_at,updatedAt:r.updated_at});
+  const toFile=async r=>{
+    const data=fail(await client.storage.from('diary-media').download(r.storage_path));
+    return {id:r.id,entryId:r.entry_id,name:r.file_name,type:r.content_type,size:r.file_size,createdAt:r.created_at,blob:data};
+  };
+  const pageAll=async(table,filters)=>{
+    const arr=[];
+    for(let offset=0;;offset+=500){
+      let q=client.from(table).select('*').eq('user_id',own()).range(offset,offset+499);
+      if(filters)q=q.eq(filters[0],filters[1]);
+      const part=fail(await q.order('created_at',{ascending:true}));
+      arr.push(...part);
+      if(part.length<500)break;
+    }
+    return arr;
+  };
+  const pathFor=f=>own()+'/'+f.entryId+'/'+f.id+'/'+encodeURIComponent(f.name).replace(/%2F/gi,'_');
+  const api={
+    configured:true,client,
+    get user(){return user;},
+    async session(){const {data,error}=await client.auth.getUser();if(error && !/session missing/i.test(error.message||''))throw error;user=data?.user||null;return user;},
+    async signup(email,password){return fail(await client.auth.signUp({email,password,emailRedirectTo:location.origin+location.pathname}));},
+    async login(email,password){return fail(await client.auth.signInWithPassword({email,password}));},
+    async logout(){fail(await client.auth.signOut());user=null;},
+    async entries(){return (await pageAll('diary_entries')).map(toEntry);},
+    async getAttachments(entryId){
+      const rows=await pageAll('diary_attachments',entryId?['entry_id',entryId]:null);
+      return Promise.all(rows.map(toFile));
+    },
+    async saveEntry(entry){fail(await client.from('diary_entries').upsert(entryRow(entry),{onConflict:'user_id,id'}));},
+    async saveAttachments(files){
+      for(const f of files){
+        const path=pathFor(f);
+        const old=fail(await client.from('diary_attachments').select('storage_path').eq('user_id',own()).eq('id',f.id).maybeSingle());
+        fail(await client.storage.from('diary-media').upload(path,f.blob,{contentType:f.type||'application/octet-stream',upsert:true}));
+        try{
+          fail(await client.from('diary_attachments').upsert({user_id:own(),id:f.id,entry_id:f.entryId,file_name:f.name,content_type:f.type||'application/octet-stream',file_size:f.size,storage_path:path,created_at:f.createdAt},{onConflict:'user_id,id'}));
+        }catch(e){await client.storage.from('diary-media').remove([path]);throw e;}
+        if(old?.storage_path && old.storage_path!==path)await client.storage.from('diary-media').remove([old.storage_path]);
+      }
+    },
+    async removeAttachment(id){
+      const row=fail(await client.from('diary_attachments').select('storage_path').eq('user_id',own()).eq('id',id).maybeSingle());
+      if(!row)return;
+      fail(await client.from('diary_attachments').delete().eq('user_id',own()).eq('id',id));
+      await client.storage.from('diary-media').remove([row.storage_path]);
+    },
+    async removeEntry(id){
+      const rows=fail(await client.from('diary_attachments').select('storage_path').eq('user_id',own()).eq('entry_id',id));
+      fail(await client.from('diary_entries').delete().eq('user_id',own()).eq('id',id));
+      if(rows.length){for(let i=0;i<rows.length;i+=100)await client.storage.from('diary-media').remove(rows.slice(i,i+100).map(x=>x.storage_path));}
+    },
+    async deleteEmpty(ids){
+      if(!ids.length)return;
+      fail(await client.from('diary_entries').delete().eq('user_id',own()).in('id',ids));
+    },
+    async hasAttachment(id){
+      const res=fail(await client.from('diary_attachments').select('id').eq('user_id',own()).eq('entry_id',id).limit(1));
+      return res.length>0;
+    }
+  };
+  window.DiaryCloud=api;
+})();
