@@ -10,18 +10,29 @@
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" />
   <link rel="stylesheet" href="./style.css" />
-  <title>하루결 — 나의 일상 기록</title>
+  <title>일상 기록 — 나의 일상 기록</title>
 </head>
 <body>
   <div class="app-shell">
     <aside class="sidebar" id="sidebar" aria-label="기록 목록">
       <div class="sidebar-top">
-        <div class="brand"><span class="brand-mark" aria-hidden="true">✦</span><span>하루결<span class="brand-dot">.</span></span></div>
+        <div class="brand"><span class="brand-mark" aria-hidden="true">✦</span><span>일상 기록<span class="brand-dot">.</span></span></div>
         <button class="icon-button mobile-close" id="closeSidebar" title="목록 닫기" aria-label="목록 닫기">✕</button>
       </div>
       <p class="brand-subtitle">평범한 날의 작은 조각들</p>
       <button class="primary-button full" id="newEntrySidebar"><span>＋</span> 새로운 기록</button>
       <div class="sidebar-search"><span aria-hidden="true">⌕</span><input type="search" id="searchInput" placeholder="날짜 · 제목 · 본문 검색" aria-label="기록 검색" /></div>
+      <section class="calendar-card" aria-label="월별 기록 달력">
+        <div class="calendar-header">
+          <button type="button" class="calendar-arrow" id="calendarPrev" aria-label="이전 달">‹</button>
+          <strong id="calendarMonthLabel" aria-live="polite"></strong>
+          <button type="button" class="calendar-arrow" id="calendarNext" aria-label="다음 달">›</button>
+          <button type="button" class="calendar-today" id="calendarToday">오늘</button>
+        </div>
+        <div class="calendar-weekdays" aria-hidden="true"><span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span></div>
+        <div class="calendar-grid" id="calendarGrid" role="group" aria-label="날짜 선택"></div>
+        <p class="calendar-legend"><span class="calendar-legend-dot"></span> 기록이 있는 날 · 날짜를 누르면 기록 열기</p>
+      </section>
       <div class="list-heading"><span>나의 기록</span><span class="list-count" id="entryCount">0</span></div>
       <div class="entry-list" id="entryList" aria-label="저장된 기록"></div>
       <div class="sidebar-bottom">
@@ -35,7 +46,7 @@
     <main class="main-panel">
       <header class="topbar">
         <div class="topbar-left">
-          <button class="icon-button mobile-menu" id="openSidebar" title="기록 목록" aria-label="기록 목록">☰</button>
+          <button class="icon-button mobile-menu" id="openSidebar" title="달력 및 기록 목록" aria-label="달력 및 기록 목록">☰</button>
           <span class="topbar-breadcrumb">MY JOURNAL <span>/</span> <strong>오늘의 기록</strong></span>
         </div>
         <div class="topbar-right">
