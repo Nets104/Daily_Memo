@@ -51,6 +51,7 @@
           <button id="cloudImport" class="sidebar-option" type="button">이 기기의 기존 기록 가져오기</button>
           <button id="cloudLogout" class="sidebar-option" type="button">로그아웃</button>
         </div>
+        <section class="month-manage" aria-label="월별 기록 관리"><strong>월별 백업 · 정리</strong><input type="month" id="archiveMonth" aria-label="선택한 월"><button type="button" id="archiveMonthBtn" class="sidebar-option">월별 ZIP 백업</button><button type="button" id="deleteMonthBtn" class="sidebar-option">백업 확인 후 월별 삭제</button><p id="archiveStatus" role="status">먼저 ZIP 파일을 내보내세요.</p></section>
         <button class="sidebar-option" id="backupBtn"><span>⇩</span> 전체 백업 ZIP</button>
         <button class="sidebar-option" id="restoreBtn"><span>↥</span> 백업 불러오기</button>
         <input id="restoreInput" type="file" accept=".zip,application/zip" hidden />
