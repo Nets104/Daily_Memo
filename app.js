@@ -202,14 +202,14 @@
     isDraft=false;fillEditor();attachments=db ? await getAll('attachments','entryId',id) : [];
     renderAttachments();renderList();setSave('','저장됨');showEditor();
   }
-  async function newEntry(date = dayString()) {
+  async function newEntry(date = dayString(), focusTitle = true) {
     if(!canLeaveDraft())return;
     await flushSave();
     const timestamp=new Date().toISOString();
     current={id:makeId(),date,title:'',body:'',weather:'',shortNote:'',createdAt:timestamp,updatedAt:timestamp};
     isDraft=true;
     fillEditor();attachments=[];renderAttachments();renderList();setSave('','저장 전');
-    el.edited.textContent='저장 전';showEditor();el.title.focus();
+    el.edited.textContent='저장 전';showEditor();if(focusTitle)el.title.focus();
   }
   function setCalendarMonth(iso) {
     const match = /^(\d{4})-(\d{2})-\d{2}$/.exec(iso || '');
@@ -219,7 +219,7 @@
   }
   const WEATHER_EMOJI={sunny:'☀️',partly_cloudy:'🌤️',cloudy:'☁️',rain:'🌧️',snow:'❄️',wind:'💨',other:'🌈'};
   function showEditor(){calendarPageOpen=false;$('calendarPage').hidden=true;$('editorPage').hidden=false;}
-  function showMiniCalendar(){calendarPageOpen=true;$('calendarPage').hidden=false;$('editorPage').hidden=true;renderMiniCalendar();}
+  function showMiniCalendar(){document.activeElement?.blur?.();calendarPageOpen=true;$('calendarPage').hidden=false;$('editorPage').hidden=true;renderMiniCalendar();}
   function renderMiniCalendar(){
     if(!calendarPageOpen)return;
     $('miniMonth').textContent=`${calendarYear}년 ${calendarMonth+1}월`;
@@ -723,7 +723,7 @@
     $('miniGrid').addEventListener('click',async e=>{
       const b=e.target.closest('[data-mini-date]');if(!b)return;
       const date=b.dataset.miniDate,entry=entries.find(x=>x.date===date);
-      if(entry)await selectEntry(entry.id);else await newEntry(date);
+      if(entry)await selectEntry(entry.id);else await newEntry(date,false);
     });
     el.calendarGrid.addEventListener('click',async e=>{
       const button=e.target.closest('[data-calendar-date]');
@@ -731,7 +731,7 @@
       const date=button.dataset.calendarDate;
       const existing=entries.filter(entry=>entry.date===date).sort((a,b)=>b.updatedAt.localeCompare(a.updatedAt))[0];
       if(existing)await selectEntry(existing.id);
-      else await newEntry(date);
+      else await newEntry(date,false);
     });
     el.list.addEventListener('click',e=>{
       const remove=e.target.closest('[data-delete-entry-id]');
