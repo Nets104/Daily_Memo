@@ -14,6 +14,8 @@
   const MONTH_EN = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
   const WEEK_EN = ['SUNDAY','MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY','SATURDAY'];
   let db, entries = [], current = null, attachments = [], mediaUrls = [];
+  const cloud = () => window.DiaryCloud?.configured ? window.DiaryCloud : null;
+  let cloudMode=false, initialized=false;
   let saveTimer = null, savePromise = Promise.resolve(), toastTimer = null, view = 'edit';
   let recorder = null, recordStream = null, recordChunks = [], recordingEntryId = null;
   let isExporting = false;
@@ -46,6 +48,7 @@
     });
   }
   function writeRecords(storeName, values) {
+    if(cloudMode) return storeName==='entries' ? Promise.all(values.map(v=>cloud().saveEntry(v))) : cloud().saveAttachments(values);
     return new Promise((resolve,reject) => {
       const tx=db.transaction(storeName,'readwrite');
       const store=tx.objectStore(storeName);
@@ -54,6 +57,7 @@
     });
   }
   function getAll(storeName, indexName, value) {
+    if(cloudMode)return storeName==='entries' ? cloud().entries() : cloud().getAttachments(indexName==='entryId'?value:null);
     return new Promise((resolve,reject) => {
       const tx=db.transaction(storeName,'readonly');
       const request=indexName ? tx.objectStore(storeName).index(indexName).getAll(value) : tx.objectStore(storeName).getAll();
@@ -61,9 +65,11 @@
     });
   }
   function deleteOne(storeName, key) {
+    if(cloudMode)return storeName==='attachments' ? cloud().removeAttachment(key) : cloud().removeEntry(key);
     return new Promise((resolve,reject)=>{ const tx=db.transaction(storeName,'readwrite');tx.objectStore(storeName).delete(key);tx.oncomplete=()=>resolve();tx.onerror=()=>reject(tx.error); });
   }
   async function deleteEntryData(id) {
+    if(cloudMode)return cloud().removeEntry(id);
     const keys=await new Promise((resolve,reject)=>{const tx=db.transaction('attachments','readonly');const q=tx.objectStore('attachments').index('entryId').getAllKeys(id);q.onsuccess=()=>resolve(q.result);q.onerror=()=>reject(q.error);});
     await new Promise((resolve,reject)=>{
       const tx=db.transaction(['entries','attachments'],'readwrite');
@@ -73,8 +79,48 @@
     });
   }
   async function init() {
+    if(cloud() && !initialized){
+      initialized=true;
+      const auth=$('cloudAuth'),app=$('diaryApp');
+      async function showUser(){
+        const user=await cloud().session();
+        if(!user){
+          cloudMode=false;auth.hidden=false;app.hidden=true;return;
+        }
+        cloudMode=true;db={};auth.hidden=true;app.hidden=false;
+        $('cloudAccount').hidden=false;$('cloudUserEmail').textContent=user.email||'';
+        current=null;attachments=[];entries=[];clearTimeout(saveTimer);saveTimer=null;
+        await loadEntries();
+      }
+      const msg=$('cloudAuthStatus');
+      $('cloudAuthForm').addEventListener('submit',async e=>{
+        e.preventDefault();msg.textContent='로그인 중…';
+        try{await cloud().login($('cloudEmail').value.trim(),$('cloudPassword').value);msg.textContent='';await showUser();}
+        catch(err){msg.textContent='로그인 실패: '+err.message;}
+      });
+      $('cloudSignup').addEventListener('click',async()=>{
+        msg.textContent='계정 생성 중…';
+        try{
+          await cloud().signup($('cloudEmail').value.trim(),$('cloudPassword').value);
+          msg.textContent='가입 요청 완료. 이메일 인증이 활성화되어 있으면 메일의 확인 링크를 누른 뒤 로그인해 주세요.';
+        }catch(err){msg.textContent='가입 실패: '+err.message;}
+      });
+      $('cloudLogout').addEventListener('click',async()=>{
+        await flushSave();
+        try{await cloud().logout();current=null;attachments=[];entries=[];revokeMediaUrls();renderAttachments();await showUser();}
+        catch(e){toast('로그아웃 실패: '+e.message);}
+      });
+      $('cloudImport').addEventListener('click',importLocal);
+      try{await showUser();}catch(e){auth.hidden=false;app.hidden=true;msg.textContent='서버 연결 오류: '+e.message;}
+      return;
+    }
+    await loadEntries();
+  }
+  async function loadEntries() {
     try {
-      db=await openDb();entries=await getAll('entries');
+      if(cloudMode){entries=await cloud().entries();}
+      else {db=await openDb();entries=await getAll('entries');}
+
       if(entries.length) await selectEntry([...entries].sort((a,b)=>b.updatedAt.localeCompare(a.updatedAt))[0].id);
       else await newEntry();
       renderList();
@@ -105,12 +151,15 @@
     if(isDraft){
       isSavingDraft=true;setSave('saving','저장 중…');
       const staged=[...attachments];
-      savePromise=savePromise.catch(()=>{}).then(()=>new Promise((resolve,reject)=>{
-        const tx=db.transaction(['entries','attachments'],'readwrite');
-        tx.objectStore('entries').put(snapshot);
-        for(const file of staged)tx.objectStore('attachments').put(file);
-        tx.oncomplete=()=>resolve();tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error || Error('저장 실패'));
-      }));
+      savePromise=savePromise.catch(()=>{}).then(async()=>{
+        if(cloudMode){await cloud().saveEntry(snapshot);await cloud().saveAttachments(staged);return;}
+        await new Promise((resolve,reject)=>{
+          const tx=db.transaction(['entries','attachments'],'readwrite');
+          tx.objectStore('entries').put(snapshot);
+          for(const file of staged)tx.objectStore('attachments').put(file);
+          tx.oncomplete=()=>resolve();tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error||Error('저장 실패'));
+        });
+      });
       try{
         await savePromise;
         if(current?.id===snapshot.id){
@@ -229,7 +278,7 @@
     if(!maybeEmpty.length){toast('정리할 빈 기록이 없어요.');return;}
     const empty=[];
     for(const entry of maybeEmpty){
-      const hasAttachment=await new Promise((resolve,reject)=>{
+      const hasAttachment=cloudMode ? await cloud().hasAttachment(entry.id) : await new Promise((resolve,reject)=>{
         const tx=db.transaction('attachments','readonly');
         const req=tx.objectStore('attachments').index('entryId').getKey(entry.id);
         req.onsuccess=()=>resolve(req.result!==undefined);
@@ -240,7 +289,8 @@
     if(!empty.length){toast('제목·본문·첨부 파일이 모두 빈 기록이 없어요.');return;}
     if(!confirm(`제목·본문·첨부 파일이 없는 기록 ${empty.length}개를 삭제할까요?\n삭제한 기록은 복구할 수 없어요. 필요하면 먼저 전체 백업 ZIP을 저장해 주세요.`))return;
     try{
-      await new Promise((resolve,reject)=>{
+      if(cloudMode)await cloud().deleteEmpty(empty.map(e=>e.id));
+      else await new Promise((resolve,reject)=>{
         const tx=db.transaction('entries','readwrite'),store=tx.objectStore('entries');
         for(const entry of empty)store.delete(entry.id);
         tx.oncomplete=()=>resolve();tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error||Error('삭제 실패'));
@@ -541,6 +591,32 @@
       toast(`${name} 파일을 내보냈어요.`);
     }catch(e){console.error(e);el.exportProgress.textContent=`오류: ${e.message}`;toast(`내보내기 실패: ${e.message}`);}
     finally{isExporting=false;}
+  }
+  async function importLocal(){
+    if(!cloudMode)return;
+    if(!confirm('현재 기기에 저장된 기존 기록과 첨부 파일을 로그인한 계정으로 가져올까요? 기존 로컬 파일은 지우지 않습니다.'))return;
+    try{
+      const local=await openDb();
+      const read=(store,index,value)=>new Promise((resolve,reject)=>{
+        const tx=local.transaction(store,'readonly');
+        const req=index?tx.objectStore(store).index(index).getAll(value):tx.objectStore(store).getAll();
+        req.onsuccess=()=>resolve(req.result||[]);req.onerror=()=>reject(req.error);
+      });
+      const notes=await read('entries'), media=await read('attachments');
+      const known=new Set(entries.map(e=>e.id));
+      let count=0;
+      for(const entry of notes){
+        if(known.has(entry.id))continue;
+        await cloud().saveEntry(entry);
+        const files=media.filter(f=>f.entryId===entry.id);
+        if(files.length)await cloud().saveAttachments(files);
+        count++;
+      }
+      local.close();current=null;attachments=[];
+      entries=await cloud().entries();const last=[...entries].sort((a,b)=>b.updatedAt.localeCompare(a.updatedAt))[0];
+      if(last)await selectEntry(last.id);else await newEntry();
+      renderList();toast(`기존 기록 ${count}개를 가져왔어요.`);
+    }catch(e){console.error(e);toast('가져오기 실패: '+e.message);}
   }
   function bindEvents(){
     $('newEntrySidebar').addEventListener('click',()=>newEntry());$('newEntryTop').addEventListener('click',()=>newEntry());
