@@ -79,3 +79,8 @@ create policy "diary_media_update_own" on storage.objects for update to authenti
 drop policy if exists "diary_media_delete_own" on storage.objects;
 create policy "diary_media_delete_own" on storage.objects for delete to authenticated
   using (bucket_id = 'diary-media' and (storage.foldername(name))[1] = (select auth.uid())::text);
+
+-- 미니 다이어리 카드 전용 선택 항목
+alter table public.diary_entries add column if not exists short_note text not null default '';
+alter table public.diary_entries add column if not exists weather text not null default '';
+alter table public.diary_entries add column if not exists cover_attachment_id text;
