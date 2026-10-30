@@ -32,7 +32,7 @@
     configured:true,client,
     get user(){return user;},
     async session(){const {data,error}=await client.auth.getUser();if(error && !/session missing/i.test(error.message||''))throw error;user=data?.user||null;return user;},
-    async signup(email,password){return fail(await client.auth.signUp({email,password,emailRedirectTo:location.origin+location.pathname}));},
+    async signup(email,password){return fail(await client.auth.signUp({email,password,options:{emailRedirectTo:location.origin+location.pathname}}));},
     async login(email,password){return fail(await client.auth.signInWithPassword({email,password}));},
     async logout(){fail(await client.auth.signOut());user=null;},
     async entries(){return (await pageAll('diary_entries')).map(toEntry);},
