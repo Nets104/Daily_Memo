@@ -31,7 +31,7 @@
       </div>
       <p class="brand-subtitle">평범한 날의 작은 조각들</p>
       <button class="primary-button full" id="newEntrySidebar"><span>＋</span> 새로운 기록</button>
-      <button type="button" class="sidebar-option" id="openCalendarPage">▦ 월간 미니 다이어리</button><div class="sidebar-search"><span aria-hidden="true">⌕</span><input type="search" id="searchInput" placeholder="날짜 · 제목 · 본문 검색" aria-label="기록 검색" /></div>
+      <button type="button" class="sidebar-option" id="openCalendarPage">▦ 캘린더</button><div class="sidebar-search"><span aria-hidden="true">⌕</span><input type="search" id="searchInput" placeholder="날짜 · 제목 · 본문 검색" aria-label="기록 검색" /></div>
       <section class="calendar-card" aria-label="월별 기록 달력">
         <div class="calendar-header">
           <button type="button" class="calendar-arrow" id="calendarPrev" aria-label="이전 달">‹</button>
@@ -72,7 +72,8 @@
           <button class="primary-button export-main" id="openExportBtn">내보내기 <span>↗</span></button>
         </div>
       </header>
-      <div class="page-wrap"><section id="calendarPage" class="mini-calendar-page" hidden><header class="mini-calendar-header"><h2>월간 미니 다이어리</h2><button type="button" id="returnEditor" class="outlined-button">일기 작성</button></header><nav class="mini-calendar-toolbar"><button type="button" id="miniPrev">‹</button><strong id="miniMonth"></strong><button type="button" id="miniNext">›</button><button type="button" id="miniToday">이번 달</button></nav><div class="mini-calendar-weekdays"><span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span></div><div class="mini-calendar-grid" id="miniGrid"></div></section><div id="editorPage">
+      <div class="page-wrap"><section id="calendarPage" class="mini-calendar-page" hidden><header class="mini-calendar-header"><h2>캘린더</h2><button type="button" id="returnEditor" class="outlined-button">일기 작성</button></header><nav class="mini-calendar-toolbar"><button type="button" id="miniPrev">‹</button><strong id="miniMonth"></strong><button type="button" id="miniNext">›</button><button type="button" id="miniToday">이번 달</button></nav><div class="mini-calendar-weekdays"><span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span></div><div class="mini-calendar-grid" id="miniGrid"></div>
+          <p class="mini-hint">날짜를 누르면 사진과 한마디를 추가할 수 있어요.</p></section><div id="editorPage">
         <section class="page-intro">
           <div><p class="eyebrow">A LITTLE MOMENT, EVERY DAY</p><h1>오늘을 <em>기록</em>하다<span class="sparkle">✳</span></h1><p class="intro-desc">매일의 장면과 마음을 나만의 방식으로 남겨요.</p></div>
           <div class="date-sticker" aria-hidden="true"><span id="stickerMonth">OCT</span><strong id="stickerDay">31</strong><small id="stickerWeek">SATURDAY</small></div>
@@ -120,6 +121,30 @@
       <button data-export="zip"><span class="export-icon zip-icon">ZIP</span><span><strong>기록 + 첨부 파일</strong><small>.zip · 원본 미디어 포함</small></span><span class="option-arrow">↗</span></button>
     </div>
     <div class="export-progress" id="exportProgress" aria-live="polite"></div>
+  </dialog>
+  <dialog id="dayCardDialog" class="day-card-dialog" aria-labelledby="dayCardTitle">
+    <div class="day-card-header">
+      <h2 id="dayCardTitle">날짜의 기록</h2>
+      <button type="button" id="dayCardClose" class="icon-button" aria-label="편집창 닫기">✕</button>
+    </div>
+    <div class="day-card-content">
+      <button id="dayPhotoBtn" type="button" class="day-photo-select">＋ 썸네일 사진 추가 / 변경</button>
+      <input id="dayPhotoInput" type="file" accept="image/*" hidden />
+      <div id="dayExistingPhoto" class="day-existing-photo" hidden></div>
+      <div id="dayCropSection" class="day-crop-section" hidden>
+        <p class="day-card-help">사진을 드래그해 위치를 맞추고 확대 비율을 조절해요.</p>
+        <canvas id="dayCropCanvas" width="512" height="512" aria-label="정사각형 사진 자르기 미리보기"></canvas>
+        <label for="dayCropZoom">사진 확대</label>
+        <input id="dayCropZoom" type="range" min="1" max="3" step=".05" value="1" />
+      </div>
+      <label class="day-card-label" for="dayCardNote">사진 밑에 표시할 한마디 <small>(최대 120자)</small></label>
+      <input id="dayCardNote" type="text" maxlength="120" placeholder="오늘은 어떤 하루였나요?" />
+      <p id="dayCardStatus" role="status" class="day-card-status"></p>
+      <div class="day-card-actions">
+        <button type="button" id="dayOpenEntry" class="outlined-button">일기 보기 / 작성</button>
+        <button type="button" id="dayCardSave" class="primary-button">저장</button>
+      </div>
+    </div>
   </dialog>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
   <script src="./supabase-config.js" defer></script>
