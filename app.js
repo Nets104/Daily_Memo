@@ -513,14 +513,14 @@
       await flushSave();const {month,items}=monthEntries();
       $('archiveStatus').textContent='ZIP 검사 중…';
       const result=await buildBackup(items,'일상기록_'+month+'_월별백업');
-      archivedMonth={month,ids:result.ids};
+      archivedMonth={month,ids:result.ids,stamp:items.map(e=>[e.id,e.date,e.title,e.body,e.updatedAt])};
       $('archiveStatus').textContent=items.length+'개 기록 및 '+result.files+'개 첨부의 ZIP 무결성 검사 완료. 다운로드한 파일을 직접 확인한 후 삭제하세요.';
     }catch(e){$('archiveStatus').textContent='오류: '+e.message;}
   }
   async function monthlyDelete(){
     try{
       await flushSave();const {month,items}=monthEntries();
-      if(!archivedMonth||archivedMonth.month!==month||archivedMonth.ids.length!==items.length||items.some(e=>!archivedMonth.ids.includes(e.id)))throw Error('선택한 월의 백업을 다시 실행하세요.');
+      if(!archivedMonth||archivedMonth.month!==month||archivedMonth.ids.length!==items.length||items.some(e=>!archivedMonth.ids.includes(e.id))||JSON.stringify(archivedMonth.stamp)!==JSON.stringify(items.map(e=>[e.id,e.date,e.title,e.body,e.updatedAt])))throw Error('선택한 월의 백업을 다시 실행하세요.');
       if(!confirm('다운로드한 ZIP 파일을 확인하고 보관했나요? '+items.length+'개 기록과 첨부파일을 영구 삭제합니다.'))return;
       if(prompt('확인을 위해 '+month+' 입력')!==month)return;
       let deleted=0;
