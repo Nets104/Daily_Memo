@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#f7f8fc" />
+  <meta name="description" content="나의 하루를 글, 사진, 영상, 소리로 남기는 개인 기록장" />
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png" />
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" />
+  <link rel="stylesheet" href="./style.css" />
+  <title>하루결 — 나의 일상 기록</title>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar" aria-label="기록 목록">
+      <div class="sidebar-top">
+        <div class="brand"><span class="brand-mark" aria-hidden="true">✦</span><span>하루결<span class="brand-dot">.</span></span></div>
+        <button class="icon-button mobile-close" id="closeSidebar" title="목록 닫기" aria-label="목록 닫기">✕</button>
+      </div>
+      <p class="brand-subtitle">평범한 날의 작은 조각들</p>
+      <button class="primary-button full" id="newEntrySidebar"><span>＋</span> 새로운 기록</button>
+      <div class="sidebar-search"><span aria-hidden="true">⌕</span><input type="search" id="searchInput" placeholder="날짜 · 제목 · 본문 검색" aria-label="기록 검색" /></div>
+      <div class="list-heading"><span>나의 기록</span><span class="list-count" id="entryCount">0</span></div>
+      <div class="entry-list" id="entryList" aria-label="저장된 기록"></div>
+      <div class="sidebar-bottom">
+        <button class="sidebar-option" id="backupBtn"><span>⇩</span> 전체 백업 ZIP</button>
+        <button class="sidebar-option" id="restoreBtn"><span>↥</span> 백업 불러오기</button>
+        <input id="restoreInput" type="file" accept=".zip,application/zip" hidden />
+        <p>기록은 우선 이 기기의 브라우저에 저장돼요. 삭제·기기 변경에 대비해 주기적으로 백업하세요.</p>
+      </div>
+    </aside>
+    <div class="sidebar-scrim" id="sidebarScrim"></div>
+    <main class="main-panel">
+      <header class="topbar">
+        <div class="topbar-left">
+          <button class="icon-button mobile-menu" id="openSidebar" title="기록 목록" aria-label="기록 목록">☰</button>
+          <span class="topbar-breadcrumb">MY JOURNAL <span>/</span> <strong>오늘의 기록</strong></span>
+        </div>
+        <div class="topbar-right">
+          <span class="save-state" id="saveState" role="status"><span class="save-dot"></span> 저장됨</span>
+          <button class="outlined-button top-new" id="newEntryTop">＋ 새 기록</button>
+          <button class="primary-button export-main" id="openExportBtn">내보내기 <span>↗</span></button>
+        </div>
+      </header>
+      <div class="page-wrap">
+        <section class="page-intro">
+          <div><p class="eyebrow">A LITTLE MOMENT, EVERY DAY</p><h1>오늘을 <em>기록</em>하다<span class="sparkle">✳</span></h1><p class="intro-desc">매일의 장면과 마음을 나만의 방식으로 남겨요.</p></div>
+          <div class="date-sticker" aria-hidden="true"><span id="stickerMonth">OCT</span><strong id="stickerDay">31</strong><small id="stickerWeek">SATURDAY</small></div>
+        </section>
+        <section class="editor-card" aria-label="일기 편집기">
+          <div class="editor-meta">
+            <div class="field-group"><label for="entryDate">DATE <span class="required">*</span></label><div class="date-input-wrap"><input type="date" id="entryDate" required /><span class="date-display" id="dateDisplay">2026-10-31(土)</span></div></div>
+            <span class="edited-at" id="editedAt"></span>
+          </div>
+          <div class="title-row"><input type="text" id="entryTitle" maxlength="180" placeholder="오늘의 제목을 적어주세요" aria-label="기록 제목" /><button class="delete-button" id="deleteEntryBtn" title="현재 기록 삭제" aria-label="현재 기록 삭제"><span>⌫</span> <span class="delete-text">삭제</span></button></div>
+          <div class="editor-divider"></div>
+          <div class="editor-controls">
+            <div class="view-tabs" role="group" aria-label="보기 모드"><button data-view="edit" class="active">작성</button><button data-view="preview">미리보기</button><button data-view="split">나란히</button></div>
+            <span class="editor-hint">Markdown 지원 <span class="kbd-hint">Ctrl + S</span></span>
+          </div>
+          <div class="format-toolbar" role="toolbar" aria-label="마크다운 서식">
+            <button data-format="h1" title="큰 제목">H1</button><button data-format="h2" title="작은 제목">H2</button><span class="toolbar-divider"></span>
+            <button data-format="bold" class="bold-format" title="굵게 (Ctrl+B)">B</button><button data-format="italic" class="italic-format" title="기울임 (Ctrl+I)">I</button><button data-format="underline" class="underline-format" title="밑줄">U</button><button data-format="strike" class="strike-format" title="취소선">S</button><span class="toolbar-divider"></span>
+            <button data-format="bullet" title="글머리 목록">≡</button><button data-format="number" title="번호 목록">1.</button><button data-format="check" title="체크 목록">☑</button><button data-format="quote" title="인용">❝</button><button data-format="rule" title="구분선">―</button><button data-format="link" title="링크">↗</button><button data-format="code" title="인라인 코드">&lt;/&gt;</button>
+          </div>
+          <div class="writing-area view-edit" id="writingArea">
+            <div class="editing-pane"><label class="sr-only" for="entryBody">마크다운 본문</label><textarea id="entryBody" spellcheck="true" placeholder="오늘은 어떤 하루였나요?\n\n작은 일 하나, 문득 든 생각 하나도 좋아요.\n\n- 오늘 있었던 일\n- 기억하고 싶은 순간\n- 내일의 나에게"></textarea></div>
+            <div class="preview-pane" id="previewPane"><div class="md-preview" id="mdPreview"><p class="preview-placeholder">여기에 기록한 내용이 보여요 ✨</p></div></div>
+          </div>
+          <div class="word-info"><span id="charCount">0자</span><span>글과 사진이 모두 오늘의 기록이 돼요.</span></div>
+          <div class="attachments-section">
+            <div class="section-label"><div><span class="section-glyph">✿</span> 첨부 파일 <span class="attachment-count" id="attachmentCount">0</span></div><span>사진 · 영상 · 오디오 · PDF</span></div>
+            <div class="upload-actions"><button class="attach-button" id="uploadBtn">＋ 파일 추가</button><button class="attach-button secondary" id="recordBtn"><span aria-hidden="true">●</span> <span id="recordBtnText">음성 녹음</span></button><input type="file" id="fileInput" accept="image/*,video/*,audio/*,.pdf,application/pdf" multiple hidden /></div>
+            <div id="attachmentList" class="attachment-grid"></div>
+            <p class="upload-tip">파일은 기기에 로컬 저장됩니다. 큰 영상은 저장 공간 한도에 주의해 주세요.</p>
+          </div>
+        </section>
+        <footer class="footer-note"><span>✦</span> Keep your days, keep your story. <span>✦</span></footer>
+      </div>
+    </main>
+  </div>
+  <dialog id="exportDialog" class="export-dialog">
+    <div class="dialog-heading"><div><p class="eyebrow">SAVE THIS MOMENT</p><h2>기록 내보내기</h2></div><button class="icon-button" id="closeExportBtn" aria-label="닫기">✕</button></div>
+    <label class="dialog-label" for="exportFilename">파일 이름 <small>(기록 제목은 변경되지 않아요)</small></label><input class="dialog-input" type="text" id="exportFilename" maxlength="160" placeholder="파일 이름" />
+    <p class="export-help">원하는 형식으로 현재 기록을 저장해 보세요. 첨부 파일 원본은 ‘현재 기록 ZIP’에서 함께 받을 수 있어요.</p>
+    <div class="export-options">
+      <button data-export="md"><span class="export-icon md-icon">MD</span><span><strong>Markdown</strong><small>.md 텍스트 파일</small></span><span class="option-arrow">↗</span></button>
+      <button data-export="png"><span class="export-icon png-icon">▧</span><span><strong>이미지</strong><small>.png · 페이지별 출력</small></span><span class="option-arrow">↗</span></button>
+      <button data-export="pdf"><span class="export-icon pdf-icon">PDF</span><span><strong>PDF 문서</strong><small>.pdf · A4 여러 페이지</small></span><span class="option-arrow">↗</span></button>
+      <button data-export="zip"><span class="export-icon zip-icon">ZIP</span><span><strong>기록 + 첨부 파일</strong><small>.zip · 원본 미디어 포함</small></span><span class="option-arrow">↗</span></button>
+    </div>
+    <div class="export-progress" id="exportProgress" aria-live="polite"></div>
+  </dialog>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script src="./app.js" defer></script>
+</body>
+</html>
