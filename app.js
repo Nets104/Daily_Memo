@@ -22,6 +22,7 @@
   let isDraft = false, isSavingDraft = false;
   let calendarYear = new Date().getFullYear(), calendarMonth = new Date().getMonth();
   let archivedMonth=null;
+  let calendarPageOpen=false,miniPhotoToken=0;const miniPhotoUrls=[];
 
   function dayString(date = new Date()) {
     return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
@@ -133,7 +134,7 @@
   }
   function refreshCurrentFromForm() {
     if(!current) return;
-    current.date=el.date.value || dayString();current.title=el.title.value;current.body=el.body.value;
+    current.date=el.date.value || dayString();current.title=el.title.value;current.body=el.body.value;current.weather=$('entryWeather').value;current.shortNote=$('entryShortNote').value;
   }
   function queueSave() {
     if(!current || !db) return;
@@ -179,7 +180,7 @@
   }
   async function flushSave() { if(saveTimer) await saveCurrent();else await savePromise.catch(()=>{}); }
   function fillEditor() {
-    el.date.value=current?.date || dayString();el.title.value=current?.title || '';el.body.value=current?.body || '';
+    el.date.value=current?.date || dayString();el.title.value=current?.title || '';el.body.value=current?.body || '';$('entryWeather').value=current?.weather||'';$('entryShortNote').value=current?.shortNote||'';
     setCalendarMonth(el.date.value);
     el.dateDisplay.textContent=dateText(el.date.value);
     const d=new Date(`${el.date.value}T12:00:00`);$('stickerMonth').textContent=MONTH_EN[d.getMonth()];$('stickerDay').textContent=String(d.getDate());$('stickerWeek').textContent=WEEK_EN[d.getDay()];
@@ -189,7 +190,7 @@
   function canLeaveDraft() {
     if(!isDraft || !current) return true;
     refreshCurrentFromForm();
-    return !(current.title.trim() || current.body.trim() || attachments.length)
+    return !(current.title.trim() || current.body.trim() || current.shortNote?.trim() || current.weather || attachments.length)
       || confirm('저장하지 않은 내용이 있어요. 저장하지 않고 이동할까요?');
   }
   async function selectEntry(id) {
@@ -199,22 +200,68 @@
     current=entries.find(e=>e.id===id);
     if(!current)return;
     isDraft=false;fillEditor();attachments=db ? await getAll('attachments','entryId',id) : [];
-    renderAttachments();renderList();setSave('','저장됨');closeSidebar();
+    renderAttachments();renderList();setSave('','저장됨');showEditor();
   }
   async function newEntry(date = dayString()) {
     if(!canLeaveDraft())return;
     await flushSave();
     const timestamp=new Date().toISOString();
-    current={id:makeId(),date,title:'',body:'',createdAt:timestamp,updatedAt:timestamp};
+    current={id:makeId(),date,title:'',body:'',weather:'',shortNote:'',createdAt:timestamp,updatedAt:timestamp};
     isDraft=true;
     fillEditor();attachments=[];renderAttachments();renderList();setSave('','저장 전');
-    el.edited.textContent='저장 전';closeSidebar();el.title.focus();
+    el.edited.textContent='저장 전';showEditor();el.title.focus();
   }
   function setCalendarMonth(iso) {
     const match = /^(\d{4})-(\d{2})-\d{2}$/.exec(iso || '');
     if (!match) return;
     calendarYear = Number(match[1]);
     calendarMonth = Number(match[2]) - 1;
+  }
+  const WEATHER_EMOJI={sunny:'☀️',partly_cloudy:'🌤️',cloudy:'☁️',rain:'🌧️',snow:'❄️',wind:'💨',other:'🌈'};
+  function showEditor(){calendarPageOpen=false;$('calendarPage').hidden=true;$('editorPage').hidden=false;}
+  function showMiniCalendar(){calendarPageOpen=true;$('calendarPage').hidden=false;$('editorPage').hidden=true;renderMiniCalendar();}
+  function renderMiniCalendar(){
+    if(!calendarPageOpen)return;
+    $('miniMonth').textContent=`${calendarYear}년 ${calendarMonth+1}월`;
+    const first=new Date(calendarYear,calendarMonth,1).getDay(),last=new Date(calendarYear,calendarMonth+1,0).getDate(),prefix=`${calendarYear}-${String(calendarMonth+1).padStart(2,'0')}-`;
+    const byDay=new Map();
+    for(const entry of entries)if(entry.date.startsWith(prefix)&&!byDay.has(entry.date))byDay.set(entry.date,entry);
+    const cells=Array.from({length:first},()=>'<div class="mini-pad"></div>');
+    for(let d=1;d<=last;d++){
+      const date=prefix+String(d).padStart(2,'0'),entry=byDay.get(date);
+      const note=entry?(entry.shortNote||entry.title||'기록 보기'):'';
+      cells.push(`<button class="mini-day ${entry?'filled':''}" data-mini-date="${date}"><span class="mini-date">${d} ${entry?(WEATHER_EMOJI[entry.weather]||''):''}</span><span class="mini-photo" data-mini-photo="${date}">${entry?'✿':'+'}</span><span class="mini-line">${escapeHtml(note)}</span></button>`);
+    }
+    $('miniGrid').innerHTML=cells.join('');
+    loadMiniPhotos();
+  }
+  async function loadMiniPhotos(){
+    const token=++miniPhotoToken;
+    for(const url of miniPhotoUrls)URL.revokeObjectURL(url);
+    miniPhotoUrls.length=0;
+    const prefix=`${calendarYear}-${String(calendarMonth+1).padStart(2,'0')}-`;
+    const visible=entries.filter(e=>e.date.startsWith(prefix)),ids=new Set(visible.map(e=>e.id));
+    const dateById=new Map(visible.map(e=>[e.id,e.date]));
+    const paint=(id,url)=>{
+      if(token!==miniPhotoToken)return;
+      const date=dateById.get(id);if(!date)return;
+      const slot=[...document.querySelectorAll('[data-mini-photo]')].find(el=>el.dataset.miniPhoto===date);
+      if(!slot||slot.querySelector('img'))return;
+      const img=document.createElement('img');img.loading='lazy';img.alt='일기 사진';img.src=url;slot.replaceChildren(img);
+    };
+    try{
+      if(cloudMode){
+        const photos=await cloud().photoPreviews([...ids]);
+        if(token!==miniPhotoToken)return;
+        for(const f of photos)paint(f.entryId,f.url);
+      }else if(db){
+        const files=await getAll('attachments');
+        if(token!==miniPhotoToken)return;
+        for(const f of files)if(ids.has(f.entryId)&&f.type.startsWith('image/')){
+          const url=URL.createObjectURL(f.blob);miniPhotoUrls.push(url);paint(f.entryId,url);
+        }
+      }
+    }catch(e){console.warn('미니 캘린더 이미지',e);}
   }
   function renderCalendar() {
     if (!el.calendarGrid) return;
@@ -236,6 +283,7 @@
       days.push(`<button type="button" class="${classes}" data-calendar-date="${iso}" aria-label="${escapeHtml(label)}" aria-pressed="${iso === current?.date}"><span>${day}</span>${count > 1 ? `<small class="calendar-multi">${count}</small>` : ''}</button>`);
     }
     el.calendarGrid.innerHTML = days.join('');
+    if(calendarPageOpen)renderMiniCalendar();
   }
   function shiftCalendar(delta) {
     const target = new Date(calendarYear, calendarMonth + delta, 1);
@@ -667,6 +715,16 @@
     $('calendarPrev').addEventListener('click',()=>shiftCalendar(-1));
     $('calendarNext').addEventListener('click',()=>shiftCalendar(1));
     $('calendarToday').addEventListener('click',()=>{setCalendarMonth(dayString());renderCalendar();});
+    $('openCalendarPage').addEventListener('click',showMiniCalendar);
+    $('returnEditor').addEventListener('click',showEditor);
+    $('miniPrev').addEventListener('click',()=>shiftCalendar(-1));
+    $('miniNext').addEventListener('click',()=>shiftCalendar(1));
+    $('miniToday').addEventListener('click',()=>{setCalendarMonth(dayString());renderCalendar();});
+    $('miniGrid').addEventListener('click',async e=>{
+      const b=e.target.closest('[data-mini-date]');if(!b)return;
+      const date=b.dataset.miniDate,entry=entries.find(x=>x.date===date);
+      if(entry)await selectEntry(entry.id);else await newEntry(date);
+    });
     el.calendarGrid.addEventListener('click',async e=>{
       const button=e.target.closest('[data-calendar-date]');
       if(!button)return;
@@ -682,7 +740,7 @@
       if(open)selectEntry(open.dataset.entryId);
     });
     $('cleanupEmptyBtn').addEventListener('click',cleanupEmptyRecords);
-    el.date.addEventListener('change',updateDate);el.title.addEventListener('input',queueSave);
+    el.date.addEventListener('change',updateDate);el.title.addEventListener('input',queueSave);$('entryWeather').addEventListener('change',queueSave);$('entryShortNote').addEventListener('input',queueSave);
     el.body.addEventListener('input',()=>{queueSave();renderPreview();el.charCount.textContent=`${[...el.body.value].length.toLocaleString()}자`;});
     document.querySelectorAll('[data-view]').forEach(b=>b.addEventListener('click',()=>setView(b.dataset.view)));
     document.querySelectorAll('[data-format]').forEach(b=>b.addEventListener('click',()=>formatText(b.dataset.format)));
