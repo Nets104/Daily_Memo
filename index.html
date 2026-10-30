@@ -13,7 +13,17 @@
   <title>일상 기록</title>
 </head>
 <body>
-  <div class="app-shell">
+  <section id="cloudAuth" hidden style="max-width:420px;margin:7vh auto;padding:24px;border-radius:18px;background:white;box-shadow:0 8px 40px #2221;font-family:Pretendard,sans-serif">
+    <h1>일상 기록</h1><p>계정으로 로그인하면 내 기록이 안전하게 동기화돼요.</p>
+    <form id="cloudAuthForm" style="display:grid;gap:12px">
+      <input id="cloudEmail" type="email" required autocomplete="username" placeholder="이메일" style="padding:13px;border:1px solid #ddd;border-radius:9px">
+      <input id="cloudPassword" type="password" required minlength="6" autocomplete="current-password" placeholder="비밀번호 (6자 이상)" style="padding:13px;border:1px solid #ddd;border-radius:9px">
+      <button type="submit" class="primary-button" id="cloudLogin">로그인</button>
+      <button type="button" class="outlined-button" id="cloudSignup">새 계정 만들기</button>
+      <p id="cloudAuthStatus" role="status" style="font-size:12px;line-height:1.6"></p>
+    </form>
+  </section>
+  <div class="app-shell" id="diaryApp">
     <aside class="sidebar" id="sidebar" aria-label="기록 목록">
       <div class="sidebar-top">
         <div class="brand"><span class="brand-mark" aria-hidden="true">✦</span><span>일상 기록<span class="brand-dot">.</span></span></div>
@@ -36,6 +46,11 @@
       <div class="list-heading"><span>나의 기록</span><span class="list-count" id="entryCount">0</span><button type="button" class="cleanup-empty-button" id="cleanupEmptyBtn" title="내용과 첨부 파일이 없는 저장 기록만 삭제">빈 기록 정리</button></div>
       <div class="entry-list" id="entryList" aria-label="저장된 기록"></div>
       <div class="sidebar-bottom">
+        <div id="cloudAccount" hidden style="padding:8px 8px 12px;font-size:11px;color:#6b6195">
+          <div id="cloudUserEmail" style="overflow-wrap:anywhere"></div>
+          <button id="cloudImport" class="sidebar-option" type="button">이 기기의 기존 기록 가져오기</button>
+          <button id="cloudLogout" class="sidebar-option" type="button">로그아웃</button>
+        </div>
         <button class="sidebar-option" id="backupBtn"><span>⇩</span> 전체 백업 ZIP</button>
         <button class="sidebar-option" id="restoreBtn"><span>↥</span> 백업 불러오기</button>
         <input id="restoreInput" type="file" accept=".zip,application/zip" hidden />
@@ -106,6 +121,9 @@
     <div class="export-progress" id="exportProgress" aria-live="polite"></div>
   </dialog>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script src="./supabase-config.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js" defer></script>
+  <script src="./cloud.js" defer></script>
   <script src="./app.js" defer></script>
 </body>
 </html>
