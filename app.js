@@ -22,6 +22,7 @@
   let isDraft = false, isSavingDraft = false;
   let calendarYear = new Date().getFullYear(), calendarMonth = new Date().getMonth();
   let archivedMonth=null;
+  let cardDate=null,cardPhoto=null,cardObjectUrl=null,cardImage=null,cardZoom=1,cardOffsetX=0,cardOffsetY=0,cardDragging=false,cardPointer=null;
   let calendarPageOpen=false,miniPhotoToken=0;const miniPhotoUrls=[];
 
   function dayString(date = new Date()) {
@@ -124,7 +125,7 @@
       else {db=await openDb();entries=await getAll('entries');}
 
       if(entries.length) await selectEntry([...entries].sort((a,b)=>b.updatedAt.localeCompare(a.updatedAt))[0].id);
-      else await newEntry();
+      else await newEntry(dayString(),false);
       renderList();
       if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) navigator.serviceWorker.register('./sw.js').catch(()=>{});
     } catch(e) {
@@ -220,12 +221,71 @@
   const WEATHER_EMOJI={sunny:'☀️',partly_cloudy:'🌤️',cloudy:'☁️',rain:'🌧️',snow:'❄️',wind:'💨',other:'🌈'};
   function showEditor(){calendarPageOpen=false;$('calendarPage').hidden=true;$('editorPage').hidden=false;}
   function showMiniCalendar(){document.activeElement?.blur?.();calendarPageOpen=true;$('calendarPage').hidden=false;$('editorPage').hidden=true;renderMiniCalendar();}
+  function closeDayCard(){
+    $('dayCardDialog').close();cardDate=null;cardPhoto=null;cardImage=null;
+    if(cardObjectUrl){URL.revokeObjectURL(cardObjectUrl);cardObjectUrl=null;}
+  }
+  async function openDayCard(date){
+    document.activeElement?.blur?.();
+    cardDate=date;cardPhoto=null;cardImage=null;cardZoom=1;cardOffsetX=0;cardOffsetY=0;
+    $('dayCardTitle').textContent=date+' 기록';
+    const entry=entries.filter(e=>e.date===date).sort((a,b)=>b.updatedAt.localeCompare(a.updatedAt))[0];
+    $('dayCardNote').value=entry?.shortNote||'';
+    $('dayCardStatus').textContent='';
+    $('dayCropSection').hidden=true;$('dayCropZoom').value='1';
+    const view=$('dayExistingPhoto');view.replaceChildren();view.hidden=true;
+    $('dayCardSave').disabled=false;
+    if(entry){
+      try{
+        const files=await getAll('attachments','entryId',entry.id);
+        if(cardDate!==date)return;
+        const cover=files.find(f=>f.id===entry.coverAttachmentId && f.type.startsWith('image/'))||files.find(f=>f.type.startsWith('image/'));
+        if(cover){const url=URL.createObjectURL(cover.blob);cardObjectUrl=url;const img=document.createElement('img');img.src=url;img.alt='현재 썸네일';view.append(img);view.hidden=false;}
+      }catch(e){$('dayCardStatus').textContent='기존 사진 불러오기 실패: '+e.message;}
+    }
+    if(!$('dayCardDialog').open)$('dayCardDialog').showModal();
+  }
+  function paintCrop(){
+    if(!cardImage)return;
+    const canvas=$('dayCropCanvas'),ctx=canvas.getContext('2d');
+    const ratio=Math.max(canvas.width/cardImage.naturalWidth,canvas.height/cardImage.naturalHeight)*cardZoom;
+    const w=cardImage.naturalWidth*ratio,h=cardImage.naturalHeight*ratio;
+    const x=(canvas.width-w)/2+cardOffsetX,y=(canvas.height-h)/2+cardOffsetY;
+    ctx.clearRect(0,0,canvas.width,canvas.height);ctx.drawImage(cardImage,x,y,w,h);
+  }
+  async function saveDayCard(){
+    if(!cardDate)return;
+    const date=cardDate,note=$('dayCardNote').value.trim(),button=$('dayCardSave');
+    if(!note&&!cardPhoto&&!entries.some(e=>e.date===date)){toast('한마디나 사진을 추가해 주세요.');return;}
+    button.disabled=true;$('dayCardStatus').textContent='서버에 저장 중…';
+    try{
+      await flushSave();
+      let entry=entries.filter(e=>e.date===date).sort((a,b)=>b.updatedAt.localeCompare(a.updatedAt))[0];
+      const isNew=!entry,now=new Date().toISOString();
+      if(isNew)entry={id:makeId(),date,title:'',body:'',weather:'',shortNote:'',createdAt:now,updatedAt:now};
+      else entry={...entry};
+      entry.shortNote=note;entry.updatedAt=now;
+      let file=null;
+      if(cardPhoto){
+        const canvas=$('dayCropCanvas');
+        const blob=await new Promise((resolve,reject)=>canvas.toBlob(b=>b?resolve(b):reject(Error('이미지를 자르지 못했어요.')),'image/jpeg',.86));
+        file={id:makeId(),entryId:entry.id,name:'달력_썸네일_'+date+'.jpg',type:'image/jpeg',size:blob.size,blob,createdAt:now};
+        entry.coverAttachmentId=file.id;
+      }
+      await writeRecords('entries',[entry]);
+      if(file)await writeRecords('attachments',[file]);
+      if(isNew)entries.push(entry);else entries=entries.map(e=>e.id===entry.id?entry:e);
+      if(current?.id===entry.id){current=entry;attachments=await getAll('attachments','entryId',entry.id);fillEditor();renderAttachments();}
+      renderList();closeDayCard();toast('캘린더 기록을 저장했어요.');
+    }catch(e){console.error(e);$('dayCardStatus').textContent='저장 실패: '+e.message;toast('저장에 실패했어요.');}
+    finally{button.disabled=false;}
+  }
   function renderMiniCalendar(){
     if(!calendarPageOpen)return;
     $('miniMonth').textContent=`${calendarYear}년 ${calendarMonth+1}월`;
     const first=new Date(calendarYear,calendarMonth,1).getDay(),last=new Date(calendarYear,calendarMonth+1,0).getDate(),prefix=`${calendarYear}-${String(calendarMonth+1).padStart(2,'0')}-`;
     const byDay=new Map();
-    for(const entry of entries)if(entry.date.startsWith(prefix)&&!byDay.has(entry.date))byDay.set(entry.date,entry);
+    for(const entry of [...entries].sort((a,b)=>b.updatedAt.localeCompare(a.updatedAt)))if(entry.date.startsWith(prefix)&&!byDay.has(entry.date))byDay.set(entry.date,entry);
     const cells=Array.from({length:first},()=>'<div class="mini-pad"></div>');
     for(let d=1;d<=last;d++){
       const date=prefix+String(d).padStart(2,'0'),entry=byDay.get(date);
@@ -253,6 +313,8 @@
       if(cloudMode){
         const photos=await cloud().photoPreviews([...ids]);
         if(token!==miniPhotoToken)return;
+        const priority=new Map(visible.map(e=>[e.id,e.coverAttachmentId]));
+        for(const f of photos.filter(f=>priority.get(f.entryId)===f.id))paint(f.entryId,f.url);
         for(const f of photos)paint(f.entryId,f.url);
       }else if(db){
         const files=await getAll('attachments');
@@ -720,11 +782,37 @@
     $('miniPrev').addEventListener('click',()=>shiftCalendar(-1));
     $('miniNext').addEventListener('click',()=>shiftCalendar(1));
     $('miniToday').addEventListener('click',()=>{setCalendarMonth(dayString());renderCalendar();});
-    $('miniGrid').addEventListener('click',async e=>{
-      const b=e.target.closest('[data-mini-date]');if(!b)return;
-      const date=b.dataset.miniDate,entry=entries.find(x=>x.date===date);
+    $('miniGrid').addEventListener('click',e=>{const b=e.target.closest('[data-mini-date]');if(b)openDayCard(b.dataset.miniDate);});
+    $('dayCardClose').addEventListener('click',closeDayCard);
+    $('dayCardDialog').addEventListener('close',()=>{cardDate=null;});
+    $('dayOpenEntry').addEventListener('click',async()=>{
+      const date=cardDate;closeDayCard();
+      const entry=entries.filter(e=>e.date===date).sort((a,b)=>b.updatedAt.localeCompare(a.updatedAt))[0];
       if(entry)await selectEntry(entry.id);else await newEntry(date,false);
     });
+    $('dayCardSave').addEventListener('click',saveDayCard);
+    $('dayPhotoBtn').addEventListener('click',()=>$('dayPhotoInput').click());
+    $('dayPhotoInput').addEventListener('change',async()=>{
+      const file=$('dayPhotoInput').files[0];$('dayPhotoInput').value='';if(!file)return;
+      if(!file.type.startsWith('image/')){toast('이미지 파일을 선택해 주세요.');return;}
+      const url=URL.createObjectURL(file),image=new Image();
+      try{
+        await new Promise((res,rej)=>{image.onload=res;image.onerror=()=>rej(Error('이미지를 열 수 없어요.'));image.src=url;});
+        cardImage=image;cardPhoto=file;cardZoom=1;cardOffsetX=0;cardOffsetY=0;$('dayCropZoom').value='1';
+        $('dayCropSection').hidden=false;paintCrop();
+      }catch(e){toast(e.message);}finally{URL.revokeObjectURL(url);}
+    });
+    $('dayCropZoom').addEventListener('input',e=>{cardZoom=Number(e.target.value);paintCrop();});
+    const crop=$('dayCropCanvas');
+    crop.addEventListener('pointerdown',e=>{if(!cardImage)return;cardDragging=true;cardPointer={x:e.clientX,y:e.clientY};crop.setPointerCapture(e.pointerId);});
+    crop.addEventListener('pointermove',e=>{
+      if(!cardDragging||!cardPointer)return;
+      const scale=crop.width/crop.getBoundingClientRect().width;
+      cardOffsetX+=(e.clientX-cardPointer.x)*scale;cardOffsetY+=(e.clientY-cardPointer.y)*scale;
+      cardPointer={x:e.clientX,y:e.clientY};paintCrop();
+    });
+    const endDrag=()=>{cardDragging=false;cardPointer=null;};
+    crop.addEventListener('pointerup',endDrag);crop.addEventListener('pointercancel',endDrag);
     el.calendarGrid.addEventListener('click',async e=>{
       const button=e.target.closest('[data-calendar-date]');
       if(!button)return;
