@@ -58,3 +58,29 @@
 .mini-photo img{width:100%;height:100%;object-fit:cover}
 .mini-line{font-size:10px;line-height:1.3;color:#6b657a;overflow:hidden;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2}
 @media(max-width:740px){.mini-calendar-page{padding:12px}.mini-calendar-grid,.mini-calendar-weekdays{gap:3px}.mini-day{height:96px;padding:3px;gap:3px}.mini-date{font-size:10px}.mini-photo{height:48px}.mini-line{font-size:9px}.mini-calendar-header h2{font-size:19px}}
+
+/* Calendar date-card editor */
+.mini-calendar-page,.mini-calendar-grid,.mini-day{min-width:0}
+.mini-day{overflow:hidden}
+.mini-date,.mini-line{max-width:100%;min-width:0;overflow:hidden}
+.mini-line{word-break:break-word;overflow-wrap:anywhere;white-space:normal;max-height:2.6em}
+.mini-photo{flex-shrink:0;width:100%;min-width:0}
+.day-card-dialog{border:1px solid #e7e1f0;border-radius:20px;padding:22px;width:min(440px,calc(100vw - 24px));max-height:calc(100dvh - 32px);overflow:auto;box-shadow:0 18px 55px #24203b44;color:#343348}
+.day-card-dialog::backdrop{background:#22223880}
+.day-card-header{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:16px}
+.day-card-header h2{font-size:18px;margin:0}
+.day-card-content{display:flex;flex-direction:column;gap:14px}
+.day-photo-select{display:block;width:100%;border:1px dashed #bcb1e8;border-radius:12px;background:#f8f5ff;color:#7160b4;padding:15px;font-weight:700;cursor:pointer}
+.day-existing-photo{width:100%;max-height:160px;overflow:hidden;border-radius:10px}
+.day-existing-photo img{width:100%;height:160px;object-fit:contain;background:#f6f3fd}
+.day-crop-section{display:flex;flex-direction:column;gap:9px;align-items:stretch}
+.day-crop-section[hidden]{display:none!important}
+#dayCropCanvas{display:block;width:min(100%,290px);height:auto;aspect-ratio:1;margin:0 auto;border-radius:9px;touch-action:none;background:#eae6f2;cursor:grab}
+#dayCropCanvas:active{cursor:grabbing}
+.day-card-help,.day-card-status{font-size:12px;line-height:1.5;color:#837b9b;margin:0}
+.day-card-label{font-size:12px;font-weight:750;color:#68617d}
+.day-card-label small{font-weight:400}
+#dayCardNote{width:100%;border:1px solid #e4def2;border-radius:10px;padding:13px;font-size:14px;box-sizing:border-box}
+.day-card-actions{display:flex;gap:8px}
+.day-card-actions button{flex:1;min-width:0}
+@media(max-width:740px){.mini-day{overflow:hidden}.day-card-dialog{padding:17px}.mini-calendar-page{overflow:hidden}}
