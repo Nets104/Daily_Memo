@@ -17,6 +17,7 @@
   let saveTimer = null, savePromise = Promise.resolve(), toastTimer = null, view = 'edit';
   let recorder = null, recordStream = null, recordChunks = [], recordingEntryId = null;
   let isExporting = false;
+  let isDraft = false, isSavingDraft = false;
   let calendarYear = new Date().getFullYear(), calendarMonth = new Date().getMonth();
 
   function dayString(date = new Date()) {
@@ -80,7 +81,7 @@
       if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) navigator.serviceWorker.register('./sw.js').catch(()=>{});
     } catch(e) {
       console.error(e);setSave('error','저장소 사용 불가');toast('브라우저의 저장소를 열 수 없어요. 일반 모드에서 다시 열어 주세요.');
-      current={id:makeId(),date:dayString(),title:'',body:'',createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()};fillEditor();
+      current={id:makeId(),date:dayString(),title:'',body:'',createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()};isDraft=true;fillEditor();setSave('','저장 전');
     }
   }
   function refreshCurrentFromForm() {
@@ -89,18 +90,42 @@
   }
   function queueSave() {
     if(!current || !db) return;
-    refreshCurrentFromForm();setSave('saving','저장 중…');clearTimeout(saveTimer);
+    refreshCurrentFromForm();
+    if(isDraft){setSave('','저장 전');renderCalendar();return;}
+    setSave('saving','저장 중…');clearTimeout(saveTimer);
     saveTimer=setTimeout(()=>{ saveTimer=null;saveCurrent(); },450);
     renderList();
   }
-  async function saveCurrent() {
+  async function saveCurrent(explicit = false) {
     clearTimeout(saveTimer);saveTimer=null;
-    if(!current || !db) return;
+    if(!current || !db) return false;
+    if(isDraft && (!explicit || isSavingDraft)) return false;
     refreshCurrentFromForm();current.updatedAt=new Date().toISOString();
     const snapshot={...current};
+    if(isDraft){
+      isSavingDraft=true;setSave('saving','저장 중…');
+      const staged=[...attachments];
+      savePromise=savePromise.catch(()=>{}).then(()=>new Promise((resolve,reject)=>{
+        const tx=db.transaction(['entries','attachments'],'readwrite');
+        tx.objectStore('entries').put(snapshot);
+        for(const file of staged)tx.objectStore('attachments').put(file);
+        tx.oncomplete=()=>resolve();tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error || Error('저장 실패'));
+      }));
+      try{
+        await savePromise;
+        if(current?.id===snapshot.id){
+          entries.push(current);isDraft=false;
+          setSave('','저장됨');el.edited.textContent='방금 수정됨';renderList();
+          toast('기록을 저장했어요.');
+        }
+        return true;
+      }catch(e){
+        console.error(e);setSave('error','저장 실패');toast('기록을 저장하지 못했어요. 저장 공간을 확인해 주세요.');return false;
+      }finally{isSavingDraft=false;}
+    }
     savePromise=savePromise.catch(()=>{}).then(()=>writeRecords('entries',[snapshot]));
-    try { await savePromise; if(current?.id===snapshot.id){setSave('', '저장됨');el.edited.textContent='방금 수정됨';} renderList(); }
-    catch(e){console.error(e);setSave('error','저장 실패');toast('기록 저장에 실패했어요. 기기 저장 공간을 확인해 주세요.');}
+    try { await savePromise; if(current?.id===snapshot.id){setSave('', '저장됨');el.edited.textContent='방금 수정됨';} renderList();return true; }
+    catch(e){console.error(e);setSave('error','저장 실패');toast('기록 저장에 실패했어요. 기기 저장 공간을 확인해 주세요.');return false;}
   }
   async function flushSave() { if(saveTimer) await saveCurrent();else await savePromise.catch(()=>{}); }
   function fillEditor() {
@@ -111,20 +136,29 @@
     el.edited.textContent=current?.updatedAt ? `${new Date(current.updatedAt).toLocaleDateString('ko-KR')} 수정` : '';
     el.charCount.textContent=`${[...el.body.value].length.toLocaleString()}자`;renderPreview();
   }
+  function canLeaveDraft() {
+    if(!isDraft || !current) return true;
+    refreshCurrentFromForm();
+    return !(current.title.trim() || current.body.trim() || attachments.length)
+      || confirm('저장하지 않은 내용이 있어요. 저장하지 않고 이동할까요?');
+  }
   async function selectEntry(id) {
     if(current?.id===id){closeSidebar();return;}
+    if(!canLeaveDraft())return;
     await flushSave();
     current=entries.find(e=>e.id===id);
     if(!current)return;
-    fillEditor();attachments=db ? await getAll('attachments','entryId',id) : [];renderAttachments();renderList();closeSidebar();
+    isDraft=false;fillEditor();attachments=db ? await getAll('attachments','entryId',id) : [];
+    renderAttachments();renderList();setSave('','저장됨');closeSidebar();
   }
   async function newEntry(date = dayString()) {
+    if(!canLeaveDraft())return;
     await flushSave();
     const timestamp=new Date().toISOString();
-    const entry={id:makeId(),date,title:'',body:'',createdAt:timestamp,updatedAt:timestamp};
-    current=entry;entries.push(entry);
-    if(db){try{await writeRecords('entries',[entry]);setSave('','저장됨');}catch(e){setSave('error','저장 실패');}}
-    fillEditor();attachments=[];renderAttachments();renderList();closeSidebar();el.title.focus();
+    current={id:makeId(),date,title:'',body:'',createdAt:timestamp,updatedAt:timestamp};
+    isDraft=true;
+    fillEditor();attachments=[];renderAttachments();renderList();setSave('','저장 전');
+    el.edited.textContent='저장 전';closeSidebar();el.title.focus();
   }
   function setCalendarMonth(iso) {
     const match = /^(\d{4})-(\d{2})-\d{2}$/.exec(iso || '');
@@ -148,7 +182,7 @@
       const iso = prefix + String(day).padStart(2, '0');
       const count = byDate.get(iso) || 0;
       const classes = ['calendar-day', count ? 'has-entry' : '', iso === current?.date ? 'active' : '', iso === dayString() ? 'today' : ''].filter(Boolean).join(' ');
-      const label = `${dateText(iso, 'kr')}, ${count ? `기록 ${count}개 열기` : '새 기록 작성'}`;
+      const label = `${dateText(iso, 'kr')}, ${count ? `기록 ${count}개 열기` : '새 기록 작성 (저장 버튼을 눌러야 등록)'}`;
       days.push(`<button type="button" class="${classes}" data-calendar-date="${iso}" aria-label="${escapeHtml(label)}" aria-pressed="${iso === current?.date}"><span>${day}</span>${count > 1 ? `<small class="calendar-multi">${count}</small>` : ''}</button>`);
     }
     el.calendarGrid.innerHTML = days.join('');
@@ -245,8 +279,8 @@
     }
     ta.value=a+edit.insert+b;ta.focus();ta.setSelectionRange(start+edit.selStart,start+edit.selEnd);queueSave();renderPreview();el.charCount.textContent=`${[...ta.value].length.toLocaleString()}자`;
   }
-  function closeSidebar(){el.sidebar.classList.remove('open');el.scrim.classList.remove('visible');}
-  function openSidebar(){el.sidebar.classList.add('open');el.scrim.classList.add('visible');}
+  function closeSidebar(){el.sidebar.classList.remove('open');el.scrim.classList.remove('visible');$('openSidebar').setAttribute('aria-expanded','false');}
+  function openSidebar(){el.sidebar.classList.add('open');el.scrim.classList.add('visible');$('openSidebar').setAttribute('aria-expanded','true');}
   function revokeMediaUrls(){for(const u of mediaUrls)URL.revokeObjectURL(u);mediaUrls=[];}
   function renderAttachments(){
     revokeMediaUrls();el.attachCount.textContent=attachments.length;el.attachList.replaceChildren();
@@ -261,7 +295,7 @@
       const info=document.createElement('div');info.className='attachment-info';
       const name=document.createElement('span');name.className='attachment-name';name.textContent=file.name;name.title=file.name;
       const remove=document.createElement('button');remove.type='button';remove.className='attachment-remove';remove.textContent='×';remove.title=`${file.name} 삭제`;remove.setAttribute('aria-label',`${file.name} 삭제`);
-      remove.addEventListener('click',async()=>{if(!confirm(`"${file.name}" 파일을 삭제할까요?`))return;try{await deleteOne('attachments',file.id);attachments=attachments.filter(x=>x.id!==file.id);renderAttachments();toast('첨부 파일을 삭제했어요.');}catch(e){toast('삭제하지 못했어요.');}});
+      remove.addEventListener('click',async()=>{if(!confirm(`"${file.name}" 파일을 삭제할까요?`))return;try{if(!isDraft)await deleteOne('attachments',file.id);attachments=attachments.filter(x=>x.id!==file.id);renderAttachments();toast('첨부 파일을 삭제했어요.');}catch(e){toast('삭제하지 못했어요.');}});
       info.append(name,remove);
       const dl=document.createElement('a');dl.className='attachment-download';dl.textContent='원본 다운로드 ↓';dl.href=u;dl.download=file.name;
       outer.append(visual,info,dl);el.attachList.append(outer);
@@ -269,6 +303,8 @@
   }
   async function addFiles(fileList, entryId=current?.id){
     if(!db){toast('저장소에 접근할 수 없어요.');return;}
+    const targetDraft=isDraft && current?.id===entryId;
+    if(!targetDraft && !entries.some(e=>e.id===entryId)){toast('해당 기록이 더 이상 열려 있지 않아요.');return;}
     let added=0;
     for(const file of [...fileList]) {
       if(!/^(image\/|video\/|audio\/|application\/pdf$)/.test(file.type) && !/\.(jpe?g|png|gif|webp|heic|heif|avif|mp4|mov|webm|m4v|mp3|wav|m4a|ogg|flac|aac|pdf)$/i.test(file.name)){toast(`${file.name}: 지원하지 않는 형식이에요.`);continue;}
@@ -277,10 +313,10 @@
       const inferred={jpg:'image/jpeg',jpeg:'image/jpeg',png:'image/png',gif:'image/gif',webp:'image/webp',heic:'image/heic',heif:'image/heif',avif:'image/avif',mp4:'video/mp4',mov:'video/quicktime',m4v:'video/mp4',webm:'video/webm',mp3:'audio/mpeg',wav:'audio/wav',m4a:'audio/mp4',ogg:'audio/ogg',flac:'audio/flac',aac:'audio/aac',pdf:'application/pdf'};
       const type=file.type || inferred[ext] || 'application/octet-stream';
       const record={id:makeId(),entryId,name:file.name,type,size:file.size,blob:file,createdAt:new Date().toISOString()};
-      try{await writeRecords('attachments',[record]);if(current?.id===entryId)attachments.push(record);added++;}
+      try{if(!targetDraft)await writeRecords('attachments',[record]);if(current?.id===entryId)attachments.push(record);added++;}
       catch(e){console.error(e);toast('저장 공간이 부족할 수 있어요. 첨부 파일을 저장하지 못했어요.');break;}
     }
-    if(current?.id===entryId)renderAttachments();if(added)toast(`${added}개 파일을 기록에 첨부했어요.`);
+    if(current?.id===entryId)renderAttachments();if(added)toast(targetDraft ? `${added}개 첨부를 준비했어요. 기록 저장을 눌러 확정하세요.` : `${added}개 파일을 기록에 첨부했어요.`);
   }
   async function toggleRecording(){
     if(recorder && recorder.state==='recording'){recorder.stop();return;}
@@ -333,7 +369,7 @@
       if(cursor+46>bytes.length||v.getUint32(cursor,true)!==0x02014b50)throw Error('ZIP 파일이 손상되었어요.');
       const method=v.getUint16(cursor+10,true),crc=v.getUint32(cursor+16,true),size=v.getUint32(cursor+20,true),nameLen=v.getUint16(cursor+28,true),extra=v.getUint16(cursor+30,true),comment=v.getUint16(cursor+32,true),start=v.getUint32(cursor+42,true);
       const name=new TextDecoder().decode(bytes.slice(cursor+46,cursor+46+nameLen));cursor+=46+nameLen+extra+comment;
-      if(method!==0)throw Error('하루결에서 만든 압축되지 않은 ZIP 백업만 불러올 수 있어요.');
+      if(method!==0)throw Error('일상 기록에서 만든 압축되지 않은 ZIP 백업만 불러올 수 있어요.');
       if(start+30>bytes.length||v.getUint32(start,true)!==0x04034b50)throw Error('ZIP 항목이 손상되었어요.');
       const nameSize=v.getUint16(start+26,true),extraSize=v.getUint16(start+28,true),begin=start+30+nameSize+extraSize;
       if(begin+size>bytes.length)throw Error('ZIP 파일의 길이가 올바르지 않아요.');
@@ -363,7 +399,7 @@
       if(data.entries.some(x=>!x.id||!x.date||typeof x.body!=='string'||typeof x.title!=='string'))throw Error('기록 정보가 잘못되었어요.');
       await writeRecords('entries',data.entries);
       for(const a of data.attachments){const bytes=zip.get(a.path);if(!bytes)throw Error(`${a.name}: 미디어 파일을 찾지 못했어요.`);const {path,...meta}=a;await writeRecords('attachments',[{...meta,blob:new Blob([bytes],{type:a.type})}]);}
-      entries=await getAll('entries');const last=[...entries].sort((a,b)=>b.updatedAt.localeCompare(a.updatedAt))[0];current=null;await selectEntry(last.id);
+      entries=await getAll('entries');const last=[...entries].sort((a,b)=>b.updatedAt.localeCompare(a.updatedAt))[0];current=null;isDraft=false;await selectEntry(last.id);
       setSave('','저장됨');toast(`${data.entries.length}개 기록의 백업을 불러왔어요.`);
     }catch(e){console.error(e);setSave('error','복원 실패');toast(`복원 실패: ${e.message}`);}
   }
@@ -403,7 +439,7 @@
           else{drawWrapped(`사진: ${a.name}`,{size:23,lineHeight:42});y+=10;}
         }else{drawWrapped(`📎 ${a.name}  (원본 파일은 ZIP 내보내기에서 확인)`,{size:22,color:col.muted,lineHeight:39});y+=8;}}
     }
-    for(let i=0;i<pages.length;i++){const c=pages[i],cctx=c.getContext('2d');cctx.fillStyle=col.muted;cctx.font='19px Pretendard, sans-serif';cctx.fillText(`하루결  ·  ${i+1} / ${pages.length}`,left,1685);}
+    for(let i=0;i<pages.length;i++){const c=pages[i],cctx=c.getContext('2d');cctx.fillStyle=col.muted;cctx.font='19px Pretendard, sans-serif';cctx.fillText(`일상 기록  ·  ${i+1} / ${pages.length}`,left,1685);}
     return pages;
   }
   async function makePdf(pages){
@@ -453,7 +489,8 @@
   }
   function bindEvents(){
     $('newEntrySidebar').addEventListener('click',()=>newEntry());$('newEntryTop').addEventListener('click',()=>newEntry());
-    $('openSidebar').addEventListener('click',openSidebar);$('closeSidebar').addEventListener('click',closeSidebar);el.scrim.addEventListener('click',closeSidebar);
+    $('openSidebar').addEventListener('click',()=>el.sidebar.classList.contains('open')?closeSidebar():openSidebar());$('closeSidebar').addEventListener('click',closeSidebar);el.scrim.addEventListener('click',closeSidebar);
+    $('saveEntryBtn').addEventListener('click',()=>saveCurrent(true));
     el.search.addEventListener('input',renderList);
     $('calendarPrev').addEventListener('click',()=>shiftCalendar(-1));
     $('calendarNext').addEventListener('click',()=>shiftCalendar(1));
@@ -471,14 +508,16 @@
     el.body.addEventListener('input',()=>{queueSave();renderPreview();el.charCount.textContent=`${[...el.body.value].length.toLocaleString()}자`;});
     document.querySelectorAll('[data-view]').forEach(b=>b.addEventListener('click',()=>setView(b.dataset.view)));
     document.querySelectorAll('[data-format]').forEach(b=>b.addEventListener('click',()=>formatText(b.dataset.format)));
-    document.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='s'){e.preventDefault();saveCurrent();toast('기록을 저장했어요.');}if((e.ctrlKey||e.metaKey)&&['b','i'].includes(e.key.toLowerCase())&&document.activeElement===el.body){e.preventDefault();formatText(e.key.toLowerCase()==='b'?'bold':'italic');}});
+    document.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='s'){e.preventDefault();saveCurrent(true);}if((e.ctrlKey||e.metaKey)&&['b','i'].includes(e.key.toLowerCase())&&document.activeElement===el.body){e.preventDefault();formatText(e.key.toLowerCase()==='b'?'bold':'italic');}});
     $('uploadBtn').addEventListener('click',()=>el.file.click());el.file.addEventListener('change',()=>{addFiles(el.file.files);el.file.value='';});el.record.addEventListener('click',toggleRecording);
-    $('deleteEntryBtn').addEventListener('click',async()=>{if(!current||!confirm(`"${current.title||dateText(current.date)}" 기록과 모든 첨부 파일을 삭제할까요?\n삭제한 내용은 복구할 수 없어요.`))return;
+    $('deleteEntryBtn').addEventListener('click',async()=>{if(!current)return;
+      if(isDraft){if(!confirm('저장하지 않은 작성 내용을 지울까요?'))return;const date=current.date;current=null;attachments=[];await newEntry(date);toast('임시 작성 내용을 지웠어요.');return;}
+      if(!confirm(`"${current.title||dateText(current.date)}" 기록과 모든 첨부 파일을 삭제할까요?\n삭제한 내용은 복구할 수 없어요.`))return;
       const id=current.id;clearTimeout(saveTimer);saveTimer=null;await savePromise.catch(()=>{});try{await deleteEntryData(id);entries=entries.filter(x=>x.id!==id);current=null;attachments=[];if(entries.length)await selectEntry([...entries].sort((a,b)=>b.updatedAt.localeCompare(a.updatedAt))[0].id);else await newEntry();renderList();toast('기록을 삭제했어요.');}catch(e){toast('기록 삭제에 실패했어요.');}});
-    $('openExportBtn').addEventListener('click',async()=>{await flushSave();el.exportFilename.value=current?.title.trim()||`${current?.date}_기록`;el.exportProgress.textContent='';el.dialog.showModal();});
+    $('openExportBtn').addEventListener('click',async()=>{if(isDraft){toast('새 기록을 먼저 저장한 뒤 내보내 주세요.');return;}await flushSave();el.exportFilename.value=current?.title.trim()||`${current?.date}_기록`;el.exportProgress.textContent='';el.dialog.showModal();});
     $('closeExportBtn').addEventListener('click',()=>el.dialog.close());el.dialog.addEventListener('click',e=>{if(e.target===el.dialog)el.dialog.close();});
     document.querySelectorAll('[data-export]').forEach(b=>b.addEventListener('click',()=>exportRecord(b.dataset.export)));
-    $('backupBtn').addEventListener('click',async()=>{try{await flushSave();await buildBackup([...entries],`일상기록_전체백업_${dayString()}`);toast('전체 기록과 첨부 파일 백업을 저장했어요.');}catch(e){toast(`백업 실패: ${e.message}`);}});
+    $('backupBtn').addEventListener('click',async()=>{try{if(isDraft && (el.title.value.trim() || el.body.value.trim() || attachments.length))toast('저장하지 않은 새 기록은 백업에 포함되지 않아요.');await flushSave();await buildBackup([...entries],`일상기록_전체백업_${dayString()}`);toast('전체 기록과 첨부 파일 백업을 저장했어요.');}catch(e){toast(`백업 실패: ${e.message}`);}});
     $('restoreBtn').addEventListener('click',()=>el.restoreInput.click());el.restoreInput.addEventListener('change',async()=>{const file=el.restoreInput.files[0];if(file)await restoreBackup(file);el.restoreInput.value='';});
     window.addEventListener('pagehide',()=>{if(saveTimer)saveCurrent();});document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden'&&saveTimer)saveCurrent();});
   }
