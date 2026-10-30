@@ -194,7 +194,7 @@
       || confirm('저장하지 않은 내용이 있어요. 저장하지 않고 이동할까요?');
   }
   async function selectEntry(id) {
-    if(current?.id===id){closeSidebar();return;}
+    if(current?.id===id){showEditor();return;}
     if(!canLeaveDraft())return;
     await flushSave();
     current=entries.find(e=>e.id===id);
