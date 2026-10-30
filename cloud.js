@@ -10,8 +10,8 @@
   let user=null;
   const fail=(result)=>{if(result.error)throw result.error;return result.data;};
   const own=()=>{if(!user)throw Error('로그인 정보가 없어요.');return user.id;};
-  const entryRow=e=>({user_id:own(),id:e.id,entry_date:e.date,title:e.title||'',body:e.body||'',created_at:e.createdAt,updated_at:e.updatedAt});
-  const toEntry=r=>({id:r.id,date:r.entry_date,title:r.title,body:r.body,createdAt:r.created_at,updatedAt:r.updated_at});
+  const entryRow=e=>({user_id:own(),id:e.id,entry_date:e.date,title:e.title||'',body:e.body||'',short_note:e.shortNote||'',weather:e.weather||'',cover_attachment_id:e.coverAttachmentId||null,created_at:e.createdAt,updated_at:e.updatedAt});
+  const toEntry=r=>({id:r.id,date:r.entry_date,title:r.title,body:r.body,shortNote:r.short_note||'',weather:r.weather||'',coverAttachmentId:r.cover_attachment_id||null,createdAt:r.created_at,updatedAt:r.updated_at});
   const toFile=async r=>{
     const data=fail(await client.storage.from('diary-media').download(r.storage_path));
     return {id:r.id,entryId:r.entry_id,name:r.file_name,type:r.content_type,size:r.file_size,createdAt:r.created_at,blob:data};
@@ -36,6 +36,16 @@
     async login(email,password){return fail(await client.auth.signInWithPassword({email,password}));},
     async logout(){fail(await client.auth.signOut());user=null;},
     async entries(){return (await pageAll('diary_entries')).map(toEntry);},
+    async photoPreviews(entryIds){
+      if(!entryIds.length)return [];
+      const res=fail(await client.from('diary_attachments')
+        .select('id,entry_id,content_type,storage_path,created_at')
+        .eq('user_id',own()).in('entry_id',entryIds).like('content_type','image/%').order('created_at',{ascending:true}));
+      return Promise.all(res.map(async row=>{
+        const signed=await client.storage.from('diary-media').createSignedUrl(row.storage_path,600);
+        return signed.error ? null : {id:row.id,entryId:row.entry_id,url:signed.data.signedUrl};
+      })).then(xs=>xs.filter(Boolean));
+    },
     async getAttachments(entryId){
       const rows=await pageAll('diary_attachments',entryId?['entry_id',entryId]:null);
       return Promise.all(rows.map(toFile));
