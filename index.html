@@ -55,7 +55,7 @@
         <button class="sidebar-option" id="backupBtn"><span>⇩</span> 전체 백업 ZIP</button>
         <button class="sidebar-option" id="restoreBtn"><span>↥</span> 백업 불러오기</button>
         <input id="restoreInput" type="file" accept=".zip,application/zip" hidden />
-        <p>기록은 우선 이 기기의 브라우저에 저장돼요. 삭제·기기 변경에 대비해 주기적으로 백업하세요.</p>
+        <p>로그인한 계정의 기록은 서버에 저장됩니다. 월별 ZIP 백업을 정기적으로 보관하세요.</p>
       </div>
     </aside>
     <div class="sidebar-scrim" id="sidebarScrim"></div>
@@ -102,7 +102,7 @@
             <div class="section-label"><div><span class="section-glyph">✿</span> 첨부 파일 <span class="attachment-count" id="attachmentCount">0</span></div><span>사진 · 영상 · 오디오 · PDF</span></div>
             <div class="upload-actions"><button class="attach-button" id="uploadBtn">＋ 파일 추가</button><button class="attach-button secondary" id="recordBtn"><span aria-hidden="true">●</span> <span id="recordBtnText">음성 녹음</span></button><input type="file" id="fileInput" accept="image/*,video/*,audio/*,.pdf,application/pdf" multiple hidden /></div>
             <div id="attachmentList" class="attachment-grid"></div>
-            <p class="upload-tip">파일은 기기에 로컬 저장됩니다. 큰 영상은 저장 공간 한도에 주의해 주세요.</p>
+            <p class="upload-tip">로그인 시 파일은 계정별 비공개 서버에 저장됩니다. 파일당 50MB 이하를 권장해요.</p>
           </div>
         </section>
         <footer class="footer-note"><span>✦</span> Keep your days, keep your story. <span>✦</span></footer>
@@ -123,7 +123,7 @@
   </dialog>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
   <script src="./supabase-config.js" defer></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js" defer></script>
   <script src="./cloud.js" defer></script>
   <script src="./app.js" defer></script>
 </body>
