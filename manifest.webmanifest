@@ -1,6 +1,6 @@
 {
-  "name": "하루결 — 나의 일상 기록",
-  "short_name": "하루결",
+  "name": "일상 기록",
+  "short_name": "일상 기록",
   "description": "글, 사진, 영상, 소리로 매일을 기록하는 개인 일기장",
   "lang": "ko",
   "start_url": "./index.html",
