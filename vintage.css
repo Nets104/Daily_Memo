@@ -453,3 +453,89 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 #cloudAuth p{color:#8b765e}
 #cloudAuth input{background:#fffaf0;border-color:#d4bfa2!important;color:#48382d}
 #cloudAuth input::placeholder{color:#a58d72}
+
+
+/* Font roles: Pretendard for system UI; Ongleip Ryuryu for handwritten accents;
+   RIDIBatang for long-form diary text. No font files are bundled with the app. */
+@font-face{
+  font-family:"OngleipRyuryu";
+  src:url("https://cdn.jsdelivr.net/gh/projectnoonnu/2405-2@1.0/Ownglyph_ryurue-Rg.woff2") format("woff2");
+  font-style:normal;
+  font-weight:400;
+  font-display:swap;
+}
+@font-face{
+  font-family:"RIDIBatang";
+  src:url("https://cdn.jsdelivr.net/gh/sweetherofonts/fontshero_pack3/ridibatang/ridibatang-Regular.woff2") format("woff2");
+  font-style:normal;
+  font-weight:400;
+  font-display:swap;
+}
+:root,body,button,select,input,textarea{font-family:Pretendard,-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Noto Sans KR",Arial,sans-serif}
+/* Diary heading and photo captions are deliberately handwritten. */
+.title-row input{
+  font-family:"OngleipRyuryu",Pretendard,sans-serif;
+  font-size:31px;
+  font-weight:400;
+  letter-spacing:-.4px;
+}
+.title-row input::placeholder{font-family:inherit}
+#entryShortNote,#dayCardNote{
+  font-family:"OngleipRyuryu",Pretendard,sans-serif;
+  font-size:18px;
+  font-weight:400;
+  letter-spacing:0;
+}
+/* The writing surface stays unruled. */
+.editing-pane textarea,.md-preview,.md-preview p,.md-preview li,.md-preview blockquote{
+  font-family:"RIDIBatang","Batang",serif;
+  font-weight:400;
+  font-size:16px;
+  line-height:1.85;
+}
+/* Keep generated markdown headings distinguished from paragraphs. */
+.md-preview h1,.md-preview h2,.md-preview h3{font-family:"RIDIBatang","Batang",serif}
+.mini-day-head{
+  width:100%;
+  min-width:0;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:1px;
+  flex:0 0 auto;
+  min-height:17px;
+  overflow:hidden;
+}
+.mini-date{flex:0 0 auto}
+.mini-weather{
+  display:flex;
+  flex:0 0 auto;
+  align-items:center;
+  justify-content:center;
+  line-height:1;
+  font-family:system-ui,sans-serif;
+  font-size:14px;
+  max-width:19px;
+  white-space:nowrap;
+  overflow:hidden;
+}
+.mini-line{
+  font-family:"OngleipRyuryu",Pretendard,sans-serif;
+  font-weight:400;
+  font-size:16px;
+  line-height:1.1;
+  letter-spacing:0;
+  max-height:2.2em;
+  -webkit-line-clamp:2;
+}
+@media(max-width:740px){
+  .title-row input{font-size:27px}
+  .editing-pane textarea,.md-preview,.md-preview p,.md-preview li,.md-preview blockquote{font-size:15px;line-height:1.85}
+  .mini-day-head{min-height:15px}
+  .mini-weather{font-size:12px;max-width:16px}
+  .mini-line{font-size:11px;line-height:1.1;max-height:2.2em}
+}
+@media(max-width:370px){
+  .mini-weather{font-size:11px;max-width:15px}
+  .mini-line{font-size:10px}
+}
