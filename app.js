@@ -30,7 +30,7 @@
   let isDraft = false, isSavingDraft = false;
   let calendarYear = new Date().getFullYear(), calendarMonth = new Date().getMonth();
   let archivedMonth=null;
-  let cardDate=null,cardPhoto=null,cardObjectUrl=null,cardImage=null,cardZoom=1,cardOffsetX=0,cardOffsetY=0,cardDragging=false,cardPointer=null;
+  let cardDate=null,cardPhoto=null,cardCoverFileId=null,cardObjectUrl=null,cardImage=null,cardZoom=1,cardOffsetX=0,cardOffsetY=0,cardDragging=false,cardPointer=null;
   let calendarPageOpen=false,miniPhotoToken=0,highlightedCalendarDate=null;const miniPhotoUrls=[];
   const MAX_DIARY_PHOTOS=10;
   const isCalendarCover=f=>f.id===current?.coverAttachmentId||/^달력_썸네일_/.test(f.name||'');
@@ -136,11 +136,11 @@
 
       if(entries.length) await selectEntry([...entries].sort((a,b)=>b.updatedAt.localeCompare(a.updatedAt))[0].id,false);
       else await newEntry(dayString(),false,false);
-      renderList();showHome();
+      renderList();showHome();$('diaryApp').hidden=false;
       if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) navigator.serviceWorker.register('./sw.js').catch(()=>{});
     } catch(e) {
       console.error(e);setSave('error','저장소 사용 불가');toast('브라우저의 저장소를 열 수 없어요. 일반 모드에서 다시 열어 주세요.');
-      current={id:makeId(),date:dayString(),title:'',body:'',createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()};isDraft=true;fillEditor();setSave('','저장 전');
+      current={id:makeId(),date:dayString(),title:'',body:'',createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()};isDraft=true;fillEditor();setSave('','저장 전');$('diaryApp').hidden=false;
     }
   }
   function updateInputCounts(){
@@ -307,38 +307,86 @@
     $('myPageLogout').hidden=!cloudMode;
   }
   function closeDayCard(){
-    $('dayCardDialog').close();cardDate=null;cardPhoto=null;cardImage=null;
+    $('dayCardDialog').close();cardDate=null;cardPhoto=null;cardImage=null;cardCoverFileId=null;
     if(cardObjectUrl){URL.revokeObjectURL(cardObjectUrl);cardObjectUrl=null;}
   }
   async function openDayCard(date){
     document.activeElement?.blur?.();
-    cardDate=date;cardPhoto=null;cardImage=null;cardZoom=1;cardOffsetX=0;cardOffsetY=0;
+    cardDate=date;cardPhoto=null;cardImage=null;cardCoverFileId=null;cardZoom=1;cardOffsetX=0;cardOffsetY=0;
     $('dayCardTitle').textContent=date+' 기록';
     const entry=entries.filter(e=>e.date===date).sort((a,b)=>b.updatedAt.localeCompare(a.updatedAt))[0];
     $('dayCardNote').value=entry?.shortNote||'';
     $('dayCardNote').maxLength=Math.max(MAX_NOTE_CHARS,$('dayCardNote').value.length);
     $('dayCardStatus').textContent='';
-    $('dayCropSection').hidden=true;$('dayCropZoom').value='1';
+    $('dayCropSection').hidden=true;$('dayCropZoom').value='1';$('dayDeletePhoto').hidden=true;$('dayDeletePhoto').textContent='✕ 썸네일 삭제';
     const view=$('dayExistingPhoto');view.replaceChildren();view.hidden=true;
     $('dayCardSave').disabled=false;
     if(entry){
       try{
         const files=await getAll('attachments','entryId',entry.id);
         if(cardDate!==date)return;
-        const cover=files.find(f=>f.id===entry.coverAttachmentId && f.type.startsWith('image/'))||files.find(f=>f.type.startsWith('image/'));
-        if(cover){const url=URL.createObjectURL(cover.blob);cardObjectUrl=url;const img=document.createElement('img');img.src=url;img.alt='현재 썸네일';view.append(img);view.hidden=false;}
+        const cover=files.find(f=>f.id===entry.coverAttachmentId && f.type.startsWith('image/'))
+          ||files.find(f=>/^달력_썸네일_/.test(f.name||'')&&f.type.startsWith('image/'));
+        if(cover){
+          cardCoverFileId=cover.id;
+          const url=URL.createObjectURL(cover.blob);cardObjectUrl=url;
+          const img=document.createElement('img');img.src=url;img.alt='현재 캘린더 썸네일';
+          view.append(img);view.hidden=false;$('dayDeletePhoto').hidden=false;
+        }
       }catch(e){$('dayCardStatus').textContent='기존 사진 불러오기 실패: '+e.message;}
     }
     if(!$('dayCardDialog').open)$('dayCardDialog').showModal();
   }
+  async function deleteDayCardPhoto(){
+    const button=$('dayDeletePhoto');
+    if(cardPhoto){
+      cardPhoto=null;cardImage=null;$('dayCropSection').hidden=true;
+      button.textContent='✕ 썸네일 삭제';button.hidden=!cardCoverFileId;
+      $('dayCardStatus').textContent='선택한 사진을 취소했어요.';
+      return;
+    }
+    if(!cardCoverFileId||!cardDate)return;
+    if(!confirm('이 날짜의 캘린더 썸네일을 삭제할까요? 일반 첨부사진과 일기는 그대로 유지돼요.'))return;
+    const date=cardDate,oldId=cardCoverFileId;
+    button.disabled=true;$('dayCardStatus').textContent='썸네일 삭제 중…';
+    try{
+      await flushSave();
+      const entry=entries.filter(e=>e.date===date).sort((a,b)=>b.updatedAt.localeCompare(a.updatedAt))[0];
+      if(!entry)throw Error('기록을 찾을 수 없어요.');
+      const updated={...entry,coverAttachmentId:null,updatedAt:new Date().toISOString()};
+      await writeRecords('entries',[updated]);
+      entries=entries.map(e=>e.id===updated.id?updated:e);
+      if(current?.id===updated.id)current=updated;
+      let cleanupError=null;
+      try{await deleteOne('attachments',oldId);}catch(e){cleanupError=e;console.error('썸네일 원본 정리 실패',e);}
+      cardCoverFileId=null;
+      $('dayExistingPhoto').replaceChildren();$('dayExistingPhoto').hidden=true;
+      if(cardObjectUrl){URL.revokeObjectURL(cardObjectUrl);cardObjectUrl=null;}
+      button.hidden=true;
+      if(current?.id===updated.id){
+        attachments=await getAll('attachments','entryId',updated.id);
+        renderAttachments();fillEditor();
+      }
+      renderList();
+      if(cleanupError){
+        $('dayCardStatus').textContent='달력에서는 삭제했지만 서버 원본 정리에 실패했어요.';
+        toast('썸네일 표시 해제됨. 파일 정리는 다시 확인해 주세요.');
+      }else{
+        $('dayCardStatus').textContent='썸네일을 삭제했어요.';
+        toast('썸네일을 삭제했어요.');
+      }
+    }catch(e){
+      console.error(e);$('dayCardStatus').textContent='썸네일 삭제 실패: '+e.message;
+    }finally{button.disabled=false;}
+  }
   function paintCrop(){
     if(!cardImage)return;
     const canvas=$('dayCropCanvas'),ctx=canvas.getContext('2d');
-    const ratio=Math.max(canvas.width/cardImage.naturalWidth,canvas.height/cardImage.naturalHeight)*cardZoom;
+    const ratio=Math.min(canvas.width/cardImage.naturalWidth,canvas.height/cardImage.naturalHeight)*cardZoom;
     const w=cardImage.naturalWidth*ratio,h=cardImage.naturalHeight*ratio;
     const x=(canvas.width-w)/2+cardOffsetX,y=(canvas.height-h)/2+cardOffsetY;
     ctx.clearRect(0,0,canvas.width,canvas.height);
-    ctx.fillStyle='#000';ctx.fillRect(0,0,canvas.width,canvas.height);
+    ctx.fillStyle='#75563f';ctx.fillRect(0,0,canvas.width,canvas.height);
     ctx.drawImage(cardImage,x,y,w,h);
   }
   async function saveDayCard(){
@@ -357,6 +405,7 @@
       if(isNew)entry={id:makeId(),date,title:'',body:'',weather:'',shortNote:'',createdAt:now,updatedAt:now};
       else entry={...entry};
       entry.shortNote=note;entry.updatedAt=now;
+      const previousCoverId=cardCoverFileId||entry.coverAttachmentId||null;
       let file=null;
       if(cardPhoto){
         const canvas=$('dayCropCanvas');
@@ -371,6 +420,10 @@
         await writeRecords('attachments',[file]);
         entry.coverAttachmentId=file.id;
         await writeRecords('entries',[entry]);
+        if(previousCoverId&&previousCoverId!==file.id){
+          try{await deleteOne('attachments',previousCoverId);}
+          catch(err){console.warn('이전 썸네일 정리 실패:',err);}
+        }
       }
       if(current?.id===entry.id){current=entry;attachments=await getAll('attachments','entryId',entry.id);fillEditor();renderAttachments();}
       renderList();closeDayCard();toast('저장되었습니다.', true);
@@ -420,11 +473,11 @@
         if(token!==miniPhotoToken)return;
         const priority=new Map(visible.map(e=>[e.id,e.coverAttachmentId]));
         for(const f of photos.filter(f=>priority.get(f.entryId)===f.id))paint(f.entryId,f.url);
-        for(const f of photos)paint(f.entryId,f.url);
       }else if(db){
         const files=await getAll('attachments');
         if(token!==miniPhotoToken)return;
-        for(const f of files)if(ids.has(f.entryId)&&f.type.startsWith('image/')){
+        const covers=new Map(visible.filter(e=>e.coverAttachmentId).map(e=>[e.id,e.coverAttachmentId]));
+        for(const f of files)if(ids.has(f.entryId)&&covers.get(f.entryId)===f.id&&f.type.startsWith('image/')){
           const url=URL.createObjectURL(f.blob);miniPhotoUrls.push(url);paint(f.entryId,url);
         }
       }
@@ -956,6 +1009,7 @@
       if(entry)await selectEntry(entry.id);else await newEntry(date,false);
     });
     $('dayCardSave').addEventListener('click',saveDayCard);
+    $('dayDeletePhoto').addEventListener('click',deleteDayCardPhoto);
     $('dayPhotoBtn').addEventListener('click',()=>$('dayPhotoInput').click());
     $('dayPhotoInput').addEventListener('change',async()=>{
       const file=$('dayPhotoInput').files[0];$('dayPhotoInput').value='';if(!file)return;
@@ -965,7 +1019,9 @@
       try{
         await new Promise((res,rej)=>{image.onload=res;image.onerror=()=>rej(Error('이미지를 열 수 없어요.'));image.src=url;});
         cardImage=image;cardPhoto=file;cardZoom=1;cardOffsetX=0;cardOffsetY=0;$('dayCropZoom').value='1';
-        $('dayCropSection').hidden=false;paintCrop();
+        $('dayCropSection').hidden=false;
+        $('dayDeletePhoto').hidden=false;$('dayDeletePhoto').textContent='✕ 선택한 사진 취소';
+        paintCrop();
       }catch(e){toast(e.message);}finally{URL.revokeObjectURL(url);}
     });
     $('dayCropZoom').addEventListener('input',e=>{cardZoom=Number(e.target.value);paintCrop();});
@@ -1030,5 +1086,8 @@
     $('restoreBtn').addEventListener('click',()=>el.restoreInput.click());el.restoreInput.addEventListener('change',async()=>{const file=el.restoreInput.files[0];if(file)await restoreBackup(file);el.restoreInput.value='';});
     window.addEventListener('pagehide',()=>{if(saveTimer)saveCurrent();});document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden'&&saveTimer)saveCurrent();});
   }
-  bindEvents();init();
+  bindEvents();
+  init().finally(()=>{
+    setTimeout(()=>$('startupIntro')?.classList.add('is-finished'),850);
+  });
 })();
