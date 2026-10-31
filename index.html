@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" />
   <link rel="stylesheet" href="./style.css?v=13" />
-  <link rel="stylesheet" href="./vintage.css?v=24" />
+  <link rel="stylesheet" href="./vintage.css?v=25" />
   <title>일상 기록</title>
 </head>
 <body>
@@ -73,7 +73,42 @@
           <button class="primary-button export-main" id="openExportBtn">내보내기 <span>↗</span></button>
         </div>
       </header>
-      <div class="page-wrap"><section id="calendarPage" class="mini-calendar-page" hidden><header class="mini-calendar-header"><h2>캘린더</h2><button type="button" id="returnEditor" class="outlined-button">일기 작성</button></header><nav class="mini-calendar-toolbar"><button type="button" id="miniPrev">‹</button><strong id="miniYear"></strong><strong id="miniMonth"></strong><button type="button" id="miniNext">›</button><button type="button" id="miniToday">오늘</button></nav><div class="mini-calendar-weekdays"><span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span></div><div class="mini-calendar-grid" id="miniGrid"></div>
+      <div class="page-wrap"><section id="homePage" class="home-dashboard" hidden aria-label="홈">
+  <div class="home-hero">
+    <p class="eyebrow">A LITTLE MOMENT, EVERY DAY</p>
+    <h1>하루의 조각들을 모아요 ✿</h1>
+    <p>오늘을 기록하고, 남겨둔 순간을 다시 꺼내 보세요.</p>
+  </div>
+  <div class="home-stats">
+    <div><span>오늘</span><strong id="homeTodayLabel"></strong></div>
+    <div><span>나의 기록</span><strong id="homeEntryCount">0개</strong></div>
+  </div>
+  <div class="home-actions">
+    <button type="button" class="primary-button" id="homeWrite">✎ 일기 작성</button>
+    <button type="button" class="outlined-button" id="homeCalendar">▦ 캘린더 보기</button>
+  </div>
+  <section class="home-recent">
+    <h2>최근 기록</h2>
+    <button type="button" id="homeRecent" class="home-recent-entry" hidden>
+      <span id="homeRecentDate"></span><strong id="homeRecentTitle"></strong>
+      <small>기록 이어서 보기 ›</small>
+    </button>
+    <p id="homeEmpty" class="home-empty">아직 저장된 기록이 없어요. 첫 이야기를 남겨보세요.</p>
+  </section>
+</section>
+<section id="myPage" class="my-page" hidden aria-label="마이페이지">
+  <div class="my-paper-heading"><span>✿ MY PAGE</span><h1>마이페이지</h1><p>소중한 기록을 관리해요.</p></div>
+  <section class="my-info-card">
+    <span>현재 계정</span><strong id="myPageEmail">기기 내 기록</strong>
+    <span>저장된 일기</span><strong id="myPageCount">0개</strong>
+  </section>
+  <div class="my-actions">
+    <button type="button" class="outlined-button" id="myPageBackup">⇩ 전체 기록 ZIP 백업</button>
+    <button type="button" class="outlined-button" id="myPageArchive">▦ 월별 백업 · 정리</button>
+    <button type="button" class="outlined-button" id="myPageLogout" hidden>로그아웃</button>
+  </div>
+  <p class="my-hint">기존 기록과 첨부 파일은 계정 또는 기기 저장소에 그대로 보관돼요.</p>
+</section><section id="calendarPage" class="mini-calendar-page" hidden><header class="mini-calendar-header"><h2>캘린더</h2><button type="button" id="returnEditor" class="outlined-button">일기 작성</button></header><nav class="mini-calendar-toolbar"><button type="button" id="miniPrev">‹</button><strong id="miniYear"></strong><strong id="miniMonth"></strong><button type="button" id="miniNext">›</button><button type="button" id="miniToday">오늘</button></nav><div class="mini-calendar-weekdays"><span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span></div><div class="mini-calendar-grid" id="miniGrid"></div>
           <p class="mini-hint">날짜를 누르면 사진과 한마디를 추가할 수 있어요.</p></section><div id="editorPage">
         <section class="page-intro">
           <div><p class="eyebrow">A LITTLE MOMENT, EVERY DAY</p><h1>오늘을 <em>기록</em>하다<span class="sparkle">✳</span></h1><p class="intro-desc">매일의 장면과 마음을 나만의 방식으로 남겨요.</p></div>
@@ -120,6 +155,12 @@
         <footer class="footer-note"><span>✦</span> Keep your days, keep your story. <span>✦</span></footer></div>
       </div>
     </main>
+    <nav class="bottom-tabs" id="bottomTabs" aria-label="화면 이동">
+  <button type="button" data-tab="home" aria-current="page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5V21h-6v-7H9v7H3z"/></svg><span>홈</span></button>
+  <button type="button" data-tab="calendar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4M17 3v4M3 10h18M8 14h2M14 14h2M8 18h2"/></svg><span>캘린더</span></button>
+  <button type="button" data-tab="diary"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h14v18H6a3 3 0 0 1-3-3V6a3 3 0 0 1 3-3zM6 3v18M10 8h6M10 12h6"/></svg><span>일기</span></button>
+  <button type="button" data-tab="mypage"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4.5 21c0-4 3.1-7 7.5-7s7.5 3 7.5 7"/></svg><span>마이페이지</span></button>
+</nav>
   </div>
   <dialog id="exportDialog" class="export-dialog">
     <div class="dialog-heading"><div><p class="eyebrow">SAVE THIS MOMENT</p><h2>기록 내보내기</h2></div><button class="icon-button" id="closeExportBtn" aria-label="닫기">✕</button></div>
@@ -175,7 +216,7 @@
         <p class="day-card-help">사진을 드래그해 위치를 맞추고 확대 비율을 조절해요.</p>
         <canvas id="dayCropCanvas" width="512" height="512" aria-label="정사각형 사진 자르기 미리보기"></canvas>
         <label for="dayCropZoom">사진 확대</label>
-        <input id="dayCropZoom" type="range" min="1" max="3" step=".05" value="1" />
+        <input id="dayCropZoom" type="range" min=".5" max="3" step=".05" value="1" />
       </div>
       <label class="day-card-label" for="dayCardNote">사진 밑에 표시할 한마디 <small>(최대 20자)</small></label>
       <input id="dayCardNote" type="text" maxlength="20" placeholder="오늘은 어떤 하루였나요?" />
@@ -194,6 +235,6 @@
   <script src="./supabase-config.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0" defer></script>
   <script src="./cloud.js?v=12" defer></script>
-  <script src="./app.js?v=24" defer></script>
+  <script src="./app.js?v=25" defer></script>
 </body>
 </html>
