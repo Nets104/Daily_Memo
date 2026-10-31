@@ -9,6 +9,7 @@
     attachList:$('attachmentList'),attachCount:$('attachmentCount'),file:$('fileInput'),record:$('recordBtn'),recordText:$('recordBtnText'),
     dialog:$('exportDialog'),exportFilename:$('exportFilename'),exportProgress:$('exportProgress'),restoreInput:$('restoreInput'),toast:$('toast')
   };
+  const MAX_TITLE_CHARS=180, MAX_BODY_CHARS=30000, MAX_NOTE_CHARS=120, MAX_FILE_BYTES=50*1024*1024;
   const WEEK_KR = ['일','월','화','수','목','금','토'];
   const WEEK_JP = ['日','月','火','水','木','金','土'];
   const MONTH_EN = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
@@ -133,6 +134,14 @@
       current={id:makeId(),date:dayString(),title:'',body:'',createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()};isDraft=true;fillEditor();setSave('','저장 전');
     }
   }
+  function updateInputCounts(){
+    $('titleCount').textContent=el.title.value.length.toLocaleString()+' / '+MAX_TITLE_CHARS+'자';
+    el.charCount.textContent=el.body.value.length.toLocaleString()+' / '+MAX_BODY_CHARS.toLocaleString()+'자';
+  }
+  function textWithinLimits(){
+    return el.title.value.length<=MAX_TITLE_CHARS && el.body.value.length<=MAX_BODY_CHARS &&
+      (current?.shortNote||'').length<=MAX_NOTE_CHARS;
+  }
   function refreshCurrentFromForm() {
     if(!current) return;
     current.title=el.title.value;current.body=el.body.value;
@@ -140,6 +149,8 @@
   function queueSave() {
     if(!current || !db) return;
     refreshCurrentFromForm();
+    updateInputCounts();
+    if(!textWithinLimits()){setSave('error','글자 수 초과');return;}
     if(isDraft){setSave('','저장 전');renderCalendar();return;}
     setSave('saving','저장 중…');clearTimeout(saveTimer);
     saveTimer=setTimeout(()=>{ saveTimer=null;saveCurrent(); },450);
@@ -150,6 +161,12 @@
     if(!current || !db) return false;
     if(isDraft && (!explicit || isSavingDraft)) return false;
     refreshCurrentFromForm();
+    updateInputCounts();
+    if(!textWithinLimits()){
+      setSave('error','글자 수 초과');
+      if(explicit)toast('제목은 180자, 본문은 30,000자 이내로 입력해 주세요.');
+      return false;
+    }
     const hasInput=!!(current.title?.trim()||current.body?.trim()||current.shortNote?.trim()||current.weather||current.coverAttachmentId||attachments.length);
     if(!hasInput){
       setSave(isDraft?'':'error',isDraft?'저장 전':'내용 없음');
@@ -205,7 +222,7 @@
     el.title.value=current?.title||'';el.body.value=current?.body||'';
     renderEntryMeta();setCalendarMonth(current?.date||dayString());
     el.edited.textContent=current?.updatedAt ? `${new Date(current.updatedAt).toLocaleDateString('ko-KR')} 수정` : '';
-    el.charCount.textContent=`${[...el.body.value].length.toLocaleString()}자`;renderPreview();
+    updateInputCounts();renderPreview();
   }
   function canLeaveDraft() {
     if(!isDraft || !current) return true;
@@ -292,6 +309,7 @@
       if(cardPhoto){
         const canvas=$('dayCropCanvas');
         const blob=await new Promise((resolve,reject)=>canvas.toBlob(b=>b?resolve(b):reject(Error('이미지를 자르지 못했어요.')),'image/jpeg',.86));
+        if(blob.size>MAX_FILE_BYTES)throw Error('사진 파일은 50MB를 초과할 수 없어요.');
         file={id:makeId(),entryId:entry.id,name:'달력_썸네일_'+date+'.jpg',type:'image/jpeg',size:blob.size,blob,createdAt:now};
       }
       await writeRecords('entries',[entry]);
@@ -425,41 +443,6 @@
       renderList();toast('기록을 삭제했어요.');
     }catch(e){console.error(e);toast('기록을 삭제하지 못했어요.');}
   }
-  async function cleanupEmptyRecords(){
-    if(!db)return;
-    await flushSave();
-    const maybeEmpty=entries.filter(e=>!e.title.trim()&&!e.body.trim()&&!e.shortNote?.trim()&&!e.weather&&!e.coverAttachmentId);
-    if(!maybeEmpty.length){toast('정리할 빈 기록이 없어요.');return;}
-    const empty=[];
-    for(const entry of maybeEmpty){
-      const hasAttachment=cloudMode ? await cloud().hasAttachment(entry.id) : await new Promise((resolve,reject)=>{
-        const tx=db.transaction('attachments','readonly');
-        const req=tx.objectStore('attachments').index('entryId').getKey(entry.id);
-        req.onsuccess=()=>resolve(req.result!==undefined);
-        req.onerror=()=>reject(req.error);
-      }).catch(()=>true);
-      if(!hasAttachment)empty.push(entry);
-    }
-    if(!empty.length){toast('제목·본문·한마디·날씨·첨부가 모두 빈 기록이 없어요.');return;}
-    if(!confirm(`제목·본문·한마디·날씨·첨부가 없는 기록 ${empty.length}개를 삭제할까요?\n삭제한 기록은 복구할 수 없어요. 필요하면 먼저 전체 백업 ZIP을 저장해 주세요.`))return;
-    try{
-      if(cloudMode)await cloud().deleteEmpty(empty.map(e=>e.id));
-      else await new Promise((resolve,reject)=>{
-        const tx=db.transaction('entries','readwrite'),store=tx.objectStore('entries');
-        for(const entry of empty)store.delete(entry.id);
-        tx.oncomplete=()=>resolve();tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error||Error('삭제 실패'));
-      });
-      const deleted=new Set(empty.map(e=>e.id));
-      entries=entries.filter(e=>!deleted.has(e.id));
-      if(current&&!isDraft&&deleted.has(current.id)){
-        current=null;attachments=[];isDraft=false;
-        const next=[...entries].sort((a,b)=>b.updatedAt.localeCompare(a.updatedAt))[0];
-        if(next)await selectEntry(next.id);
-        else await newEntry();
-      }
-      renderList();toast(`빈 기록 ${empty.length}개를 정리했어요.`);
-    }catch(e){console.error(e);toast('빈 기록 정리에 실패했어요.');}
-  }
   function openEntryMeta() {
     if(!current)return;
     el.date.value=current.date||dayString();
@@ -561,7 +544,9 @@
       const le=ta.value.indexOf('\n',end);const actualEnd=le===-1?ta.value.length:le;
       const slice=ta.value.slice(ls,actualEnd);
       const modified=slice.split('\n').map((line,j)=>prefix(j)+line).join('\n');
-      ta.value=ta.value.slice(0,ls)+modified+ta.value.slice(actualEnd);ta.focus();ta.setSelectionRange(ls,ls+modified.length);queueSave();renderPreview();el.charCount.textContent=`${[...ta.value].length.toLocaleString()}자`;return;
+      const updated=ta.value.slice(0,ls)+modified+ta.value.slice(actualEnd);
+      if(updated.length>MAX_BODY_CHARS){toast('본문은 30,000자까지 입력할 수 있어요.');return;}
+      ta.value=updated;ta.focus();ta.setSelectionRange(ls,ls+modified.length);queueSave();renderPreview();el.charCount.textContent=`${[...ta.value].length.toLocaleString()}자`;return;
     };
     switch(kind){
       case 'bold':edit=wrap('**');break;case 'italic':edit=wrap('*');break;case 'underline':edit=wrap('<u>','</u>');break;
@@ -573,7 +558,9 @@
       case 'rule':edit={insert:`\n\n---\n\n`,selStart:6,selEnd:6};break;
       default:return;
     }
-    ta.value=a+edit.insert+b;ta.focus();ta.setSelectionRange(start+edit.selStart,start+edit.selEnd);queueSave();renderPreview();el.charCount.textContent=`${[...ta.value].length.toLocaleString()}자`;
+    const updated=a+edit.insert+b;
+    if(updated.length>MAX_BODY_CHARS){toast('본문은 30,000자까지 입력할 수 있어요.');return;}
+    ta.value=updated;ta.focus();ta.setSelectionRange(start+edit.selStart,start+edit.selEnd);queueSave();renderPreview();el.charCount.textContent=`${[...ta.value].length.toLocaleString()}자`;
   }
   function closeSidebar(){el.sidebar.classList.remove('open');el.scrim.classList.remove('visible');$('openSidebar').setAttribute('aria-expanded','false');}
   function openSidebar(){el.sidebar.classList.add('open');el.scrim.classList.add('visible');$('openSidebar').setAttribute('aria-expanded','true');}
@@ -604,7 +591,7 @@
     let added=0;
     for(const file of [...fileList]) {
       if(!/^(image\/|video\/|audio\/|application\/pdf$)/.test(file.type) && !/\.(jpe?g|png|gif|webp|heic|heif|avif|mp4|mov|webm|m4v|mp3|wav|m4a|ogg|flac|aac|pdf)$/i.test(file.name)){toast(`${file.name}: 지원하지 않는 형식이에요.`);continue;}
-      if(file.size>200*1024*1024){toast(`${file.name}: 200MB 초과 파일은 첨부할 수 없어요.`);continue;}
+      if(file.size>MAX_FILE_BYTES){toast(`${file.name}: 50MB를 초과해 첨부할 수 없어요.`);continue;}
       const ext=file.name.split('.').pop().toLowerCase();
       const inferred={jpg:'image/jpeg',jpeg:'image/jpeg',png:'image/png',gif:'image/gif',webp:'image/webp',heic:'image/heic',heif:'image/heif',avif:'image/avif',mp4:'video/mp4',mov:'video/quicktime',m4v:'video/mp4',webm:'video/webm',mp3:'audio/mpeg',wav:'audio/wav',m4a:'audio/mp4',ogg:'audio/ogg',flac:'audio/flac',aac:'audio/aac',pdf:'application/pdf'};
       const type=file.type || inferred[ext] || 'application/octet-stream';
@@ -875,6 +862,7 @@
     $('dayPhotoInput').addEventListener('change',async()=>{
       const file=$('dayPhotoInput').files[0];$('dayPhotoInput').value='';if(!file)return;
       if(!file.type.startsWith('image/')){toast('이미지 파일을 선택해 주세요.');return;}
+      if(file.size>MAX_FILE_BYTES){toast('사진은 50MB 이하만 선택할 수 있어요.');return;}
       const url=URL.createObjectURL(file),image=new Image();
       try{
         await new Promise((res,rej)=>{image.onload=res;image.onerror=()=>rej(Error('이미지를 열 수 없어요.'));image.src=url;});
@@ -907,14 +895,13 @@
       const open=e.target.closest('[data-entry-id]');
       if(open)selectEntry(open.dataset.entryId);
     });
-    $('cleanupEmptyBtn').addEventListener('click',cleanupEmptyRecords);
     $('openMetaDialog').addEventListener('click',openEntryMeta);
     $('entryMetaClose').addEventListener('click',()=>$('entryMetaDialog').close());
     $('entryMetaCancel').addEventListener('click',()=>$('entryMetaDialog').close());
     $('entryMetaSave').addEventListener('click',saveEntryMeta);
     $('entryShortNote').addEventListener('input',()=>{$('entryMetaCount').textContent=$('entryShortNote').value.length+'/120';});
     el.title.addEventListener('input',queueSave);
-    el.body.addEventListener('input',()=>{queueSave();renderPreview();el.charCount.textContent=`${[...el.body.value].length.toLocaleString()}자`;});
+    el.body.addEventListener('input',()=>{queueSave();renderPreview();});
     document.querySelectorAll('[data-view]').forEach(b=>b.addEventListener('click',()=>setView(b.dataset.view)));
     document.querySelectorAll('[data-format]').forEach(b=>b.addEventListener('click',()=>formatText(b.dataset.format)));
     document.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='s'){e.preventDefault();saveCurrent(true);}if((e.ctrlKey||e.metaKey)&&['b','i'].includes(e.key.toLowerCase())&&document.activeElement===el.body){e.preventDefault();formatText(e.key.toLowerCase()==='b'?'bold':'italic');}});
