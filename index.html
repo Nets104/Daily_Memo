@@ -10,10 +10,20 @@
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" />
   <link rel="stylesheet" href="./style.css?v=13" />
-  <link rel="stylesheet" href="./vintage.css?v=26" />
+  <link rel="stylesheet" href="./vintage.css?v=28" />
   <title>일상 기록</title>
 </head>
 <body>
+  <div class="startup-intro" id="startupIntro" aria-hidden="true">
+    <div class="intro-flower" aria-hidden="true"></div>
+    <div class="intro-card">
+      <p class="intro-overline">A LITTLE MOMENT, EVERY DAY</p>
+      <span class="intro-emblem" aria-hidden="true">✿</span>
+      <h1>일상 기록<span>✦</span></h1>
+      <p>평범한 날의 작은 조각들</p>
+      <div class="intro-loading" aria-hidden="true"><span></span><span></span><span></span></div>
+    </div>
+  </div>
   <section id="cloudAuth" hidden style="max-width:420px;margin:7vh auto;padding:24px;border-radius:18px;background:white;box-shadow:0 8px 40px #2221;font-family:Pretendard,sans-serif">
     <h1>일상 기록</h1><p>계정으로 로그인하면 내 기록이 안전하게 동기화돼요.</p>
     <form id="cloudAuthForm" style="display:grid;gap:12px">
@@ -24,7 +34,7 @@
       <p id="cloudAuthStatus" role="status" style="font-size:12px;line-height:1.6"></p>
     </form>
   </section>
-  <div class="app-shell" id="diaryApp">
+  <div class="app-shell" id="diaryApp" hidden>
     <aside class="sidebar" id="sidebar" aria-label="기록 목록">
       <div class="sidebar-top">
         <div class="brand"><span class="brand-mark" aria-hidden="true">✦</span><span>일상 기록<span class="brand-dot">.</span></span></div>
@@ -75,9 +85,12 @@
       </header>
       <div class="page-wrap"><section id="homePage" class="home-dashboard" aria-label="홈">
   <div class="home-hero">
-    <p class="eyebrow">A LITTLE MOMENT, EVERY DAY</p>
-    <h1>하루의 조각들을 모아요 ✿</h1>
-    <p>오늘을 기록하고, 남겨둔 순간을 다시 꺼내 보세요.</p>
+    <div class="home-hero-flower" aria-hidden="true"></div>
+    <p class="eyebrow">MY LITTLE MEMORY BOOK</p>
+    <span class="home-vintage-stamp" aria-hidden="true">✦ &nbsp; DAILY NOTES &nbsp; ✦</span>
+    <h1>소중한 오늘을<br><em>한 장의 추억으로.</em></h1>
+    <p>작은 순간도 오래도록 남을 수 있도록,<br>나만의 일상을 기록해요.</p>
+    <span class="home-hero-caption" aria-hidden="true">Keep the little things ♡</span>
   </div>
   <div class="home-stats">
     <div><span>오늘</span><strong id="homeTodayLabel"></strong></div>
@@ -212,9 +225,10 @@
       <button id="dayPhotoBtn" type="button" class="day-photo-select">＋ 썸네일 사진 추가 / 변경</button>
       <input id="dayPhotoInput" type="file" accept="image/*" hidden />
       <div id="dayExistingPhoto" class="day-existing-photo" hidden></div>
+       <button id="dayDeletePhoto" class="day-delete-photo" type="button" hidden>✕ 썸네일 삭제</button>
       <div id="dayCropSection" class="day-crop-section" hidden>
-        <p class="day-card-help">사진을 드래그해 위치를 맞추세요. 축소 후 남는 공간은 검은색으로 채워져요.</p>
-        <canvas id="dayCropCanvas" width="512" height="512" aria-label="정사각형 사진 자르기 미리보기"></canvas>
+        <p class="day-card-help">사진을 드래그하고 확대·축소해 맞추세요. 여백은 브라운으로 채워져요.</p>
+        <canvas id="dayCropCanvas" width="512" height="384" aria-label="캘린더와 동일한 4대3 비율 썸네일 미리보기"></canvas>
         <label for="dayCropZoom">사진 확대</label>
         <input id="dayCropZoom" type="range" min=".5" max="3" step=".05" value="1" />
       </div>
@@ -235,6 +249,6 @@
   <script src="./supabase-config.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0" defer></script>
   <script src="./cloud.js?v=12" defer></script>
-  <script src="./app.js?v=27" defer></script>
+  <script src="./app.js?v=28" defer></script>
 </body>
 </html>
