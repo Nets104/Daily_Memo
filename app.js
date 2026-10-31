@@ -23,7 +23,7 @@
   let calendarYear = new Date().getFullYear(), calendarMonth = new Date().getMonth();
   let archivedMonth=null;
   let cardDate=null,cardPhoto=null,cardObjectUrl=null,cardImage=null,cardZoom=1,cardOffsetX=0,cardOffsetY=0,cardDragging=false,cardPointer=null;
-  let calendarPageOpen=false,miniPhotoToken=0;const miniPhotoUrls=[];
+  let calendarPageOpen=false,miniPhotoToken=0,highlightedCalendarDate=null;const miniPhotoUrls=[];
 
   function dayString(date = new Date()) {
     return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
@@ -149,7 +149,14 @@
     clearTimeout(saveTimer);saveTimer=null;
     if(!current || !db) return false;
     if(isDraft && (!explicit || isSavingDraft)) return false;
-    refreshCurrentFromForm();current.updatedAt=new Date().toISOString();
+    refreshCurrentFromForm();
+    const hasInput=!!(current.title?.trim()||current.body?.trim()||current.shortNote?.trim()||current.weather||current.coverAttachmentId||attachments.length);
+    if(!hasInput){
+      setSave(isDraft?'':'error',isDraft?'저장 전':'내용 없음');
+      if(explicit)toast('내용을 입력한 뒤 저장해 주세요.');
+      return false;
+    }
+    current.updatedAt=new Date().toISOString();
     const snapshot={...current};
     if(isDraft){
       isSavingDraft=true;setSave('saving','저장 중…');
@@ -314,7 +321,7 @@
       const date=prefix+String(d).padStart(2,'0'),entry=byDay.get(date);
       const note=entry?(entry.shortNote||entry.title||'기록 보기'):'';
       const weather=entry?(WEATHER_EMOJI[entry.weather]||''):'';
-      cells.push(`<button class="mini-day ${entry?'filled':''}" data-mini-date="${date}"><span class="mini-day-head"><span class="mini-date">${d}</span>${weather?`<span class="mini-weather" aria-label="날씨">${weather}</span>`:''}</span><span class="mini-photo" data-mini-photo="${date}">${entry?'✿':'+'}</span><span class="mini-line">${escapeHtml(note)}</span></button>`);
+      cells.push(`<button class="mini-day ${entry?'filled':''} ${date===dayString()?'today':''} ${date===highlightedCalendarDate?'jump-selected':''}" data-mini-date="${date}" aria-pressed="${date===highlightedCalendarDate}"><span class="mini-day-head"><span class="mini-date">${d}</span>${weather?`<span class="mini-weather" aria-label="날씨">${weather}</span>`:''}</span><span class="mini-photo" data-mini-photo="${date}">${entry?'✿':'+'}</span><span class="mini-line">${escapeHtml(note)}</span></button>`);
     }
     $('miniGrid').innerHTML=cells.join('');
     loadMiniPhotos();
@@ -364,14 +371,23 @@
     for (let day = 1; day <= lastDate; day++) {
       const iso = prefix + String(day).padStart(2, '0');
       const count = byDate.get(iso) || 0;
-      const classes = ['calendar-day', count ? 'has-entry' : '', iso === current?.date ? 'active' : '', iso === dayString() ? 'today' : ''].filter(Boolean).join(' ');
+      const classes = ['calendar-day', count ? 'has-entry' : '', iso === current?.date ? 'active' : '', iso === dayString() ? 'today' : '', iso === highlightedCalendarDate ? 'jump-selected' : ''].filter(Boolean).join(' ');
       const label = `${dateText(iso, 'kr')}, ${count ? `기록 ${count}개 열기` : '새 기록 작성 (저장 버튼을 눌러야 등록)'}`;
-      days.push(`<button type="button" class="${classes}" data-calendar-date="${iso}" aria-label="${escapeHtml(label)}" aria-pressed="${iso === current?.date}"><span>${day}</span>${count > 1 ? `<small class="calendar-multi">${count}</small>` : ''}</button>`);
+      days.push(`<button type="button" class="${classes}" data-calendar-date="${iso}" aria-label="${escapeHtml(label)}" aria-pressed="${iso === current?.date || iso === highlightedCalendarDate}"><span>${day}</span>${count > 1 ? `<small class="calendar-multi">${count}</small>` : ''}</button>`);
     }
     el.calendarGrid.innerHTML = days.join('');
     if(calendarPageOpen)renderMiniCalendar();
   }
+  function jumpToToday(kind){
+    highlightedCalendarDate=dayString();
+    setCalendarMonth(highlightedCalendarDate);
+    renderCalendar();
+    const selector=kind==='large'?'[data-mini-date="'+highlightedCalendarDate+'"]':'[data-calendar-date="'+highlightedCalendarDate+'"]';
+    const cell=document.querySelector(selector);
+    if(cell){cell.focus({preventScroll:true});cell.scrollIntoView({block:'nearest',behavior:'smooth'});}
+  }
   function shiftCalendar(delta) {
+    highlightedCalendarDate=null;
     const target = new Date(calendarYear, calendarMonth + delta, 1);
     calendarYear = target.getFullYear();
     calendarMonth = target.getMonth();
@@ -409,7 +425,7 @@
   async function cleanupEmptyRecords(){
     if(!db)return;
     await flushSave();
-    const maybeEmpty=entries.filter(e=>!e.title.trim()&&!e.body.trim());
+    const maybeEmpty=entries.filter(e=>!e.title.trim()&&!e.body.trim()&&!e.shortNote?.trim()&&!e.weather&&!e.coverAttachmentId);
     if(!maybeEmpty.length){toast('정리할 빈 기록이 없어요.');return;}
     const empty=[];
     for(const entry of maybeEmpty){
@@ -421,8 +437,8 @@
       }).catch(()=>true);
       if(!hasAttachment)empty.push(entry);
     }
-    if(!empty.length){toast('제목·본문·첨부 파일이 모두 빈 기록이 없어요.');return;}
-    if(!confirm(`제목·본문·첨부 파일이 없는 기록 ${empty.length}개를 삭제할까요?\n삭제한 기록은 복구할 수 없어요. 필요하면 먼저 전체 백업 ZIP을 저장해 주세요.`))return;
+    if(!empty.length){toast('제목·본문·한마디·날씨·첨부가 모두 빈 기록이 없어요.');return;}
+    if(!confirm(`제목·본문·한마디·날씨·첨부가 없는 기록 ${empty.length}개를 삭제할까요?\n삭제한 기록은 복구할 수 없어요. 필요하면 먼저 전체 백업 ZIP을 저장해 주세요.`))return;
     try{
       if(cloudMode)await cloud().deleteEmpty(empty.map(e=>e.id));
       else await new Promise((resolve,reject)=>{
@@ -837,12 +853,12 @@
     el.search.addEventListener('input',renderList);
     $('calendarPrev').addEventListener('click',()=>shiftCalendar(-1));
     $('calendarNext').addEventListener('click',()=>shiftCalendar(1));
-    $('calendarToday').addEventListener('click',()=>{setCalendarMonth(dayString());renderCalendar();});
+    $('calendarToday').addEventListener('click',()=>jumpToToday('sidebar'));
     $('openCalendarPage').addEventListener('click',()=>{showMiniCalendar();closeSidebar();});
     $('returnEditor').addEventListener('click',showEditor);
     $('miniPrev').addEventListener('click',()=>shiftCalendar(-1));
     $('miniNext').addEventListener('click',()=>shiftCalendar(1));
-    $('miniToday').addEventListener('click',()=>{setCalendarMonth(dayString());renderCalendar();});
+    $('miniToday').addEventListener('click',()=>jumpToToday('large'));
     $('miniGrid').addEventListener('click',e=>{const b=e.target.closest('[data-mini-date]');if(b)openDayCard(b.dataset.miniDate);});
     $('dayCardClose').addEventListener('click',closeDayCard);
     $('dayCardDialog').addEventListener('close',()=>{cardDate=null;});
