@@ -1609,3 +1609,235 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 
 /* Only the diary editor needs save/export actions in the header. */
 #diaryApp[data-page]:not([data-page="diary"]) .topbar-right{display:none}
+
+
+
+/* v32 — compact calendar photo squares, original-beige paper, and clear actions */
+#openCalendarPage{
+  position:relative;
+  justify-content:center;
+  text-align:center;
+  align-items:center;
+  min-height:48px;
+  padding-inline:42px;
+}
+#openCalendarPage .sidebar-calendar-icon{
+  position:absolute;
+  top:50%;
+  left:20px;
+  transform:translateY(-50%);
+  width:22px;
+  text-align:center;
+  color:#947254;
+  font-size:19px;
+  font-weight:400;
+}
+#openCalendarPage>span:last-child{
+  display:block;
+  margin:auto;
+  font-size:13px;
+  font-weight:750;
+}
+.record-delete-area{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  flex-wrap:wrap;
+  gap:10px;
+  margin-top:26px;
+  padding-top:17px;
+  border-top:1px dashed #d9c4a6;
+}
+.record-delete-area>span{
+  color:#987b66;
+  font-size:11px;
+  line-height:1.5;
+}
+.record-delete-area .record-delete-button{
+  border:1px solid #c8ac9a;
+  border-radius:6px;
+  padding:9px 12px;
+  font-family:Pretendard,sans-serif;
+  font-weight:750;
+  font-size:12px;
+  color:#98655a;
+  background:#f9e9df;
+  white-space:nowrap;
+}
+.record-delete-area .record-delete-button:hover{background:#f2dad0}
+#calendarPage:not([hidden]){
+  min-height:0;
+  justify-content:flex-start;
+}
+.mini-calendar-grid{
+  flex:0 0 auto;
+  align-content:start;
+  align-items:start;
+  grid-auto-rows:auto;
+  gap:3px;
+}
+.mini-day{
+  align-self:start;
+  align-content:start;
+  height:auto;
+  min-height:0;
+  aspect-ratio:auto;
+  padding:3px;
+  gap:2px;
+  grid-template-columns:minmax(0,1fr);
+  grid-template-rows:14px auto 14px;
+  overflow:hidden;
+}
+.mini-day-head{height:14px;min-height:0}
+.mini-day .mini-photo:not(.has-image),
+.mini-day .mini-photo.has-image{
+  box-sizing:border-box;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  align-self:start;
+  justify-self:center;
+  flex:none;
+  width:100%;
+  height:auto;
+  min-height:0;
+  max-width:100%;
+  max-height:none;
+  aspect-ratio:1 / 1;
+  padding:0;
+  border-radius:2px;
+  background:#e8d8c0 !important;
+}
+.mini-day .mini-photo:not(.has-image){border:1px dashed #ceb99b}
+.mini-day .mini-photo.has-image{border:2px solid #fff8e9}
+.mini-day .mini-photo.has-image img{
+  display:block;
+  width:100%;
+  height:100%;
+  background:#e8d8c0 !important;
+  object-fit:contain !important;
+}
+.mini-day .mini-line{
+  display:block;
+  justify-self:center;
+  align-self:center;
+  text-align:center;
+  max-width:100%;
+  margin:0;
+  font-size:10px;
+  line-height:1.15;
+  overflow:hidden;
+}
+.mini-day .mini-line.has-note{
+  display:block;
+  width:max-content;
+  max-width:100%;
+  padding:1px 2px;
+}
+.day-existing-photo,
+#dayCropCanvas{
+  aspect-ratio:1 / 1;
+  background:#e8d8c0 !important;
+  width:min(100%,460px);
+  height:auto;
+  max-height:none;
+}
+.day-existing-photo img{object-fit:contain;background:#e8d8c0 !important}
+.day-card-help{font-family:Pretendard,sans-serif}
+/* Cropping attached images saves a separate 4:3 display copy, not the original. */
+.diary-crop-dialog{
+  box-sizing:border-box;
+  width:min(470px,calc(100vw - 28px));
+  max-height:calc(100dvh - 30px);
+  overflow:auto;
+  padding:22px;
+  background:#fff7e8;
+  color:#5b4432;
+  border:1px solid #cdb596;
+  border-radius:11px;
+  box-shadow:0 25px 65px rgba(43,29,18,.32);
+}
+.diary-crop-dialog::backdrop{background:rgba(42,31,23,.72)}
+.diary-crop-dialog .day-card-header h2{font-size:18px;margin:0}
+.diary-crop-help,.diary-crop-status{
+  font:12px/1.6 Pretendard,-apple-system,BlinkMacSystemFont,sans-serif;
+  color:#8a6d51;
+  margin:11px 0;
+}
+#diaryCropCanvas{
+  display:block;
+  width:100%;
+  aspect-ratio:4/3;
+  height:auto;
+  background:#e8d8c0;
+  border:5px solid #fffdf4;
+  box-shadow:0 2px 8px rgba(89,56,31,.16);
+  box-sizing:border-box;
+  border-radius:3px;
+  touch-action:none;
+  cursor:grab;
+}
+#diaryCropCanvas:active{cursor:grabbing}
+.diary-crop-zoom-label{
+  display:block;
+  margin:14px 0 7px;
+  font-size:12px;
+  font-weight:750;
+}
+#diaryCropZoom{display:block;width:100%;accent-color:#8e6c4d}
+.diary-crop-status{min-height:17px;overflow-wrap:anywhere}
+.diary-crop-actions{display:flex;gap:10px}
+.diary-crop-actions button{flex:1;min-width:0}
+.pinned-photo .attachment-info{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  gap:6px;
+  align-items:center;
+}
+.pinned-photo .attachment-name{grid-column:1;grid-row:1}
+.pinned-photo .attachment-remove{grid-column:2;grid-row:1}
+.pinned-photo .attachment-crop{
+  grid-column:1/-1;
+  grid-row:2;
+  justify-self:stretch;
+  padding:5px 8px;
+  border:1px solid #dfcdb5;
+  border-radius:4px;
+  background:#f6ead7;
+  color:#7d5e43;
+  font:700 11px Pretendard,sans-serif;
+  cursor:pointer;
+}
+.pinned-photo .attachment-crop:hover{background:#ead7b9}
+.pinned-photo .photo-open img{object-fit:cover!important}
+@media(max-width:740px){
+  #calendarPage:not([hidden]){min-height:0}
+  .mini-calendar-grid{flex:0 0 auto;grid-auto-rows:auto;align-content:start;gap:3px}
+  .mini-day{
+    height:auto;
+    min-height:0;
+    padding:2px;
+    gap:1px;
+    aspect-ratio:auto;
+    grid-template-rows:12px auto 12px;
+    align-content:start;
+  }
+  .mini-day-head{height:12px}
+  .mini-date{font-size:10px}
+  .mini-day .mini-photo:not(.has-image),
+  .mini-day .mini-photo.has-image{
+    width:100%;
+    height:auto;
+    max-height:none;
+    min-height:0;
+    aspect-ratio:1/1;
+    align-self:start;
+  }
+  .mini-day .mini-line{font-size:8px;line-height:1.12}
+  .diary-crop-dialog{padding:17px 13px}
+  .record-delete-area{gap:9px}
+}
+@media(max-width:370px){
+  .mini-day .mini-line{font-size:7px}
+  .mini-day{grid-template-rows:11px auto 11px}
+}
