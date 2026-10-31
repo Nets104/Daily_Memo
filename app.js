@@ -182,7 +182,8 @@
   async function flushSave() { if(saveTimer) await saveCurrent();else await savePromise.catch(()=>{}); }
   function renderEntryMeta() {
     const date=current?.date||dayString();
-    el.dateDisplay.textContent=dateText(date);
+    const parts=date.split('-'),weekday=WEEK_KR[new Date(date+'T12:00:00').getDay()];
+    el.dateDisplay.textContent=`${parts[0]}. ${Number(parts[1])}. ${Number(parts[2])}. (${weekday})`;
     const labels={sunny:'☀️ 맑음',partly_cloudy:'🌤️ 구름 조금',cloudy:'☁️ 흐림',rain:'🌧️ 비',snow:'❄️ 눈',wind:'💨 바람',other:'🌈 기타'};
     $('metaWeatherText').textContent=labels[current?.weather]||'선택하지 않음';
     const note=$('metaNoteText'),hasNote=!!current?.shortNote?.trim();
@@ -445,6 +446,7 @@
     el.date.value=current.date||dayString();
     $('entryWeather').value=current.weather||'';
     $('entryShortNote').value=current.shortNote||'';
+    $('entryMetaCount').textContent=$('entryShortNote').value.length+'/120';
     $('entryMetaStatus').textContent='';
     document.activeElement?.blur?.();
     $('entryMetaDialog').showModal();
@@ -891,6 +893,7 @@
     $('entryMetaClose').addEventListener('click',()=>$('entryMetaDialog').close());
     $('entryMetaCancel').addEventListener('click',()=>$('entryMetaDialog').close());
     $('entryMetaSave').addEventListener('click',saveEntryMeta);
+    $('entryShortNote').addEventListener('input',()=>{$('entryMetaCount').textContent=$('entryShortNote').value.length+'/120';});
     el.title.addEventListener('input',queueSave);
     el.body.addEventListener('input',()=>{queueSave();renderPreview();el.charCount.textContent=`${[...el.body.value].length.toLocaleString()}자`;});
     document.querySelectorAll('[data-view]').forEach(b=>b.addEventListener('click',()=>setView(b.dataset.view)));
