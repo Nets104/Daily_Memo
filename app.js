@@ -412,7 +412,7 @@
       const date=dateById.get(id);if(!date)return;
       const slot=[...document.querySelectorAll('[data-mini-photo]')].find(el=>el.dataset.miniPhoto===date);
       if(!slot||slot.querySelector('img'))return;
-      const img=document.createElement('img');img.loading='lazy';img.alt='일기 사진';img.src=url;slot.replaceChildren(img);
+      const img=document.createElement('img');img.loading='lazy';img.alt='일기 사진';img.src=url;slot.replaceChildren(img);slot.classList.add('has-image');
     };
     try{
       if(cloudMode){
