@@ -136,7 +136,7 @@
 
       if(entries.length) await selectEntry([...entries].sort((a,b)=>b.updatedAt.localeCompare(a.updatedAt))[0].id);
       else await newEntry(dayString(),false);
-      renderList();
+      renderList();showHome();
       if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) navigator.serviceWorker.register('./sw.js').catch(()=>{});
     } catch(e) {
       console.error(e);setSave('error','저장소 사용 불가');toast('브라우저의 저장소를 열 수 없어요. 일반 모드에서 다시 열어 주세요.');
@@ -268,8 +268,44 @@
     calendarMonth = Number(match[2]) - 1;
   }
   const WEATHER_EMOJI={sunny:'☀️',partly_cloudy:'🌤️',cloudy:'☁️',rain:'🌧️',snow:'❄️',wind:'💨',other:'🌈'};
-  function showEditor(){calendarPageOpen=false;$('calendarPage').hidden=true;$('editorPage').hidden=false;}
-  function showMiniCalendar(){document.activeElement?.blur?.();calendarPageOpen=true;$('calendarPage').hidden=false;$('editorPage').hidden=true;renderMiniCalendar();}
+  function showPage(page){
+    document.activeElement?.blur?.();
+    calendarPageOpen=page==='calendar';
+    $('homePage').hidden=page!=='home';
+    $('calendarPage').hidden=page!=='calendar';
+    $('editorPage').hidden=page!=='diary';
+    $('myPage').hidden=page!=='mypage';
+    document.querySelectorAll('[data-tab]').forEach(button=>{
+      if(button.dataset.tab===page)button.setAttribute('aria-current','page');
+      else button.removeAttribute('aria-current');
+    });
+    if(page==='calendar')renderMiniCalendar();
+    if(page==='home')renderHome();
+    if(page==='mypage')renderMyPage();
+    closeSidebar();
+  }
+  function showEditor(){showPage('diary');}
+  function showMiniCalendar(){showPage('calendar');}
+  function showHome(){showPage('home');}
+  function showMyPage(){showPage('mypage');}
+  function renderHome(){
+    $('homeTodayLabel').textContent=dateText(dayString(),'kr');
+    $('homeEntryCount').textContent=entries.length+'개';
+    const last=[...entries].sort((a,b)=>b.updatedAt.localeCompare(a.updatedAt))[0];
+    $('homeRecent').hidden=!last;
+    $('homeEmpty').hidden=!!last;
+    if(last){
+      $('homeRecent').dataset.entryId=last.id;
+      $('homeRecentDate').textContent=dateText(last.date,'kr');
+      $('homeRecentTitle').textContent=last.title?.trim()||last.shortNote?.trim()||'제목 없는 기록';
+    }
+  }
+  function renderMyPage(){
+    const user=cloudMode?cloud()?.user:null;
+    $('myPageEmail').textContent=user?.email||'이 기기에 저장된 기록';
+    $('myPageCount').textContent=entries.length+'개';
+    $('myPageLogout').hidden=!cloudMode;
+  }
   function closeDayCard(){
     $('dayCardDialog').close();cardDate=null;cardPhoto=null;cardImage=null;
     if(cardObjectUrl){URL.revokeObjectURL(cardObjectUrl);cardObjectUrl=null;}
@@ -301,7 +337,9 @@
     const ratio=Math.max(canvas.width/cardImage.naturalWidth,canvas.height/cardImage.naturalHeight)*cardZoom;
     const w=cardImage.naturalWidth*ratio,h=cardImage.naturalHeight*ratio;
     const x=(canvas.width-w)/2+cardOffsetX,y=(canvas.height-h)/2+cardOffsetY;
-    ctx.clearRect(0,0,canvas.width,canvas.height);ctx.drawImage(cardImage,x,y,w,h);
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    ctx.fillStyle='#000';ctx.fillRect(0,0,canvas.width,canvas.height);
+    ctx.drawImage(cardImage,x,y,w,h);
   }
   async function saveDayCard(){
     if(!cardDate)return;
@@ -357,7 +395,7 @@
       const date=prefix+String(d).padStart(2,'0'),entry=byDay.get(date);
       const note=entry?(entry.shortNote||entry.title||'기록 보기'):'';
       const weather=entry?(WEATHER_EMOJI[entry.weather]||''):'';
-      cells.push(`<button class="mini-day ${entry?'filled':''} ${date===dayString()?'today':''} ${date===highlightedCalendarDate?'jump-selected':''}" data-mini-date="${date}" aria-pressed="${date===highlightedCalendarDate}"><span class="mini-day-head"><span class="mini-date">${d}</span>${weather?`<span class="mini-weather" aria-label="날씨">${weather}</span>`:''}</span><span class="mini-photo" data-mini-photo="${date}">${entry?'✿':'+'}</span><span class="mini-line">${escapeHtml(note)}</span></button>`);
+      cells.push(`<button class="mini-day ${entry?'filled':''} ${date===dayString()?'today':''} ${date===highlightedCalendarDate?'jump-selected':''}" data-mini-date="${date}" aria-pressed="${date===highlightedCalendarDate}"><span class="mini-day-head"><span class="mini-date">${d}</span>${weather?`<span class="mini-weather" aria-label="날씨">${weather}</span>`:''}</span><span class="mini-photo" data-mini-photo="${date}">${entry?'✿':'+'}</span><span class="mini-line ${note?'has-note':''}">${escapeHtml(note)}</span></button>`);
     }
     $('miniGrid').innerHTML=cells.join('');
     loadMiniPhotos();
@@ -440,6 +478,8 @@
       const label=escapeHtml(e.title.trim() || dateText(e.date));
       return `<div class="list-entry-row"><button type="button" class="list-entry ${e.id===current?.id?'active':''}" data-entry-id="${id}"><div class="entry-list-date">${escapeHtml(dateText(e.date))}</div><div class="entry-list-title">${escapeHtml(e.title.trim()||'제목 없는 기록')}</div><div class="entry-list-excerpt">${escapeHtml(e.body.replace(/[#*_>\[\]\n-]/g,' ').trim().slice(0,90)||'여기에 하루의 이야기를 담아보세요.')}</div></button><button type="button" class="list-entry-delete" data-delete-entry-id="${id}" aria-label="${label} 기록 삭제" title="이 기록 삭제">삭제</button></div>`;
     }).join('') : '<div class="list-empty">검색된 기록이 없어요.<br>새로운 하루를 남겨볼까요?</div>';
+    renderHome();
+    if(!$('myPage').hidden)renderMyPage();
   }
   async function deleteSavedRecord(id) {
     const entry=entries.find(e=>e.id===id);
@@ -889,7 +929,20 @@
     $('calendarPrev').addEventListener('click',()=>shiftCalendar(-1));
     $('calendarNext').addEventListener('click',()=>shiftCalendar(1));
     $('calendarToday').addEventListener('click',()=>jumpToToday('sidebar'));
-    $('openCalendarPage').addEventListener('click',()=>{showMiniCalendar();closeSidebar();});
+    $('openCalendarPage').addEventListener('click',showMiniCalendar);
+    document.querySelectorAll('[data-tab]').forEach(button=>button.addEventListener('click',()=>{
+      const tab=button.dataset.tab;
+      if(tab==='home')showHome();
+      else if(tab==='calendar')showMiniCalendar();
+      else if(tab==='diary')showEditor();
+      else if(tab==='mypage')showMyPage();
+    }));
+    $('homeWrite').addEventListener('click',showEditor);
+    $('homeCalendar').addEventListener('click',showMiniCalendar);
+    $('homeRecent').addEventListener('click',()=>{const id=$('homeRecent').dataset.entryId;if(id)selectEntry(id);});
+    $('myPageBackup').addEventListener('click',()=>$('backupBtn').click());
+    $('myPageArchive').addEventListener('click',()=>{openSidebar();$('archiveMonth').scrollIntoView({block:'center'});});
+    $('myPageLogout').addEventListener('click',()=>$('cloudLogout').click());
     $('returnEditor').addEventListener('click',showEditor);
     $('miniPrev').addEventListener('click',()=>shiftCalendar(-1));
     $('miniNext').addEventListener('click',()=>shiftCalendar(1));
