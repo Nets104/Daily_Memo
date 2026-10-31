@@ -77,6 +77,20 @@
   function schedulePending(){
     clearTimeout(pendingTimer);pendingTimer=setTimeout(stagePending,220);
   }
+  async function clearAccountPending(userId){
+    const scope='user:'+userId+':';
+    try{
+      await pendingWrites.catch(()=>{});
+      const keys=await pendingOperation('readonly',store=>store.getAllKeys())||[];
+      const ownKeys=keys.filter(key=>typeof key==='string'&&key.startsWith(scope));
+      if(ownKeys.length){
+        await pendingOperation('readwrite',store=>{
+          for(const key of ownKeys)store.delete(key);
+          return null;
+        });
+      }
+    }catch(e){console.warn('탈퇴 후 이 기기의 임시 기록 정리 실패',e);}
+  }
   async function clearPending(id,scope=pendingScope()){
     clearTimeout(pendingTimer);pendingTimer=null;
     try{
@@ -1444,6 +1458,68 @@
     $('myPageBackup').addEventListener('click',()=>$('backupBtn').click());
     $('myPageArchive').addEventListener('click',()=>{openSidebar();$('archiveMonth').scrollIntoView({block:'center'});});
     $('myPageLogout').addEventListener('click',()=>$('cloudLogout').click());
+    $('myPageSignIn').addEventListener('click',()=>{
+      if(hasUnsavedChanges()&&!canLeaveUnsaved())return;
+      guestMode=false;cloudMode=false;current=null;entries=[];attachments=[];db=null;
+      savedState=null;savedFileIds=new Set();
+      revokeMediaUrls();
+      $('diaryApp').hidden=true;$('cloudAuth').hidden=false;
+      $('cloudLoginPanel').hidden=false;
+      $('cloudSignupEmailPanel').hidden=true;
+      $('cloudSignupFinishPanel').hidden=true;
+      $('cloudAuthStatus').textContent='';
+      closeSidebar();
+    });
+    const accountModal=$('accountDeleteDialog');
+    function clearDeleteDialog(){
+      $('accountDeletePassword').value='';
+      $('accountDeletePhrase').value='';
+      $('accountDeleteStatus').textContent='';
+      $('accountDeleteConfirm').disabled=true;
+    }
+    $('myPageDelete').addEventListener('click',()=>{
+      if(!cloudMode||!cloud()?.user)return;
+      clearDeleteDialog();accountModal.showModal();
+    });
+    function checkDeleteForm(){
+      $('accountDeleteConfirm').disabled=$('accountDeletePhrase').value.trim()!=='탈퇴합니다'||
+        !$('accountDeletePassword').value||$('accountDeleteConfirm').dataset.working==='true';
+    }
+    $('accountDeletePhrase').addEventListener('input',checkDeleteForm);
+    $('accountDeletePassword').addEventListener('input',checkDeleteForm);
+    $('accountDeleteCancel').addEventListener('click',()=>accountModal.close());
+    accountModal.addEventListener('close',clearDeleteDialog);
+    $('accountDeleteForm').addEventListener('submit',async event=>{
+      event.preventDefault();
+      if(!cloudMode||!cloud()?.user||$('accountDeletePhrase').value.trim()!=='탈퇴합니다')return;
+      if(!$('accountDeletePassword').value)return;
+      if(!confirm('정말 탈퇴하시겠어요? 서버에 보관된 모든 일기와 첨부파일을 영구 삭제하며 복구할 수 없습니다.'))return;
+      const button=$('accountDeleteConfirm'),uid=cloud().user.id;
+      button.dataset.working='true';button.disabled=true;
+      $('accountDeleteCancel').disabled=true;
+      $('accountDeleteStatus').textContent='서버 기록과 계정을 삭제하고 있어요…';
+      try{
+        await cloud().deleteAccount($('accountDeletePassword').value);
+        clearTimeout(pendingTimer);pendingTimer=null;
+        current=null;attachments=[];entries=[];savedState=null;savedFileIds=new Set();
+        revokeMediaUrls();
+        cloudMode=false;guestMode=false;db=null;
+        await clearAccountPending(uid);
+        accountModal.close();
+        $('diaryApp').hidden=true;$('cloudAuth').hidden=false;
+        $('cloudLoginPanel').hidden=false;
+        $('cloudSignupEmailPanel').hidden=true;
+        $('cloudSignupFinishPanel').hidden=true;
+        $('cloudAuthStatus').textContent='계정과 서버 기록이 삭제되었습니다.';
+        toast('탈퇴가 완료되었습니다.');
+      }catch(e){
+        $('accountDeleteStatus').textContent='탈퇴 실패: '+e.message;
+      }finally{
+        button.dataset.working='false';
+        $('accountDeleteCancel').disabled=false;
+        checkDeleteForm();
+      }
+    });
     $('returnEditor').addEventListener('click',showEditor);
     $('miniPrev').addEventListener('click',()=>shiftCalendar(-1));
     $('miniNext').addEventListener('click',()=>shiftCalendar(1));
