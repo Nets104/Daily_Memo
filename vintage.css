@@ -1254,3 +1254,108 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
   .mini-day .mini-line{font-size:7.5px}
   .bottom-tabs button{font-size:9px}
 }
+
+
+/* v26 — reference-aligned calendar and restored beige empty cells */
+.sidebar-top .brand{margin-left:18px}
+.brand-subtitle{padding-left:45px}
+/* Correct order despite the existing toolbar markup: year, previous, month, next, today. */
+.mini-calendar-toolbar{
+  display:grid;
+  grid-template-areas:"year prev month next today";
+  grid-template-columns:minmax(0,1fr) 34px minmax(0,1.2fr) 34px minmax(0,1fr);
+  gap:8px;
+  align-items:center;
+}
+#miniYear{grid-area:year;justify-self:start;min-width:0;font-size:18px;font-family:Georgia,"Nanum Myeongjo",serif}
+#miniPrev{grid-area:prev}
+#miniMonth{grid-area:month;justify-self:center;min-width:0;font-size:29px}
+#miniNext{grid-area:next}
+#miniToday{grid-area:today;justify-self:end}
+#miniPrev,#miniNext{
+  width:34px;
+  min-width:34px;
+  height:36px;
+  padding:0;
+  display:grid;
+  place-items:center;
+}
+/* Empty dates are made of warm paper, not black photo letterboxes. */
+.mini-day .mini-photo:not(.has-image){
+  background:#e9d9c1;
+  color:#967859;
+  border:1px dashed #d1b898;
+  box-shadow:inset 0 0 0 2px rgba(255,252,243,.26);
+  width:100%;
+  height:100%;
+  aspect-ratio:auto;
+}
+.mini-day .mini-photo.has-image{
+  background:#000;
+  width:100%;
+  max-width:100%;
+}
+.mini-day .mini-photo.has-image img{
+  background:#000;
+  width:100%;
+  height:100%;
+  object-fit:contain;
+}
+@media(max-width:740px){
+  /* Use the stationery sheet itself, without an extra modern card border. */
+  #calendarPage:not([hidden]){
+    background:transparent;
+    border:0;
+    border-radius:0;
+    box-shadow:none;
+    padding-top:12px;
+  }
+  .mini-calendar-header{display:none}
+  .mini-calendar-toolbar{
+    grid-template-areas:"year prev month next today";
+    grid-template-columns:minmax(0,1fr) 30px minmax(0,1.2fr) 30px minmax(0,1fr);
+    gap:6px;
+    margin-bottom:15px;
+    padding:5px 2px 7px;
+    border-bottom:1px solid rgba(153,117,80,.16);
+  }
+  #miniYear{font-size:16px}
+  #miniMonth{font-size:25px}
+  #miniPrev,#miniNext{height:32px;width:30px;min-width:30px;padding:0}
+  #miniToday{padding:7px 10px}
+  .mini-calendar-grid{gap:3px;grid-auto-rows:minmax(90px,1fr)}
+  .mini-day{
+    grid-template-rows:13px minmax(0,1fr) 13px;
+    padding:3px;
+    gap:2px;
+    background:rgba(255,251,240,.63);
+    border-color:#dac8ac;
+  }
+  .mini-day .mini-photo:not(.has-image){
+    height:100%;
+    width:100%;
+    border:1px dashed #d6bfa2;
+    border-radius:2px;
+    background:#edddc6;
+  }
+  .mini-day .mini-photo.has-image{
+    height:100%;
+    width:100%;
+    aspect-ratio:auto;
+    border-color:#fff7e9;
+  }
+  .mini-day .mini-date{font-size:10px;font-weight:720}
+  .mini-day .mini-line{font-size:8px}
+  .mini-hint{display:none}
+}
+@media(max-width:370px){
+  .mini-calendar-toolbar{
+    grid-template-columns:minmax(0,1fr) 27px minmax(0,1.1fr) 27px minmax(0,1fr);
+    gap:4px;
+  }
+  #miniYear{font-size:14px}
+  #miniMonth{font-size:22px}
+  #miniPrev,#miniNext{width:27px;min-width:27px;height:30px}
+  #miniToday{padding:6px 7px}
+  .mini-day .mini-line{font-size:7.5px}
+}
