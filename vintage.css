@@ -1107,3 +1107,150 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
   .mini-line{font-size:9px}
 }
 @media(prefers-reduced-motion:reduce){.pinned-photo.attachment-item{transition:none}}
+
+
+/* v25 – Four persistent scrapbook navigation tabs and compact highlighter notes */
+.bottom-tabs{
+  position:fixed;
+  left:292px;
+  bottom:0;
+  width:calc(100% - 292px);
+  height:calc(66px + env(safe-area-inset-bottom,0px));
+  box-sizing:border-box;
+  padding:6px 9px calc(6px + env(safe-area-inset-bottom,0px));
+  display:flex;
+  justify-content:space-around;
+  align-items:stretch;
+  gap:4px;
+  background:linear-gradient(180deg,#fff8eb,#f3e3cc);
+  border-top:1px solid #d9c1a1;
+  box-shadow:0 -4px 16px rgba(73,46,25,.11);
+  z-index:25;
+  font-family:Pretendard,-apple-system,BlinkMacSystemFont,sans-serif;
+}
+.bottom-tabs button{
+  flex:1;
+  min-width:0;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:3px;
+  padding:4px 2px;
+  border:0;
+  border-radius:10px;
+  background:transparent;
+  color:#92806e;
+  font-family:inherit;
+  font-size:10px;
+  font-weight:720;
+  cursor:pointer;
+  -webkit-tap-highlight-color:transparent;
+}
+.bottom-tabs svg{display:block;width:23px;height:23px;flex-shrink:0}
+.bottom-tabs button[aria-current="page"]{
+  color:#75472e;
+  background:linear-gradient(100deg,#e8cdb7,#f3e2cf 80%);
+  font-weight:850;
+}
+.bottom-tabs button:focus-visible{outline:2px solid #936c48;outline-offset:-2px}
+.main-panel{padding-bottom:calc(75px + env(safe-area-inset-bottom,0px))}
+#calendarPage:not([hidden]){min-height:calc(100dvh - 208px)}
+/* Home overview: intentionally simpler than the diary editor */
+.home-dashboard,.my-page{
+  padding:22px;
+  border:1px solid #d5bea0;
+  border-radius:8px;
+  background:radial-gradient(circle at 18% 8%,rgba(135,98,58,.037) 0 1px,transparent 1.7px) 0 0 / 19px 23px,#fff7e8;
+  box-shadow:0 8px 23px rgba(80,54,29,.09);
+}
+.home-hero{padding:18px 9px 24px}
+.home-hero h1,.my-paper-heading h1{
+  font-family:"Nanum Myeongjo","Batang",Georgia,serif;
+  font-size:clamp(23px,4vw,33px);
+  color:#483528;
+  margin:8px 0 12px;
+  line-height:1.4;
+}
+.home-hero>p:last-child,.my-paper-heading p,.my-hint{color:#88745d;font-size:12px;line-height:1.7}
+.home-stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-bottom:19px}
+.home-stats>div{
+  display:flex;flex-direction:column;gap:9px;
+  padding:18px 14px;border:1px solid #dac4a8;background:#f3e6d1;border-radius:8px;
+}
+.home-stats span,.my-info-card span{color:#937d64;font-size:11px;font-weight:700}
+.home-stats strong{font-family:Pretendard,sans-serif;font-size:17px;color:#513b2b;overflow-wrap:anywhere}
+.home-actions{display:flex;gap:10px;margin:10px 0 28px}
+.home-actions button{flex:1;min-width:0;font-size:12px}
+.home-recent{border-top:1px dashed #d7c3a5;padding-top:18px}
+.home-recent h2{color:#674a35;font-size:16px;margin:0 0 14px}
+.home-recent-entry{
+  display:flex;flex-direction:column;align-items:flex-start;gap:8px;
+  width:100%;padding:16px;background:#fffcf2;
+  border:1px solid #d9c4a7;border-radius:9px;text-align:left;color:#53402f;
+}
+.home-recent-entry span,.home-recent-entry small{font-size:11px;color:#987b5f}
+.home-recent-entry strong{font-size:15px}
+.home-empty{font-size:12px;color:#97826b}
+.my-paper-heading{padding:10px 6px 23px}
+.my-paper-heading>span{font-family:Georgia,serif;color:#a48a6d;font-size:11px;letter-spacing:2px}
+.my-info-card{
+  display:grid;grid-template-columns:100px minmax(0,1fr);
+  align-items:center;gap:15px 9px;padding:23px 15px;background:#f4e7d5;
+  border:1px solid #ddc7aa;border-radius:9px;
+}
+.my-info-card strong{overflow-wrap:anywhere;color:#5c4030;font-size:13px}
+.my-actions{display:flex;flex-direction:column;gap:10px;margin:24px 0}
+.my-actions button{text-align:left}
+.my-hint{padding:0 4px}
+/* Letterbox the entire image rather than cropping. Unused areas are black. */
+.mini-photo,.mini-photo img,.pinned-photo .photo-open,.pinned-photo .photo-open img{background:#000}
+.mini-photo img{object-fit:contain!important}
+.pinned-photo .photo-open img{object-fit:contain!important}
+/* Short sentence: small centered ink handwriting over a beige highlighter stroke. */
+.mini-day .mini-line{
+  font-family:"OngleipRyuryu",Pretendard,sans-serif;
+  justify-self:center;
+  align-self:center;
+  text-align:center;
+  font-size:11px;
+  line-height:1.2;
+  font-weight:400;
+  color:#5d4433;
+  max-width:100%;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.mini-day .mini-line.has-note{
+  display:block;
+  width:max-content;
+  padding:1px 2px;
+  background:linear-gradient(transparent 25%,rgba(214,181,130,.67) 25%,rgba(214,181,130,.67) 87%,transparent 87%);
+}
+/* Make the calendar note legible without increasing date cell height. */
+.mini-day{grid-template-rows:16px minmax(0,1fr) 17px}
+@media(max-width:1050px) and (min-width:741px){
+  .bottom-tabs{left:253px;width:calc(100% - 253px)}
+}
+@media(max-width:740px){
+  .bottom-tabs{left:0;width:100%;height:calc(68px + env(safe-area-inset-bottom,0px));padding:5px 5px calc(5px + env(safe-area-inset-bottom,0px))}
+  .bottom-tabs button{font-size:10px;gap:3px}
+  .bottom-tabs svg{width:21px;height:21px}
+  .main-panel{padding-bottom:calc(82px + env(safe-area-inset-bottom,0px))}
+  .page-wrap{padding-bottom:calc(88px + env(safe-area-inset-bottom,0px))}
+  #calendarPage:not([hidden]){min-height:calc(100dvh - 205px)}
+  .home-dashboard,.my-page{padding:17px 14px}
+  .home-hero{padding:12px 2px 21px}
+  .home-hero h1,.my-paper-heading h1{font-size:25px}
+  .home-stats{gap:9px}
+  .home-stats>div{padding:15px 10px}
+  .home-stats strong{font-size:13px}
+  .mini-day{grid-template-rows:12px minmax(0,1fr) 13px}
+  .mini-day .mini-line{font-size:8px;line-height:1.1}
+  .mini-day .mini-line.has-note{padding:0 1px}
+}
+@media(max-width:370px){
+  .mini-day .mini-line{font-size:7.5px}
+  .bottom-tabs button{font-size:9px}
+}
