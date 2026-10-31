@@ -27,6 +27,7 @@
   let saveTimer = null, savePromise = Promise.resolve(), toastTimer = null, view = 'edit';
   let recorder = null, recordStream = null, recordChunks = [], recordingEntryId = null;
   let isExporting = false;
+  let appUpdateReloading=false;
   let isDraft = false, isSavingDraft = false;
   let savedState=null,savedFileIds=new Set(),pendingTimer=null,pendingWrites=Promise.resolve();
   const pendingScope=()=>cloudMode&&cloud()?.user?.id?'user:'+cloud().user.id:'local';
@@ -332,7 +333,6 @@
       else await newEntry(dayString(),false,false);
       renderList();showHome();$('diaryApp').hidden=false;
       await restoreLatestPending();
-      if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) navigator.serviceWorker.register('./sw.js').catch(()=>{});
     } catch(e) {
       console.error(e);setSave('error','저장소 사용 불가');toast('브라우저의 저장소를 열 수 없어요. 일반 모드에서 다시 열어 주세요.');
       current={id:makeId(),date:dayString(),title:'',body:'',createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()};isDraft=true;fillEditor();setSave('','저장 전');$('diaryApp').hidden=false;
@@ -1617,7 +1617,7 @@
     $('backupBtn').addEventListener('click',async()=>{try{if(isDraft && (el.title.value.trim() || el.body.value.trim() || attachments.length))toast('저장하지 않은 새 기록은 백업에 포함되지 않아요.');await flushSave();await buildBackup([...entries],`일상기록_전체백업_${dayString()}`);toast('전체 기록과 첨부 파일 백업을 저장했어요.');}catch(e){toast(`백업 실패: ${e.message}`);}});
     $('restoreBtn').addEventListener('click',()=>el.restoreInput.click());el.restoreInput.addEventListener('change',async()=>{const file=el.restoreInput.files[0];if(file)await restoreBackup(file);el.restoreInput.value='';});
     window.addEventListener('beforeunload',e=>{
-      if(!hasUnsavedChanges())return;
+      if(appUpdateReloading||!hasUnsavedChanges())return;
       stagePending();
       e.preventDefault();e.returnValue='';
     });
@@ -1627,6 +1627,103 @@
     });
   }
   bindEvents();
+
+  // Offer new PWA versions without interrupting typing or committing a diary to the server.
+  function setupAppUpdatePrompt(){
+    if(!('serviceWorker' in navigator)||!/^https?:$/.test(location.protocol))return;
+    const notice=$('appUpdateNotice'),accept=$('appUpdateApply'),later=$('appUpdateLater');
+    let registration=null,hadController=!!navigator.serviceWorker.controller;
+    let updateBusy=false,updateDismissed=false,checking=false;
+    const show=(force=false)=>{
+      if(!hadController||(!force&&updateDismissed))return;
+      notice.hidden=false;
+    };
+    const detect=()=>{
+      if(registration?.waiting&&navigator.serviceWorker.controller)show();
+    };
+    const watch=worker=>{
+      if(!worker)return;
+      worker.addEventListener('statechange',()=>{
+        if(worker.state==='installed')detect();
+      });
+    };
+    function reloadWhenReady(){
+      if(!appUpdateReloading)return;
+      location.reload();
+    }
+    navigator.serviceWorker.addEventListener('controllerchange',()=>{
+      if(appUpdateReloading){reloadWhenReady();return;}
+      if(hadController)show();
+      hadController=true;
+    });
+    later.addEventListener('click',()=>{
+      updateDismissed=true;
+      notice.hidden=true;
+    });
+    accept.addEventListener('click',async()=>{
+      if(updateBusy)return;
+      if(isSavingDraft||isExporting||recorder){
+        toast('저장·녹음·내보내기를 마친 뒤 업데이트해 주세요.');
+        return;
+      }
+      if(hasUnsavedChanges()&&!confirm('저장하지 않은 변경사항이 있어요. 기기에 임시 보관한 뒤 업데이트할까요? 서버에는 저장되지 않습니다.'))return;
+      updateBusy=true;accept.disabled=true;
+      const oldLabel=accept.textContent;
+      accept.textContent='확인 중…';
+      try{
+        // Fail closed: don't navigate until edits and attached Blobs are durably stored.
+        clearTimeout(pendingTimer);
+        if(hasUnsavedChanges()){
+          stagePending();
+          await pendingWrites;
+        }
+        appUpdateReloading=true;
+        accept.textContent='업데이트 중…';
+        if(registration?.waiting){
+          registration.waiting.postMessage({type:'SKIP_WAITING'});
+          // Reload only once the updated worker actually controls the page.
+          setTimeout(()=>{
+            if(!appUpdateReloading)return;
+            if(registration?.waiting){
+              appUpdateReloading=false;updateBusy=false;accept.disabled=false;
+              accept.textContent=oldLabel;
+              toast('업데이트를 적용하지 못했어요. 다시 시도해 주세요.');
+            }else location.reload();
+          },6000);
+        }else location.reload();
+      }catch(e){
+        appUpdateReloading=false;
+        toast('임시 보관에 실패했어요. 기록을 보호하기 위해 업데이트를 취소했어요.');
+        console.warn('업데이트 전 임시 기록 보관 실패',e);
+        updateBusy=false;accept.disabled=false;accept.textContent=oldLabel;
+      }
+    });
+    const check=async()=>{
+      if(checking||document.visibilityState==='hidden'||!registration)return;
+      checking=true;
+      try{await registration.update();detect();}
+      catch(e){console.warn('업데이트 확인 실패',e);}
+      finally{checking=false;}
+    };
+    navigator.serviceWorker.register('./sw.js',{updateViaCache:'none'}).then(reg=>{
+      registration=reg;
+      watch(reg.installing);
+      reg.addEventListener('updatefound',()=>{
+        watch(reg.installing);
+        updateDismissed=false;
+      });
+      detect();
+      check();
+      // Check while installed PWA is open and again when it returns to foreground.
+      setInterval(check,20*60*1000);
+      window.addEventListener('focus',check);
+      document.addEventListener('visibilitychange',()=>{
+        if(document.visibilityState==='visible')check();
+      });
+    }).catch(e=>console.warn('앱 업데이트 감지 설정 실패',e));
+  }
+  setupAppUpdatePrompt();
+
   // Dismiss the opening screen even when authentication or a cached stylesheet is slow.
   const intro=$('startupIntro');
   let introClosed=false;
