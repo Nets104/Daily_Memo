@@ -1174,7 +1174,7 @@
     $('homeCalendar').addEventListener('click',showMiniCalendar);
     $('homeRecent').addEventListener('click',()=>{const id=$('homeRecent').dataset.entryId;if(id)selectEntry(id);});
     $('myPageBackup').addEventListener('click',()=>$('backupBtn').click());
-    $('myPageArchive').addEventListener('click',()=>{openSidebar();$('archiveMonth').scrollIntoView({block:'center'});});
+    $('myPageArchive').addEventListener('click',()=>{openSidebar();$('archiveMonthLabel').scrollIntoView({block:'center'});});
     $('myPageLogout').addEventListener('click',()=>$('cloudLogout').click());
     $('returnEditor').addEventListener('click',showEditor);
     $('miniPrev').addEventListener('click',()=>shiftCalendar(-1));
