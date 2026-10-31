@@ -486,15 +486,16 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
   font-weight:400;
   letter-spacing:0;
 }
-/* The writing surface stays unruled. */
+/* Handwritten diary body, still on unruled paper. */
 .editing-pane textarea,.md-preview,.md-preview p,.md-preview li,.md-preview blockquote{
-  font-family:"RIDIBatang","Batang",serif;
+  font-family:"OngleipRyuryu",Pretendard,sans-serif;
   font-weight:400;
-  font-size:16px;
-  line-height:1.85;
+  font-size:19px;
+  line-height:1.75;
 }
-/* Keep generated markdown headings distinguished from paragraphs. */
-.md-preview h1,.md-preview h2,.md-preview h3{font-family:"RIDIBatang","Batang",serif}
+.md-preview h1,.md-preview h2,.md-preview h3{
+  font-family:"OngleipRyuryu",Pretendard,sans-serif;
+}
 .mini-day-head{
   width:100%;
   min-width:0;
@@ -530,7 +531,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 }
 @media(max-width:740px){
   .title-row input{font-size:27px}
-  .editing-pane textarea,.md-preview,.md-preview p,.md-preview li,.md-preview blockquote{font-size:15px;line-height:1.85}
+  .editing-pane textarea,.md-preview,.md-preview p,.md-preview li,.md-preview blockquote{font-size:17px;line-height:1.75}
   .mini-day-head{min-height:15px}
   .mini-weather{font-size:12px;max-width:16px}
   .mini-line{font-size:11px;line-height:1.1;max-height:2.2em}
@@ -538,4 +539,18 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 @media(max-width:370px){
   .mini-weather{font-size:11px;max-width:15px}
   .mini-line{font-size:10px}
+}
+
+/* Slightly stronger metadata labels for mobile readability. */
+.mini-fields label{
+  color:#634a36;
+  font-family:Pretendard,-apple-system,BlinkMacSystemFont,"Noto Sans KR",sans-serif;
+  font-weight:850;
+  font-size:13px;
+  letter-spacing:-.2px;
+}
+.mini-fields select{
+  font-family:Pretendard,-apple-system,BlinkMacSystemFont,"Noto Sans KR",sans-serif;
+  font-size:14px;
+  font-weight:700;
 }
