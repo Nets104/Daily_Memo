@@ -134,8 +134,8 @@
       if(cloudMode){entries=await cloud().entries();}
       else {db=await openDb();entries=await getAll('entries');}
 
-      if(entries.length) await selectEntry([...entries].sort((a,b)=>b.updatedAt.localeCompare(a.updatedAt))[0].id);
-      else await newEntry(dayString(),false);
+      if(entries.length) await selectEntry([...entries].sort((a,b)=>b.updatedAt.localeCompare(a.updatedAt))[0].id,false);
+      else await newEntry(dayString(),false,false);
       renderList();showHome();
       if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) navigator.serviceWorker.register('./sw.js').catch(()=>{});
     } catch(e) {
@@ -243,23 +243,23 @@
     return !(current.title.trim() || current.body.trim() || current.shortNote?.trim() || current.weather || attachments.length)
       || confirm('저장하지 않은 내용이 있어요. 저장하지 않고 이동할까요?');
   }
-  async function selectEntry(id) {
-    if(current?.id===id){showEditor();return;}
+  async function selectEntry(id, navigate = true) {
+    if(current?.id===id){if(navigate)showEditor();return;}
     if(!canLeaveDraft())return;
     await flushSave();
     current=entries.find(e=>e.id===id);
     if(!current)return;
     isDraft=false;fillEditor();attachments=db ? await getAll('attachments','entryId',id) : [];
-    renderAttachments();renderList();setSave('','저장됨');showEditor();
+    renderAttachments();renderList();setSave('','저장됨');if(navigate)showEditor();
   }
-  async function newEntry(date = dayString(), focusTitle = true) {
+  async function newEntry(date = dayString(), focusTitle = true, navigate = true) {
     if(!canLeaveDraft())return;
     await flushSave();
     const timestamp=new Date().toISOString();
     current={id:makeId(),date,title:'',body:'',weather:'',shortNote:'',createdAt:timestamp,updatedAt:timestamp};
     isDraft=true;
     fillEditor();attachments=[];renderAttachments();renderList();setSave('','저장 전');
-    el.edited.textContent='저장 전';showEditor();if(focusTitle)el.title.focus();
+    el.edited.textContent='저장 전';if(navigate)showEditor();if(focusTitle&&navigate)el.title.focus();
   }
   function setCalendarMonth(iso) {
     const match = /^(\d{4})-(\d{2})-\d{2}$/.exec(iso || '');
