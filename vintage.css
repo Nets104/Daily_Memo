@@ -726,3 +726,20 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
   .entry-meta-weather{font-size:11px}
   .entry-meta-note .entry-meta-value{font-size:18px}
 }
+
+/* Compact 4:3 calendar thumbnails; active today; smaller weather. */
+.mini-day{height:130px;min-height:0;gap:3px;overflow:hidden}
+.mini-photo{flex:0 0 auto;width:min(100%,82px);height:auto;aspect-ratio:4/3;align-self:center;min-height:0;max-height:none;overflow:hidden}
+.mini-photo img{width:100%;height:100%;object-fit:cover}
+.mini-weather{font-size:11px;max-width:15px}
+.mini-day-head{min-height:16px}
+.mini-day.today:not(.jump-selected){border-color:#b28d64}
+.mini-day.jump-selected{border:2px solid #805d40;background:#e7d4b9;box-shadow:inset 0 0 0 1px #fff9ec}
+.calendar-day.jump-selected{background:#806047;color:#fff9ed;border-color:#806047}
+.calendar-day.jump-selected.has-entry::after{background:#fff9ed}
+/* Native Android input highlighting reduced to vintage paper color. */
+.entry-meta-card,.entry-meta-form input,.entry-meta-form select,.entry-meta-form textarea,.calendar-day,.mini-day,.calendar-today,.mini-calendar-toolbar button{-webkit-tap-highlight-color:transparent}
+.entry-meta-form input:focus,.entry-meta-form select:focus,.entry-meta-form textarea:focus{outline:none;border-color:#c5a982;box-shadow:0 0 0 2px #fffdf5}
+.entry-meta-form input:focus-visible,.entry-meta-form select:focus-visible,.entry-meta-form textarea:focus-visible{outline:2px solid #fffdf5;outline-offset:1px}
+@media(max-width:740px){.mini-day{height:85px;gap:2px}.mini-photo{width:100%;height:auto;aspect-ratio:4/3;max-height:none}.mini-day-head{min-height:13px}.mini-weather{font-size:9px;max-width:12px}.mini-line{font-size:10px;max-height:2.1em}}
+@media(max-width:370px){.mini-day{height:80px}.mini-weather{font-size:9px;max-width:11px}.mini-line{font-size:9px}}
