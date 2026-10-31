@@ -23,7 +23,7 @@
   const WEEK_EN = ['SUNDAY','MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY','SATURDAY'];
   let db, entries = [], current = null, attachments = [], mediaUrls = [];
   const cloud = () => window.DiaryCloud?.configured ? window.DiaryCloud : null;
-  let cloudMode=false, initialized=false;
+  let cloudMode=false, initialized=false, guestMode=false;
   let saveTimer = null, savePromise = Promise.resolve(), toastTimer = null, view = 'edit';
   let recorder = null, recordStream = null, recordChunks = [], recordingEntryId = null;
   let isExporting = false;
@@ -182,7 +182,7 @@
       initialized=true;
       const auth=$('cloudAuth'),app=$('diaryApp');
       const msg=$('cloudAuthStatus');
-      const usernameRule=/^[a-z][a-z0-9_]{3,11}$/;
+      const usernameRule=/^[a-z0-9]{4,12}$/;
       let checkedUsername='';
       function authPanel(which){
         $('cloudLoginPanel').hidden=which!=='login';
@@ -205,7 +205,7 @@
           $('cloudVerifiedEmail').textContent=user.email||'';
           authPanel('finish');return;
         }
-        cloudMode=true;db={};auth.hidden=true;app.hidden=false;
+        guestMode=false;cloudMode=true;db={};auth.hidden=true;app.hidden=false;
         $('cloudAccount').hidden=false;$('cloudUserEmail').textContent=user.email||'';
         current=null;attachments=[];entries=[];clearTimeout(saveTimer);saveTimer=null;
         await loadEntries();
@@ -218,6 +218,17 @@
           await showUser();
         }catch(err){msg.textContent='로그인 실패: '+err.message;}
         finally{$('cloudLogin').disabled=false;}
+      });
+      $('guestLogin').addEventListener('click',async()=>{
+        if(guestMode)return;
+        if(cloud()?.user){msg.textContent='로그인 중인 계정은 로그아웃한 뒤 비회원으로 이용해 주세요.';return;}
+        guestMode=true;cloudMode=false;
+        current=null;attachments=[];entries=[];savedState=null;savedFileIds=new Set();
+        revokeMediaUrls();
+        auth.hidden=true;app.hidden=false;
+        $('cloudAccount').hidden=true;
+        try{await loadEntries();}
+        catch(err){msg.textContent='기기 기록을 열지 못했어요: '+err.message;guestMode=false;auth.hidden=false;app.hidden=true;}
       });
       $('cloudSignup').addEventListener('click',()=>{
         authPanel('email');$('cloudSignupEmail').value=$('cloudEmail').value.trim();
@@ -243,7 +254,7 @@
         $('cloudUsername').value=name;
         checkedUsername='';
         if(!usernameRule.test(name)){
-          $('cloudUsernameStatus').textContent='영문 소문자로 시작하는 4~12자 아이디를 입력해 주세요.';
+          $('cloudUsernameStatus').textContent='영문·숫자로 된 4~12자 아이디를 입력해 주세요.';
           return;
         }
         $('cloudUsernameCheck').disabled=true;
@@ -265,8 +276,8 @@
         if(!usernameRule.test(username)||checkedUsername!==username){
           msg.textContent='아이디 중복확인을 먼저 완료해 주세요.';return;
         }
-        if(password.length<8||password.length>16||password!==confirmation){
-          msg.textContent=(password.length<8||password.length>16)?'비밀번호는 8~16자여야 해요.':'비밀번호 확인이 일치하지 않아요.';
+        if(!/^[\x21-\x7e]{8,16}$/.test(password)||password!==confirmation){
+          msg.textContent=!/^[\x21-\x7e]{8,16}$/.test(password)?'비밀번호는 영문·숫자·특수문자로 8~16자여야 해요.':'비밀번호 확인이 일치하지 않아요.';
           return;
         }
         $('cloudSignupComplete').disabled=true;msg.textContent='계정을 완성하는 중…';
@@ -482,9 +493,11 @@
   }
   function renderMyPage(){
     const user=cloudMode?cloud()?.user:null;
-    $('myPageEmail').textContent=user?.email||'이 기기에 저장된 기록';
+    $('myPageEmail').textContent=user?.email||(guestMode?'비회원 · 이 기기에만 저장':'이 기기에 저장된 기록');
     $('myPageCount').textContent=entries.length+'개';
     $('myPageLogout').hidden=!cloudMode;
+    $('myPageSignIn').hidden=!guestMode;
+    $('myPageDanger').hidden=!cloudMode;
   }
   function closeDayCard(){
     $('dayCardDialog').close();cardDate=null;cardPhoto=null;cardImage=null;cardCoverFileId=null;
