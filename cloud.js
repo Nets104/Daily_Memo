@@ -33,7 +33,34 @@
     configured:true,client,
     get user(){return user;},
     async session(){const {data,error}=await client.auth.getUser();if(error && !/session missing/i.test(error.message||''))throw error;user=data?.user||null;return user;},
-    async signup(email,password){return fail(await client.auth.signUp({email,password,options:{emailRedirectTo:location.origin+location.pathname}}));},
+    async startSignupEmail(email){
+      return fail(await client.auth.signInWithOtp({
+        email,options:{emailRedirectTo:location.origin+location.pathname,shouldCreateUser:true}
+      }));
+    },
+    async profile(){
+      if(!user)return null;
+      return fail(await client.from('diary_profiles').select('username')
+        .eq('user_id',own()).maybeSingle());
+    },
+    async usernameAvailable(username){
+      return fail(await client.rpc('diary_username_available',{p_username:username}));
+    },
+    async finishSignup(username,password){
+      const verified=fail(await client.auth.getUser())?.user;
+      if(!verified||verified.id!==own()||!verified.email_confirmed_at)throw Error('이메일 인증을 먼저 완료해 주세요.');
+      if(await api.profile())throw Error('이미 가입된 계정입니다. 로그인해 주세요.');
+      if(!/^[a-z][a-z0-9_]{3,19}$/.test(username))throw Error('아이디 형식을 확인해 주세요.');
+      if(!(await api.usernameAvailable(username)))throw Error('이미 사용 중인 아이디입니다.');
+      fail(await client.auth.updateUser({password}));
+      try{
+        fail(await client.from('diary_profiles').insert({user_id:own(),username}));
+      }catch(e){
+        if(e.code==='23505')throw Error('다른 사람이 먼저 사용한 아이디입니다. 중복확인을 다시 해 주세요.');
+        throw e;
+      }
+      return api.profile();
+    },
     async login(email,password){return fail(await client.auth.signInWithPassword({email,password}));},
     async logout(){fail(await client.auth.signOut());user=null;},
     async entries(){return (await pageAll('diary_entries')).map(toEntry);},
