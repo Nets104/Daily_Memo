@@ -1086,7 +1086,15 @@
     window.addEventListener('pagehide',()=>{if(saveTimer)saveCurrent();});document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden'&&saveTimer)saveCurrent();});
   }
   bindEvents();
-  init().finally(()=>{
-    setTimeout(()=>$('startupIntro')?.classList.add('is-finished'),850);
-  });
+  // Dismiss the opening screen even when authentication or a cached stylesheet is slow.
+  const intro=$('startupIntro');
+  let introClosed=false;
+  function closeIntro(){
+    if(!intro||introClosed)return;
+    introClosed=true;
+    intro.classList.add('is-finished');
+    setTimeout(()=>intro.remove(),600);
+  }
+  setTimeout(closeIntro,2200);
+  init().finally(()=>setTimeout(closeIntro,800));
 })();
