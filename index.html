@@ -195,11 +195,11 @@
   <dialog id="exportDialog" class="export-dialog">
     <div class="dialog-heading"><div><p class="eyebrow">SAVE THIS MOMENT</p><h2>기록 내보내기</h2></div><button class="icon-button" id="closeExportBtn" aria-label="닫기">✕</button></div>
     <label class="dialog-label" for="exportFilename">파일 이름 <small>(기록 제목은 변경되지 않아요)</small></label><input class="dialog-input" type="text" id="exportFilename" maxlength="30" placeholder="파일 이름" />
-    <p class="export-help">원하는 형식으로 현재 기록을 저장해 보세요. 첨부 파일 원본은 ‘현재 기록 ZIP’에서 함께 받을 수 있어요.</p>
+    <p class="export-help">PDF·PNG는 빈티지 다이어리 디자인으로 내보내요. Markdown은 텍스트, ZIP은 원본 첨부파일 보관용이에요.</p>
     <div class="export-options">
       <button data-export="md"><span class="export-icon md-icon">MD</span><span><strong>Markdown</strong><small>.md 텍스트 파일</small></span><span class="option-arrow">↗</span></button>
-      <button data-export="png"><span class="export-icon png-icon">▧</span><span><strong>이미지</strong><small>.png · 페이지별 출력</small></span><span class="option-arrow">↗</span></button>
-      <button data-export="pdf"><span class="export-icon pdf-icon">PDF</span><span><strong>PDF 문서</strong><small>.pdf · A4 여러 페이지</small></span><span class="option-arrow">↗</span></button>
+      <button data-export="png"><span class="export-icon png-icon">▧</span><span><strong>빈티지 이미지</strong><small>.png · 다이어리 페이지</small></span><span class="option-arrow">↗</span></button>
+      <button data-export="pdf"><span class="export-icon pdf-icon">PDF</span><span><strong>빈티지 PDF</strong><small>.pdf · A4 다이어리</small></span><span class="option-arrow">↗</span></button>
       <button data-export="zip"><span class="export-icon zip-icon">ZIP</span><span><strong>기록 + 첨부 파일</strong><small>.zip · 원본 미디어 포함</small></span><span class="option-arrow">↗</span></button>
     </div>
     <div class="export-progress" id="exportProgress" aria-live="polite"></div>
@@ -282,6 +282,6 @@
   <script src="./supabase-config.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0" defer></script>
   <script src="./cloud.js?v=13" defer></script>
-  <script src="./app.js?v=37" defer></script>
+  <script src="./app.js?v=38" defer></script>
 </body>
 </html>
