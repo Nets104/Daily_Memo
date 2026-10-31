@@ -230,7 +230,9 @@
         try{
           await cloud().startSignupEmail(email);
           msg.textContent='인증 메일을 보냈어요. 메일 속 링크를 누른 다음 이 앱으로 돌아오세요.';
-        }catch(err){msg.textContent='인증 메일 전송 실패: '+err.message;}
+        }catch(err){msg.textContent=/email address not authorized/i.test(err.message||'')
+          ? '이메일 발송 제한으로 인증 메일을 보낼 수 없어요. 관리자에게 SMTP 설정을 요청해 주세요.'
+          : '인증 메일 전송 실패: '+err.message;}
         finally{$('cloudSignupEmailSend').disabled=false;}
       });
       $('cloudUsername').addEventListener('input',()=>{
