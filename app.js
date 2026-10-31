@@ -181,28 +181,109 @@
     if(cloud() && !initialized){
       initialized=true;
       const auth=$('cloudAuth'),app=$('diaryApp');
+      const msg=$('cloudAuthStatus');
+      const usernameRule=/^[a-z][a-z0-9_]{3,19}$/;
+      let checkedUsername='';
+      function authPanel(which){
+        $('cloudLoginPanel').hidden=which!=='login';
+        $('cloudSignupEmailPanel').hidden=which!=='email';
+        $('cloudSignupFinishPanel').hidden=which!=='finish';
+        checkedUsername='';
+        $('cloudUsernameStatus').textContent='';
+        msg.textContent='';
+      }
       async function showUser(){
         const user=await cloud().session();
         if(!user){
-          cloudMode=false;auth.hidden=false;app.hidden=true;return;
+          cloudMode=false;auth.hidden=false;app.hidden=true;
+          authPanel('login');return;
+        }
+        const profile=await cloud().profile();
+        if(!profile){
+          // Authenticated through the email link; do not open the diary until setup finishes.
+          cloudMode=false;auth.hidden=false;app.hidden=true;
+          $('cloudVerifiedEmail').textContent=user.email||'';
+          authPanel('finish');return;
         }
         cloudMode=true;db={};auth.hidden=true;app.hidden=false;
         $('cloudAccount').hidden=false;$('cloudUserEmail').textContent=user.email||'';
         current=null;attachments=[];entries=[];clearTimeout(saveTimer);saveTimer=null;
         await loadEntries();
       }
-      const msg=$('cloudAuthStatus');
       $('cloudAuthForm').addEventListener('submit',async e=>{
         e.preventDefault();msg.textContent='로그인 중…';
-        try{await cloud().login($('cloudEmail').value.trim(),$('cloudPassword').value);msg.textContent='';await showUser();}
-        catch(err){msg.textContent='로그인 실패: '+err.message;}
-      });
-      $('cloudSignup').addEventListener('click',async()=>{
-        msg.textContent='계정 생성 중…';
+        $('cloudLogin').disabled=true;
         try{
-          await cloud().signup($('cloudEmail').value.trim(),$('cloudPassword').value);
-          msg.textContent='가입 요청 완료. 이메일 인증이 활성화되어 있으면 메일의 확인 링크를 누른 뒤 로그인해 주세요.';
-        }catch(err){msg.textContent='가입 실패: '+err.message;}
+          await cloud().login($('cloudEmail').value.trim(),$('cloudPassword').value);
+          await showUser();
+        }catch(err){msg.textContent='로그인 실패: '+err.message;}
+        finally{$('cloudLogin').disabled=false;}
+      });
+      $('cloudSignup').addEventListener('click',()=>{
+        authPanel('email');$('cloudSignupEmail').value=$('cloudEmail').value.trim();
+      });
+      $('cloudSignupBack').addEventListener('click',()=>authPanel('login'));
+      $('cloudSignupEmailForm').addEventListener('submit',async e=>{
+        e.preventDefault();
+        const email=$('cloudSignupEmail').value.trim();
+        $('cloudSignupEmailSend').disabled=true;msg.textContent='인증 메일을 보내는 중…';
+        try{
+          await cloud().startSignupEmail(email);
+          msg.textContent='인증 메일을 보냈어요. 메일 속 링크를 누른 다음 이 앱으로 돌아오세요.';
+        }catch(err){msg.textContent='인증 메일 전송 실패: '+err.message;}
+        finally{$('cloudSignupEmailSend').disabled=false;}
+      });
+      $('cloudUsername').addEventListener('input',()=>{
+        checkedUsername='';$('cloudUsernameStatus').textContent='';
+      });
+      $('cloudUsernameCheck').addEventListener('click',async()=>{
+        const name=$('cloudUsername').value.trim().toLowerCase();
+        $('cloudUsername').value=name;
+        checkedUsername='';
+        if(!usernameRule.test(name)){
+          $('cloudUsernameStatus').textContent='영문 소문자로 시작하는 4~20자 아이디를 입력해 주세요.';
+          return;
+        }
+        $('cloudUsernameCheck').disabled=true;
+        $('cloudUsernameStatus').textContent='아이디 중복 확인 중…';
+        try{
+          const available=await cloud().usernameAvailable(name);
+          if(available){
+            checkedUsername=name;
+            $('cloudUsernameStatus').textContent='✓ 사용할 수 있는 아이디입니다.';
+          }else $('cloudUsernameStatus').textContent='이미 사용 중인 아이디입니다.';
+        }catch(err){$('cloudUsernameStatus').textContent='중복확인 실패: '+err.message;}
+        finally{$('cloudUsernameCheck').disabled=false;}
+      });
+      $('cloudSignupFinishForm').addEventListener('submit',async e=>{
+        e.preventDefault();
+        const username=$('cloudUsername').value.trim().toLowerCase();
+        const password=$('cloudNewPassword').value;
+        const confirmation=$('cloudNewPasswordConfirm').value;
+        if(!usernameRule.test(username)||checkedUsername!==username){
+          msg.textContent='아이디 중복확인을 먼저 완료해 주세요.';return;
+        }
+        if(password.length<8||password!==confirmation){
+          msg.textContent=password.length<8?'비밀번호는 8자 이상이어야 해요.':'비밀번호 확인이 일치하지 않아요.';
+          return;
+        }
+        $('cloudSignupComplete').disabled=true;msg.textContent='계정을 완성하는 중…';
+        try{
+          await cloud().finishSignup(username,password);
+          $('cloudNewPassword').value='';$('cloudNewPasswordConfirm').value='';
+          await showUser();
+        }catch(err){
+          msg.textContent='가입 완료 실패: '+err.message;
+          checkedUsername='';
+          $('cloudUsernameStatus').textContent='아이디 중복확인을 다시 진행해 주세요.';
+        }finally{$('cloudSignupComplete').disabled=false;}
+      });
+      $('cloudSignupCancel').addEventListener('click',async()=>{
+        try{
+          await cloud().logout();
+          $('cloudNewPassword').value='';$('cloudNewPasswordConfirm').value='';
+          authPanel('login');
+        }catch(err){msg.textContent='취소 실패: '+err.message;}
       });
       $('cloudLogout').addEventListener('click',async()=>{
         await flushSave();
