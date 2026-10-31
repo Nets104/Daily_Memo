@@ -2116,3 +2116,6 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .month-delete-actions button{min-width:0;padding:11px;border-radius:7px;font-size:13px;font-weight:750}
 .month-delete-confirm{border:1px solid #a22f2e;background:#aa3830;color:white}
 .month-delete-confirm:disabled{background:#e7d6d0;color:#8c807a;border-color:#d4bdb3}
+
+/* v37: Bring the sidebar title a little closer to the visual center. */
+.sidebar-top .brand > span:last-child{position:relative;left:10px}
