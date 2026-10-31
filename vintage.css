@@ -1,0 +1,440 @@
+/* 일상 기록 · Vintage Scrapbook theme v1
+   Visual-only layer: keeps the existing diary interactions, IDs and storage intact.
+   The writing surface intentionally has NO ruled-paper lines. */
+:root{
+  --ink:#43372e;
+  --muted:#827261;
+  --line:#d9c7ad;
+  --purple:#89684e;
+  --pale:#f1e6d3;
+  --paper:#f8f0df;
+  --paper-light:#fffaef;
+  --paper-deep:#e9d9bf;
+  --vintage-brown:#7f6049;
+  --vintage-dark:#493528;
+  --vintage-olive:#768067;
+  --vintage-rose:#a76e61;
+  color:var(--ink);
+  background:#e6d8c2;
+  accent-color:var(--vintage-brown);
+}
+body{
+  color:var(--ink);
+  background:#e4d4b9;
+  background-image:
+    radial-gradient(circle at 25% 12%,rgba(255,255,255,.26),transparent 38%),
+    repeating-linear-gradient(89deg,rgba(87,63,42,.025) 0 1px,transparent 1px 32px),
+    linear-gradient(110deg,#e9ddc8,#dfcdb2);
+}
+button,input,textarea,select{color:inherit}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{
+  outline:2px solid #99754e;
+  outline-offset:2px;
+}
+.app-shell{background:transparent}
+.main-panel{
+  background:
+    radial-gradient(circle at 85% 7%,rgba(255,250,230,.52),transparent 35%),
+    repeating-linear-gradient(0deg,rgba(115,81,50,.014) 0 1px,transparent 1px 19px),
+    linear-gradient(120deg,#eadfcb,#dfceb5);
+}
+.sidebar{
+  background:
+    radial-gradient(circle at 13% 7%,rgba(255,255,255,.55),transparent 40%),
+    repeating-linear-gradient(0deg,rgba(101,69,42,.018) 0 1px,transparent 1px 23px),
+    #f3e8d5;
+  border-right:1px solid #cdb798;
+  box-shadow:4px 0 17px rgba(85,55,30,.09);
+}
+.sidebar-top{padding-top:29px}
+.brand{color:var(--vintage-dark);letter-spacing:-1.1px}
+.brand-mark{
+  background:#84634c;
+  color:#fff4dc;
+  border:1px solid #6b4a32;
+  box-shadow:inset 0 0 0 2px rgba(255,247,218,.18),2px 3px 0 #c7ad90;
+  transform:rotate(-8deg);
+  border-radius:9px;
+}
+.brand-dot{color:var(--vintage-rose)}
+.brand-subtitle{color:#9b8770}
+.primary-button{
+  background:linear-gradient(160deg,#8d6b50,#76543e);
+  border-color:#76543e;
+  border-radius:8px;
+  color:#fff9ec;
+  box-shadow:0 3px 0 rgba(75,48,28,.16),0 7px 15px rgba(88,58,36,.1);
+}
+.primary-button:hover{background:#674833}
+.outlined-button{
+  background:#fff9eb;
+  border:1px solid #cbb89b;
+  border-radius:8px;
+  color:#755b45;
+}
+.outlined-button:hover{background:#eee0c8}
+.sidebar-option{color:#695443;border-radius:5px}
+.sidebar-option:hover{background:#e7d8bf;color:#63452d}
+#openCalendarPage{
+  margin:15px 23px 0;
+  width:calc(100% - 46px);
+  padding:11px 14px;
+  background:#eee1c8;
+  border:1px solid #d4bda0;
+  box-shadow:2px 2px 0 rgba(109,73,40,.09);
+  color:#695039;
+  font-weight:760;
+  letter-spacing:.02em;
+}
+#openCalendarPage:hover{background:#e5d2b4}
+.sidebar-search{
+  background:#f9f1e3;
+  border-color:#deccb3;
+  border-radius:7px;
+  color:#9c8871;
+  margin-top:19px;
+}
+.sidebar-search input{color:#554536}
+.sidebar-search input::placeholder{color:#a59583}
+.list-heading{color:#796550}
+.list-count{
+  background:#e6d4bc;
+  color:#7b5b40;
+  border:1px solid #d2b899;
+}
+.entry-list-date{color:#987354}
+.entry-list-title{color:#463729}
+.entry-list-excerpt{color:#95836f}
+.list-entry{border-radius:7px}
+.list-entry:hover{background:#f4e8d4}
+.list-entry.active{
+  background:#e9dac3;
+  box-shadow:inset 0 0 0 1px #d7c1a3;
+}
+.list-entry.active:before{background:#916748}
+.list-entry-delete{color:#9b766b}
+.sidebar-bottom{border-color:#d4c1a7}
+.sidebar-bottom p{color:#9b876f}
+.sidebar-bottom #cloudUserEmail{color:#765a45}
+.calendar-card{
+  background:
+    radial-gradient(circle at 25% 35%,rgba(146,109,64,.043) 0 1px,transparent 1.5px) 0 0/18px 21px,
+    #f9f1e2;
+  border:1px solid #dac8ad;
+  border-radius:6px;
+  box-shadow:2px 4px 0 rgba(120,83,47,.045);
+}
+.calendar-header strong{font-family:Georgia,"Nanum Myeongjo",serif;color:#4d3b2b}
+.calendar-arrow{color:#85634b}
+.calendar-arrow:hover,.calendar-today:hover{background:#eadcc3}
+.calendar-today{border-color:#d6bea0;color:#7c593e;background:#fffaed}
+.calendar-weekdays{color:#967e66}
+.calendar-weekdays span:first-child{color:#aa6c5b}
+.calendar-weekdays span:last-child{color:#777e65}
+.calendar-day{color:#5b4d3e;border-radius:5px}
+.calendar-day:hover{background:#ebdcc2}
+.calendar-day.today{border-color:#9a7555}
+.calendar-day.has-entry{color:#815a3f}
+.calendar-day.has-entry:after,.calendar-legend-dot{background:#a36d4a}
+.calendar-day.active{background:#806047;color:#fff9ef;border-color:#6f503d}
+.calendar-day.active.has-entry:after{background:#f9e9cd}
+.calendar-legend{color:#9b896f}
+.cleanup-empty-button{
+  background:#f7eddf;
+  color:#80624b;
+  border-color:#d4bda1;
+}
+.cleanup-empty-button:hover{background:#e8d6bb}
+.month-manage{border-color:#d8c5a9}
+.month-manage strong{color:#7e624a}
+.month-manage input[type=month]{
+  background:#fff9ee;
+  color:#684f3c;
+  border-color:#d6c0a2;
+  border-radius:5px;
+}
+.topbar{
+  background:#f5eada;
+  border-bottom:1px solid #ceb99a;
+  box-shadow:0 2px 7px rgba(92,63,38,.035);
+}
+.topbar-breadcrumb{color:#a08c73}
+.topbar-breadcrumb strong{color:#69503c}
+.save-state{color:#8b775f}
+.save-dot{background:#7e9a7b}
+.save-state.saving .save-dot{background:#b99048}
+.save-state.error .save-dot{background:#b65e52}
+.page-wrap{max-width:1140px}
+.eyebrow{color:#9b7c58;font-family:Georgia,serif;letter-spacing:2.4px}
+.page-intro h1{
+  color:#4b3929;
+  font-family:"Nanum Myeongjo","Batang",Georgia,serif;
+  font-weight:760;
+  letter-spacing:-1.3px;
+}
+.page-intro em{color:#906344}
+.sparkle{color:#9c8564}
+.intro-desc{color:#8a7761}
+.date-sticker{
+  position:relative;
+  color:#765337;
+  background:
+    radial-gradient(circle at 25% 50%,rgba(156,118,73,.055) 0 1px,transparent 2px) 0 0/13px 15px,
+    #e6d2b0;
+  border:1px solid #c8aa80;
+  border-radius:4px;
+  box-shadow:2px 4px 8px rgba(92,59,30,.16);
+  transform:rotate(6deg);
+}
+.date-sticker:before{
+  content:"";
+  position:absolute;
+  top:-8px;
+  left:calc(50% - 21px);
+  height:16px;
+  width:42px;
+  transform:rotate(-9deg);
+  background:rgba(168,143,102,.46);
+  border-left:1px dashed #d5b98f;
+  border-right:1px dashed #d5b98f;
+  pointer-events:none;
+}
+.date-sticker strong{font-family:Georgia,serif}
+.editor-card,
+.mini-calendar-page{
+  background:
+    radial-gradient(circle at 20% 15%,rgba(163,122,70,.04) 0 1px,transparent 1.4px) 0 0/22px 26px,
+    radial-gradient(circle at 60% 65%,rgba(164,113,62,.03) 0 1px,transparent 1.5px) 0 0/32px 31px,
+    linear-gradient(170deg,#fff9ed,#f5ead7 100%);
+  border:1px solid #d7c1a0;
+  border-radius:5px;
+  box-shadow:0 3px 0 rgba(126,91,52,.08),0 13px 32px rgba(87,60,37,.13);
+}
+.editor-card{position:relative}
+.editor-card:before{
+  content:"";
+  pointer-events:none;
+  position:absolute;
+  left:50%;top:-9px;
+  width:72px;height:17px;
+  transform:translateX(-50%) rotate(-3deg);
+  background:rgba(181,155,111,.47);
+  border-inline:2px dashed rgba(255,249,231,.37);
+}
+.field-group label,.mini-fields label{color:#877059}
+.required{color:#a66b59}
+.date-input-wrap input,
+.mini-fields input,.mini-fields select{
+  background:#fbf4e6;
+  border:1px solid #d8c5a8;
+  color:#5c4734;
+  border-radius:5px;
+}
+.date-display{color:#947857}
+.edited-at{color:#9f8c78}
+.title-row input{
+  color:#453529;
+  font-family:"Nanum Myeongjo","Batang",Georgia,serif;
+  font-weight:750;
+}
+.title-row input::placeholder{color:#b39e87}
+.delete-button{border-color:#decfbd;color:#99776a;background:#fcf5e8}
+.delete-button:hover{color:#aa564e;background:#f5e0d7}
+.editor-divider{background:#e3d4bf}
+.view-tabs{background:#eee1ce;border-radius:5px}
+.view-tabs button{color:#977f69;border-radius:4px}
+.view-tabs button.active{
+  background:#fffaef;
+  color:#6d4e39;
+  box-shadow:0 1px 4px rgba(92,65,38,.13);
+}
+.editor-hint{color:#a08b73}
+.kbd-hint{background:#eee2d0;border-color:#d7c4a8}
+.format-toolbar{
+  border:1px solid #ddcab0;
+  border-radius:5px;
+  background:#f7eddd;
+}
+.format-toolbar button{color:#6f5a47}
+.format-toolbar button:hover{color:#664431;background:#e6d2b8}
+.toolbar-divider{background:#d4bfa2}
+/* Intentional unruled paper for handwriting and markdown preview. */
+.writing-area{
+  border:1px solid rgba(202,175,142,.5);
+  border-radius:3px;
+  background:rgba(255,252,243,.28);
+  box-shadow:inset 0 0 14px rgba(141,104,68,.025);
+}
+.editing-pane,.preview-pane{background:transparent}
+.editing-pane textarea{
+  background:transparent;
+  color:#493a2f;
+  font-size:15px;
+  line-height:1.83;
+  letter-spacing:0;
+  border:0;
+  border-radius:0;
+  box-shadow:none;
+}
+.editing-pane textarea::placeholder{color:#a99983}
+.md-preview{background:transparent;color:#493a2f;font-size:15px;line-height:1.8}
+.md-preview h1,.md-preview h2,.md-preview h3{color:#493827}
+.md-preview blockquote{background:#eee0ca;border-left-color:#aa8161;color:#66523e}
+.md-preview hr{border-top-color:#d9c3a3}
+.md-preview a{color:#926343}
+.md-preview code{background:#e9dac3;color:#4e3b2d}
+.md-preview pre{background:#49392e;color:#f9efdb}
+.md-preview .preview-placeholder{color:#b5a38e}
+.md-preview input[type=checkbox]{accent-color:#876346}
+.word-info{color:#9e8a74}
+.attachments-section{border-top-color:#d7c2a6}
+.section-label{color:#9b856c}
+.section-label>div{color:#5f4935}
+.section-glyph{color:#a07856}
+.attachment-count{color:#795d43;background:#e7d5bc}
+.attach-button{
+  background:#fbf1e2;
+  color:#78563e;
+  border-color:#bfa17f;
+  border-radius:5px;
+}
+.attach-button:hover{background:#efe0c9}
+.attach-button.secondary{border-color:#d7c2a8;background:#fffaef;color:#7f654c}
+.attach-button.recording{border-color:#b77d6f;background:#f8e9dc}
+.attachment-item{
+  background:#fffbf0;
+  border:5px solid #fffbf0;
+  border-bottom-width:12px;
+  border-radius:2px;
+  box-shadow:1px 3px 9px rgba(91,62,36,.15);
+}
+.attachment-visual{background:#e9dac3;color:#897052}
+.attachment-name{color:#6f5946}
+.attachment-download{color:#845e45;border-top-color:#e6d7bf}
+.upload-tip,.footer-note{color:#97846d}
+.footer-note span{color:#a48163}
+.icon-button{color:#82664d}
+.icon-button:hover{background:#e9d9c2}
+.export-dialog,.day-card-dialog{
+  background:
+    radial-gradient(circle at 22% 34%,rgba(147,113,69,.037) 0 1px,transparent 1.5px) 0 0/18px 18px,
+    #fff7e8;
+  border:1px solid #cdb395;
+  border-radius:10px;
+  color:#49382c;
+  box-shadow:0 22px 70px rgba(51,34,22,.3);
+}
+.export-dialog::backdrop,.day-card-dialog::backdrop{background:rgba(44,33,27,.64)}
+.dialog-heading h2,.day-card-header h2{
+  font-family:"Nanum Myeongjo","Batang",Georgia,serif;
+  color:#4c3728;
+}
+.dialog-label,.day-card-label{color:#71553e}
+.dialog-input,#dayCardNote{background:#fffaf0;color:#503e30;border-color:#d4bea0}
+.export-help,.day-card-help,.day-card-status{color:#917b63}
+.export-options button{background:#fffaf0;border-color:#d8c2a2;border-radius:6px}
+.export-options button:hover{border-color:#ac8965;background:#f1e2cc}
+.export-options strong{color:#543d2a}
+.export-options small{color:#94816c}
+.export-icon{background:#ead9c1;color:#78543b}
+.pdf-icon{background:#f1dcd3;color:#9f604f}
+.png-icon{background:#dfe5d2;color:#6c795e}
+.zip-icon{background:#e1ded4;color:#786953}
+.option-arrow,.export-progress{color:#936c4c}
+.day-photo-select{background:#f8edda;color:#76543b;border-color:#bea181}
+.day-existing-photo img{background:#e8d9c5}
+#dayCropCanvas{background:#e9dac6}
+.day-card-status{overflow-wrap:anywhere}
+.day-card-actions button{border-radius:7px}
+.toast{background:#523c2f;color:#fff5e4;box-shadow:0 5px 19px rgba(56,36,21,.28)}
+.toast.save-success{border:1px solid rgba(255,244,220,.3)}
+/* Vintage calendar: hand-cut paper squares, Polaroid thumbnails, muted dates */
+.mini-calendar-page{position:relative}
+.mini-calendar-header h2{
+  color:#4c3728;
+  font-family:"Nanum Myeongjo","Batang",Georgia,serif;
+  letter-spacing:-.5px;
+}
+.mini-calendar-header h2:before{
+  content:"✿";
+  display:inline-block;
+  margin-right:11px;
+  color:#ad8564;
+  transform:rotate(-16deg);
+  font-family:Georgia,serif;
+}
+.mini-calendar-toolbar{margin-bottom:20px}
+.mini-calendar-toolbar strong{color:#543f2c;font-family:Georgia,"Nanum Myeongjo",serif}
+.mini-calendar-toolbar button{
+  background:#eadbc3;
+  color:#76543b;
+  border:1px solid #d8c0a2;
+  border-radius:5px;
+}
+.mini-calendar-toolbar button:hover{background:#ddc6a5}
+.mini-calendar-weekdays{color:#7f6953;font-family:Georgia,"Nanum Myeongjo",serif}
+.mini-calendar-weekdays span:first-child{color:#ab6d59}
+.mini-calendar-weekdays span:last-child{color:#717e65}
+.mini-calendar-grid{gap:4px}
+.mini-day{
+  background:rgba(255,252,242,.67);
+  border:1px solid #d2bda0;
+  border-radius:2px;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.47);
+  transition:background .16s,border-color .16s;
+  overflow:hidden;
+}
+.mini-day:hover{background:#f1e3ce;border-color:#ad8e6b}
+.mini-day.filled{background:#f6e8d3;border-color:#c6a786}
+.mini-date{color:#614a36;font-family:Georgia,"Nanum Myeongjo",serif}
+.mini-photo{
+  background:#e9dac3;
+  border:3px solid #fffaf0;
+  box-shadow:0 1px 3px rgba(82,53,31,.15);
+  border-radius:1px;
+  color:#a38668;
+}
+.mini-photo img{object-fit:cover}
+.mini-line{
+  color:#644f3c;
+  font-family:Pretendard,-apple-system,BlinkMacSystemFont,sans-serif;
+  font-weight:600;
+  overflow:hidden;
+  overflow-wrap:anywhere;
+  word-break:break-word;
+  max-height:2.6em;
+}
+.mini-hint{color:#937c61}
+.month-manage input[type=month]{background:#fff9ea;border-color:#cdb395}
+@media(max-width:1050px){
+  .page-wrap{padding:32px 26px 44px}
+}
+@media(max-width:740px){
+  .sidebar{box-shadow:5px 0 25px rgba(51,35,24,.22)}
+  .sidebar-scrim.visible{background:rgba(43,32,24,.52)}
+  .main-panel{min-height:100dvh}
+  .page-wrap{padding:28px 13px 38px}
+  .page-intro h1{font-size:27px}
+  .date-sticker{transform:rotate(5deg)}
+  .editor-card{padding:25px 16px 24px;border-radius:4px}
+  .editing-pane textarea,.md-preview{padding:20px 15px;font-size:14px}
+  .mini-calendar-page{padding:14px 9px;border-radius:4px}
+  .mini-calendar-header{padding:0 5px}
+  .mini-calendar-header h2{font-size:20px}
+  .mini-calendar-grid,.mini-calendar-weekdays{gap:3px}
+  .mini-day{padding:3px;min-width:0;height:100px;gap:3px}
+  .mini-date{font-size:10px}
+  .mini-photo{height:47px;border-width:2px}
+  .mini-line{font-size:9px;line-height:1.2;max-height:2.4em}
+  .mini-calendar-toolbar button{padding:8px 9px}
+  .mini-calendar-toolbar strong{min-width:100px;font-size:15px}
+  .day-card-dialog{border-radius:9px}
+}
+@media(max-width:370px){
+  .mini-day{height:94px}
+  .mini-photo{height:41px}
+  .mini-calendar-header h2{font-size:18px}
+}
+@media(prefers-reduced-motion:reduce){
+  .mini-day{transition:none}
+}
