@@ -50,9 +50,9 @@
       const verified=fail(await client.auth.getUser())?.user;
       if(!verified||verified.id!==own()||!verified.email_confirmed_at)throw Error('이메일 인증을 먼저 완료해 주세요.');
       if(await api.profile())throw Error('이미 가입된 계정입니다. 로그인해 주세요.');
-      if(!/^[a-z][a-z0-9_]{3,11}$/.test(username))throw Error('아이디 형식을 확인해 주세요.');
+      if(!/^[a-z0-9]{4,12}$/.test(username))throw Error('아이디 형식을 확인해 주세요.');
       if(!(await api.usernameAvailable(username)))throw Error('이미 사용 중인 아이디입니다.');
-      if(typeof password!=='string'||password.length<8||password.length>16)throw Error('비밀번호는 8~16자로 설정해 주세요.');
+      if(typeof password!=='string'||!/^[\x21-\x7e]{8,16}$/.test(password))throw Error('비밀번호는 영문·숫자·특수문자로 8~16자여야 해요.');
       fail(await client.auth.updateUser({password}));
       try{
         fail(await client.from('diary_profiles').insert({user_id:own(),username}));
