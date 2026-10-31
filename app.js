@@ -222,6 +222,7 @@
       if(entries.length) await selectEntry([...entries].sort((a,b)=>b.updatedAt.localeCompare(a.updatedAt))[0].id,false);
       else await newEntry(dayString(),false,false);
       renderList();showHome();$('diaryApp').hidden=false;
+      await restoreLatestPending();
       if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) navigator.serviceWorker.register('./sw.js').catch(()=>{});
     } catch(e) {
       console.error(e);setSave('error','저장소 사용 불가');toast('브라우저의 저장소를 열 수 없어요. 일반 모드에서 다시 열어 주세요.');
@@ -233,10 +234,10 @@
     el.charCount.textContent=el.body.value.length.toLocaleString()+' / '+MAX_BODY_CHARS.toLocaleString()+'자';
   }
   function textWithinLimits(){
-    // Retain long records created before these limits; never truncate existing data.
-    if(!isDraft)return true;
-    return el.title.value.length<=MAX_TITLE_CHARS && el.body.value.length<=MAX_BODY_CHARS &&
-      (current?.shortNote||'').length<=MAX_NOTE_CHARS;
+    // Historical saved entries may exceed today's limits; never truncate them.
+    return el.title.value.length<=Math.max(MAX_TITLE_CHARS,savedState?.title?.length||0) &&
+      el.body.value.length<=Math.max(MAX_BODY_CHARS,savedState?.body?.length||0) &&
+      (current?.shortNote||'').length<=Math.max(MAX_NOTE_CHARS,savedState?.shortNote?.length||0);
   }
   function refreshCurrentFromForm() {
     if(!current) return;
@@ -316,19 +317,16 @@
     el.edited.textContent=current?.updatedAt ? `${new Date(current.updatedAt).toLocaleDateString('ko-KR')} 수정` : '';
     updateInputCounts();renderPreview();
   }
-  function canLeaveDraft() {
-    if(!isDraft || !current) return true;
-    refreshCurrentFromForm();
-    return !(current.title.trim() || current.body.trim() || current.shortNote?.trim() || current.weather || attachments.length)
-      || confirm('저장하지 않은 내용이 있어요. 저장하지 않고 이동할까요?');
-  }
+  function canLeaveDraft(){return canLeaveUnsaved();}
   async function selectEntry(id, navigate = true) {
     if(current?.id===id){if(navigate)showEditor();return;}
     if(!canLeaveDraft())return;
     await flushSave();
-    current=entries.find(e=>e.id===id);
-    if(!current)return;
+    const stored=entries.find(e=>e.id===id);
+    if(!stored)return;
+    current={...stored};
     isDraft=false;fillEditor();attachments=db ? await getAll('attachments','entryId',id) : [];
+    setSavedBaseline();
     renderAttachments();renderList();setSave('','저장됨');$('deleteEntryBtn').textContent='이 일기 전체 삭제';if(navigate)showEditor();
   }
   async function newEntry(date = dayString(), focusTitle = true, navigate = true) {
@@ -337,7 +335,7 @@
     const timestamp=new Date().toISOString();
     current={id:makeId(),date,title:'',body:'',weather:'',shortNote:'',createdAt:timestamp,updatedAt:timestamp};
     isDraft=true;
-    fillEditor();attachments=[];renderAttachments();renderList();setSave('','저장 전');
+    fillEditor();attachments=[];savedState=null;savedFileIds=new Set();renderAttachments();renderList();setSave('','저장 전');
     el.edited.textContent='저장 전';$('deleteEntryBtn').textContent='작성 내용 지우기';if(navigate)showEditor();if(focusTitle&&navigate)el.title.focus();
   }
   function setCalendarMonth(iso) {
@@ -348,6 +346,7 @@
   }
   const WEATHER_EMOJI={sunny:'☀️',partly_cloudy:'🌤️',cloudy:'☁️',rain:'🌧️',snow:'❄️',wind:'💨',other:'🌈'};
   function showPage(page){
+    if(page!=='diary'&&!$('editorPage').hidden&&!canLeaveUnsaved())return false;
     document.activeElement?.blur?.();
     $('diaryApp').dataset.page=page;
     calendarPageOpen=page==='calendar';
@@ -363,6 +362,7 @@
     if(page==='home')renderHome();
     if(page==='mypage')renderMyPage();
     closeSidebar();
+    return true;
   }
   function showEditor(){showPage('diary');}
   function showMiniCalendar(){showPage('calendar');}
@@ -642,37 +642,20 @@
     $('entryMetaDialog').showModal();
     $('entryMetaCancel').focus({preventScroll:true});
   }
-  async function saveEntryMeta() {
+  async function saveEntryMeta(){
     if(!current)return;
     const date=el.date.value,weather=$('entryWeather').value,note=$('entryShortNote').value.trim();
     if(!el.date.checkValidity()||!/^\d{4}-\d{2}-\d{2}$/.test(date)){
       $('entryMetaStatus').textContent='날짜를 확인해 주세요.';return;
     }
-    const old={date:current.date,weather:current.weather||'',shortNote:current.shortNote||'',updatedAt:current.updatedAt};
-    if(date===old.date&&weather===old.weather&&note===old.shortNote){
+    if(date===current.date&&weather===(current.weather||'')&&note===(current.shortNote||'')){
       $('entryMetaDialog').close();return;
     }
-    const button=$('entryMetaSave');
-    button.disabled=true;$('entryMetaStatus').textContent='저장 중…';
-    try{
-      await flushSave();
-      current.date=date;current.weather=weather;current.shortNote=note;
-      if(isDraft){
-        renderEntryMeta();setCalendarMonth(date);renderList();setSave('','저장 전');
-        $('entryMetaDialog').close();
-        toast('정보를 반영했어요. 일기 저장 버튼을 누르면 저장돼요.');
-      }else{
-        const saved=await saveCurrent(true);
-        if(!saved)throw Error('서버 저장을 확인하지 못했어요.');
-        renderEntryMeta();setCalendarMonth(date);renderList();
-        $('entryMetaDialog').close();
-      }
-    }catch(e){
-      current.date=old.date;current.weather=old.weather;current.shortNote=old.shortNote;current.updatedAt=old.updatedAt;
-      renderEntryMeta();
-      $('entryMetaStatus').textContent='저장 실패: 변경하지 않았어요. 다시 시도해 주세요.';
-      console.error(e);
-    }finally{button.disabled=false;}
+    current.date=date;current.weather=weather;current.shortNote=note;
+    renderEntryMeta();setCalendarMonth(date);renderList();
+    queueSave();
+    $('entryMetaDialog').close();
+    toast('변경사항을 적용했어요. 일기 저장 버튼으로 확정해 주세요.');
   }
   function inlineMarkdown(raw) {
     const tokens=[];
