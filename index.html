@@ -19,7 +19,7 @@
     #startupIntro.is-finished{opacity:0;visibility:hidden;pointer-events:none}
     #startupIntro[hidden]{display:none!important}
   </style>
-  <link rel="stylesheet" href="./vintage.css?v=36" />
+  <link rel="stylesheet" href="./vintage.css?v=37" />
   <title>일상 기록</title>
 </head>
 <body>
@@ -73,8 +73,8 @@
         </div>
         <section class="month-manage" aria-label="월별 기록 관리">
   <strong>월별 백업 · 정리</strong>
-  <p class="archive-month-description">사이드 메뉴 달력에 표시된 월을 관리해요.</p>
-  <div class="archive-month-label" id="archiveMonthLabel">현재 달력의 월</div>
+  <p class="archive-month-description">백업하거나 삭제할 달을 선택하세요.</p>
+  <input type="month" id="archiveMonth" aria-label="월별 백업 및 삭제할 달 선택" />
   <button type="button" id="archiveMonthBtn" class="sidebar-option">월별 ZIP 백업</button>
   <button type="button" id="deleteMonthBtn" class="sidebar-option archive-delete-button">선택한 월 기록 삭제</button>
   <p id="archiveStatus" role="status">백업은 선택 사항이에요. 삭제한 기록은 복구할 수 없어요.</p>
@@ -282,6 +282,6 @@
   <script src="./supabase-config.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0" defer></script>
   <script src="./cloud.js?v=13" defer></script>
-  <script src="./app.js?v=36" defer></script>
+  <script src="./app.js?v=37" defer></script>
 </body>
 </html>
