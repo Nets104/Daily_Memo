@@ -28,6 +28,89 @@
   let recorder = null, recordStream = null, recordChunks = [], recordingEntryId = null;
   let isExporting = false;
   let isDraft = false, isSavingDraft = false;
+  let savedState=null,savedFileIds=new Set(),pendingTimer=null,pendingWrites=Promise.resolve();
+  const pendingScope=()=>cloudMode&&cloud()?.user?.id?'user:'+cloud().user.id:'local';
+  const pendingKey=id=>pendingScope()+':'+id;
+  const entryFields=e=>({
+    date:e?.date||'',title:e?.title||'',body:e?.body||'',weather:e?.weather||'',
+    shortNote:e?.shortNote||'',coverAttachmentId:e?.coverAttachmentId||null
+  });
+  function setSavedBaseline(){
+    savedState=entryFields(current);savedFileIds=new Set(attachments.map(f=>f.id));
+  }
+  function hasUnsavedChanges(){
+    if(!current)return false;
+    const state={...current,title:el.title.value,body:el.body.value};
+    if(isDraft)return !!(state.title.trim()||state.body.trim()||state.shortNote?.trim()||
+      state.weather||attachments.length);
+    return JSON.stringify(entryFields(state))!==JSON.stringify(savedState)||
+      attachments.length!==savedFileIds.size||attachments.some(f=>!savedFileIds.has(f.id));
+  }
+  function openPendingDb(){
+    return new Promise((resolve,reject)=>{
+      const req=indexedDB.open('harugyeol-unsaved',1);
+      req.onupgradeneeded=()=>{if(!req.result.objectStoreNames.contains('drafts'))req.result.createObjectStore('drafts',{keyPath:'key'});};
+      req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error);
+    });
+  }
+  async function pendingOperation(mode,action){
+    const database=await openPendingDb();
+    try{
+      return await new Promise((resolve,reject)=>{
+        const tx=database.transaction('drafts',mode),store=tx.objectStore('drafts');
+        const req=action(store);
+        tx.oncomplete=()=>resolve(req?.result);
+        tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error);
+      });
+    }finally{database.close();}
+  }
+  function stagePending(){
+    clearTimeout(pendingTimer);pendingTimer=null;
+    if(!current||!hasUnsavedChanges())return;
+    const draft={key:pendingKey(current.id),scope:pendingScope(),
+      entry:{...current,title:el.title.value,body:el.body.value},
+      files:[...attachments],isDraft,changedAt:new Date().toISOString()};
+    pendingWrites=pendingWrites.catch(()=>{}).then(()=>pendingOperation('readwrite',store=>store.put(draft)));
+    pendingWrites.catch(e=>{console.warn('임시 보관 실패',e);setSave('error','임시 보관 실패');});
+  }
+  function schedulePending(){
+    clearTimeout(pendingTimer);pendingTimer=setTimeout(stagePending,220);
+  }
+  async function clearPending(id,scope=pendingScope()){
+    clearTimeout(pendingTimer);pendingTimer=null;
+    try{
+      await pendingWrites.catch(()=>{});
+      await pendingOperation('readwrite',store=>store.delete(scope+':'+id));
+    }catch(e){console.warn('임시 보관 정리 실패',e);}
+  }
+  async function restoreLatestPending(){
+    try{
+      const all=await pendingOperation('readonly',store=>store.getAll())||[];
+      const draft=all.filter(x=>x.scope===pendingScope()).sort((a,b)=>b.changedAt.localeCompare(a.changedAt))[0];
+      if(!draft?.entry?.id)return false;
+      const saved=entries.find(e=>e.id===draft.entry.id);
+      if(!draft.isDraft&&!saved)return false;
+      if(saved){
+        current={...draft.entry};isDraft=false;
+        const existingFiles=await getAll('attachments','entryId',saved.id);
+        savedState=entryFields(saved);savedFileIds=new Set(existingFiles.map(f=>f.id));
+      }else{
+        current={...draft.entry};isDraft=true;savedState=null;savedFileIds=new Set();
+      }
+      attachments=draft.files||[];
+      fillEditor();renderAttachments();renderList();
+      setSave('','임시 보관됨 · 저장 필요');
+      $('deleteEntryBtn').textContent=isDraft?'작성 내용 지우기':'이 일기 전체 삭제';
+      showEditor();
+      toast('작성 중이던 기록을 복원했어요. 저장 버튼으로 확정해 주세요.');
+      return true;
+    }catch(e){console.warn('임시 보관 복원 실패',e);return false;}
+  }
+  function canLeaveUnsaved(){
+    if(!hasUnsavedChanges())return true;
+    stagePending();
+    return confirm('저장하지 않은 변경사항이 있어요. 이동해도 기기에 임시 보관되지만 서버에는 저장되지 않습니다. 계속할까요?');
+  }
   let calendarYear = new Date().getFullYear(), calendarMonth = new Date().getMonth();
   let archivedMonth=null;
   let cardDate=null,cardPhoto=null,cardCoverFileId=null,cardObjectUrl=null,cardImage=null,cardZoom=1,cardOffsetX=0,cardOffsetY=0,cardDragging=false,cardPointer=null;
