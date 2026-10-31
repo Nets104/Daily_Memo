@@ -511,6 +511,7 @@
     $('myPageCount').textContent=entries.length+'개';
     $('myPageLogout').hidden=!cloudMode;
     $('myPageSignIn').hidden=!guestMode;
+    $('myPageGuestNotice').hidden=!guestMode;
     $('myPageDanger').hidden=!cloudMode;
   }
   function closeDayCard(){
