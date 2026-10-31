@@ -325,8 +325,7 @@
       try{
         const files=await getAll('attachments','entryId',entry.id);
         if(cardDate!==date)return;
-        const cover=files.find(f=>f.id===entry.coverAttachmentId && f.type.startsWith('image/'))
-          ||files.find(f=>/^달력_썸네일_/.test(f.name||'')&&f.type.startsWith('image/'));
+        const cover=files.find(f=>f.id===entry.coverAttachmentId && f.type.startsWith('image/'));
         if(cover){
           cardCoverFileId=cover.id;
           const url=URL.createObjectURL(cover.blob);cardObjectUrl=url;
