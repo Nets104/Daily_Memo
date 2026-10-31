@@ -270,6 +270,7 @@
   const WEATHER_EMOJI={sunny:'☀️',partly_cloudy:'🌤️',cloudy:'☁️',rain:'🌧️',snow:'❄️',wind:'💨',other:'🌈'};
   function showPage(page){
     document.activeElement?.blur?.();
+    $('diaryApp').dataset.page=page;
     calendarPageOpen=page==='calendar';
     $('homePage').hidden=page!=='home';
     $('calendarPage').hidden=page!=='calendar';
