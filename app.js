@@ -435,7 +435,10 @@
       const updated={...entry,coverAttachmentId:null,updatedAt:new Date().toISOString()};
       await writeRecords('entries',[updated]);
       entries=entries.map(e=>e.id===updated.id?updated:e);
-      if(current?.id===updated.id)current=updated;
+      const editorDirty=current?.id===updated.id&&hasUnsavedChanges();
+      if(current?.id===updated.id){
+        current=editorDirty?{...current,coverAttachmentId:null,updatedAt:updated.updatedAt}:{...updated};
+      }
       let cleanupError=null;
       try{await deleteOne('attachments',oldId);}catch(e){cleanupError=e;console.error('썸네일 원본 정리 실패',e);}
       cardCoverFileId=null;
@@ -443,8 +446,15 @@
       if(cardObjectUrl){URL.revokeObjectURL(cardObjectUrl);cardObjectUrl=null;}
       button.hidden=true;
       if(current?.id===updated.id){
-        attachments=await getAll('attachments','entryId',updated.id);
-        renderAttachments();fillEditor();
+        if(editorDirty){
+          attachments=attachments.filter(f=>f.id!==oldId);
+          savedState=entryFields(updated);savedFileIds.delete(oldId);
+          renderEntryMeta();queueSave();
+        }else{
+          attachments=await getAll('attachments','entryId',updated.id);
+          setSavedBaseline();fillEditor();
+        }
+        renderAttachments();
       }
       renderList();
       if(cleanupError){
@@ -504,7 +514,21 @@
           catch(err){console.warn('이전 썸네일 정리 실패:',err);}
         }
       }
-      if(current?.id===entry.id){current=entry;attachments=await getAll('attachments','entryId',entry.id);fillEditor();renderAttachments();}
+      if(current?.id===entry.id){
+        const editorDirty=hasUnsavedChanges();
+        current=editorDirty?
+          {...current,shortNote:entry.shortNote,coverAttachmentId:entry.coverAttachmentId,updatedAt:entry.updatedAt}:
+          {...entry};
+        const storedFiles=await getAll('attachments','entryId',entry.id);
+        if(editorDirty){
+          if(file&&!attachments.some(f=>f.id===file.id))attachments.push(file);
+          if(previousCoverId)attachments=attachments.filter(f=>f.id!==previousCoverId||f.id===file?.id);
+          savedState=entryFields(entry);
+          savedFileIds=new Set(storedFiles.map(f=>f.id));
+          renderEntryMeta();queueSave();
+        }else{attachments=storedFiles;setSavedBaseline();fillEditor();}
+        renderAttachments();
+      }
       renderList();closeDayCard();toast('저장되었습니다.', true);
     }catch(e){
       console.error(e);
@@ -620,6 +644,7 @@
     await flushSave();
     try{
       await deleteEntryData(id);
+      await clearPending(id);
       entries=entries.filter(e=>e.id!==id);
       if(current?.id===id){
         current=null;attachments=[];isDraft=false;
@@ -1171,8 +1196,9 @@
     $('deleteEntryBtn').addEventListener('click',async()=>{
       if(!current)return;
       if(isDraft){
-        if(!confirm('저장하지 않은 작성 내용을 지울까요?'))return;
-        const date=current.date;
+        if(!confirm('임시 작성 내용과 첨부 파일을 지울까요?'))return;
+        const date=current.date,id=current.id;
+        await clearPending(id);
         current=null;attachments=[];
         await newEntry(date);
         toast('임시 작성 내용을 지웠어요.');
