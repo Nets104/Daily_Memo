@@ -32,6 +32,8 @@
   let archivedMonth=null;
   let cardDate=null,cardPhoto=null,cardObjectUrl=null,cardImage=null,cardZoom=1,cardOffsetX=0,cardOffsetY=0,cardDragging=false,cardPointer=null;
   let calendarPageOpen=false,miniPhotoToken=0,highlightedCalendarDate=null;const miniPhotoUrls=[];
+  const MAX_DIARY_PHOTOS=10;
+  const isCalendarCover=f=>f.id===current?.coverAttachmentId||/^달력_썸네일_/.test(f.name||'');
 
   function dayString(date = new Date()) {
     return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
@@ -345,7 +347,8 @@
   }
   function renderMiniCalendar(){
     if(!calendarPageOpen)return;
-    $('miniMonth').textContent=`${calendarYear}년 ${calendarMonth+1}월`;
+    $('miniYear').textContent=`${calendarYear}년`;
+    $('miniMonth').textContent=`${calendarMonth+1}월`;
     const first=new Date(calendarYear,calendarMonth,1).getDay(),last=new Date(calendarYear,calendarMonth+1,0).getDate(),prefix=`${calendarYear}-${String(calendarMonth+1).padStart(2,'0')}-`;
     const byDay=new Map();
     for(const entry of [...entries].sort((a,b)=>b.updatedAt.localeCompare(a.updatedAt)))if(entry.date.startsWith(prefix)&&!byDay.has(entry.date))byDay.set(entry.date,entry);
@@ -579,29 +582,55 @@
   function openSidebar(){el.sidebar.classList.add('open');el.scrim.classList.add('visible');$('openSidebar').setAttribute('aria-expanded','true');}
   function revokeMediaUrls(){for(const u of mediaUrls)URL.revokeObjectURL(u);mediaUrls=[];}
   function renderAttachments(){
-    revokeMediaUrls();el.attachCount.textContent=attachments.length;el.attachList.replaceChildren();
-    for(const file of attachments){
-      const outer=document.createElement('div');outer.className='attachment-item';
+    if($('photoPreviewDialog').open)$('photoPreviewDialog').close();
+    revokeMediaUrls();
+    const shown=attachments.filter(f=>!isCalendarCover(f));
+    el.attachCount.textContent=shown.length;el.attachList.replaceChildren();
+    const wall=document.createElement('div');wall.className='photo-wall';
+    const files=document.createElement('div');files.className='attachment-files';
+    for(const file of shown){
+      const isPhoto=file.type.startsWith('image/');
+      const outer=document.createElement('div');outer.className=isPhoto?'attachment-item pinned-photo':'attachment-item media-file-card';
       const visual=document.createElement('div');visual.className='attachment-visual';
-      const u=URL.createObjectURL(file.blob);mediaUrls.push(u);
-      if(file.type.startsWith('image/')){const img=document.createElement('img');img.src=u;img.alt=file.name;img.loading='lazy';visual.append(img);}
-      else if(file.type.startsWith('video/')){const video=document.createElement('video');video.src=u;video.controls=true;video.preload='metadata';visual.append(video);}
-      else if(file.type.startsWith('audio/')){const audio=document.createElement('audio');audio.src=u;audio.controls=true;audio.preload='metadata';visual.append(audio);}
-      else visual.textContent='PDF';
+      const url=URL.createObjectURL(file.blob);mediaUrls.push(url);
+      if(isPhoto){
+        const open=document.createElement('button');open.type='button';open.className='photo-open';
+        open.title='사진 크게 보기';open.setAttribute('aria-label',file.name+' 크게 보기');
+        const img=document.createElement('img');img.src=url;img.alt=file.name;img.loading='lazy';open.append(img);
+        open.addEventListener('click',()=>{$('photoPreviewImage').src=url;$('photoPreviewImage').alt=file.name;$('photoPreviewDialog').showModal();});
+        visual.append(open);
+      }else if(file.type.startsWith('video/')){
+        const video=document.createElement('video');video.src=url;video.controls=true;video.preload='metadata';visual.append(video);
+      }else if(file.type.startsWith('audio/')){
+        const audio=document.createElement('audio');audio.src=url;audio.controls=true;audio.preload='metadata';visual.append(audio);
+      }else visual.textContent='PDF';
       const info=document.createElement('div');info.className='attachment-info';
       const name=document.createElement('span');name.className='attachment-name';name.textContent=file.name;name.title=file.name;
-      const remove=document.createElement('button');remove.type='button';remove.className='attachment-remove';remove.textContent='×';remove.title=`${file.name} 삭제`;remove.setAttribute('aria-label',`${file.name} 삭제`);
-      remove.addEventListener('click',async()=>{if(!confirm(`"${file.name}" 파일을 삭제할까요?`))return;try{if(!isDraft)await deleteOne('attachments',file.id);attachments=attachments.filter(x=>x.id!==file.id);renderAttachments();toast('첨부 파일을 삭제했어요.');}catch(e){toast('삭제하지 못했어요.');}});
+      const remove=document.createElement('button');remove.type='button';remove.className='attachment-remove';
+      remove.textContent='×';remove.title=file.name+' 삭제';remove.setAttribute('aria-label',file.name+' 삭제');
+      remove.addEventListener('click',async()=>{
+        if(!confirm('"'+file.name+'" 파일을 삭제할까요?'))return;
+        try{
+          if(!isDraft)await deleteOne('attachments',file.id);
+          attachments=attachments.filter(x=>x.id!==file.id);
+          renderAttachments();toast('첨부 파일을 삭제했어요.');
+        }catch(e){toast('삭제하지 못했어요.');}
+      });
       info.append(name,remove);
-      const dl=document.createElement('a');dl.className='attachment-download';dl.textContent='원본 다운로드 ↓';dl.href=u;dl.download=file.name;
-      outer.append(visual,info,dl);el.attachList.append(outer);
+      const dl=document.createElement('a');dl.className='attachment-download';
+      dl.textContent='원본 다운로드 ↓';dl.href=url;dl.download=file.name;
+      outer.append(visual,info,dl);
+      (isPhoto?wall:files).append(outer);
     }
+    if(wall.childElementCount)el.attachList.append(wall);
+    if(files.childElementCount)el.attachList.append(files);
   }
   async function addFiles(fileList, entryId=current?.id){
     if(!db){toast('저장소에 접근할 수 없어요.');return;}
     const targetDraft=isDraft && current?.id===entryId;
     if(!targetDraft && !entries.some(e=>e.id===entryId)){toast('해당 기록이 더 이상 열려 있지 않아요.');return;}
     let added=0;
+    let diaryPhotoCount=attachments.filter(f=>f.type.startsWith('image/')&&!isCalendarCover(f)).length;
     for(const file of [...fileList]) {
       if(!/^(image\/|video\/|audio\/|application\/pdf$)/.test(file.type) && !/\.(jpe?g|png|gif|webp|heic|heif|avif|mp4|mov|webm|m4v|mp3|wav|m4a|ogg|flac|aac|pdf)$/i.test(file.name)){toast(`${file.name}: 지원하지 않는 형식이에요.`);continue;}
       const maxBytes=fileLimit(file.type||'',file.name);
@@ -609,8 +638,10 @@
       const ext=file.name.split('.').pop().toLowerCase();
       const inferred={jpg:'image/jpeg',jpeg:'image/jpeg',png:'image/png',gif:'image/gif',webp:'image/webp',heic:'image/heic',heif:'image/heif',avif:'image/avif',mp4:'video/mp4',mov:'video/quicktime',m4v:'video/mp4',webm:'video/webm',mp3:'audio/mpeg',wav:'audio/wav',m4a:'audio/mp4',ogg:'audio/ogg',flac:'audio/flac',aac:'audio/aac',pdf:'application/pdf'};
       const type=file.type || inferred[ext] || 'application/octet-stream';
+      const isPhoto=type.startsWith('image/');
+      if(isPhoto&&diaryPhotoCount>=MAX_DIARY_PHOTOS){toast('일기 사진은 최대 10장까지 첨부할 수 있어요.');continue;}
       const record={id:makeId(),entryId,name:file.name,type,size:file.size,blob:file,createdAt:new Date().toISOString()};
-      try{if(!targetDraft)await writeRecords('attachments',[record]);if(current?.id===entryId)attachments.push(record);added++;}
+      try{if(!targetDraft)await writeRecords('attachments',[record]);if(current?.id===entryId)attachments.push(record);added++;if(isPhoto)diaryPhotoCount++;}
       catch(e){console.error(e);toast('저장 공간이 부족할 수 있어요. 첨부 파일을 저장하지 못했어요.');break;}
     }
     if(current?.id===entryId)renderAttachments();if(added)toast(targetDraft ? `${added}개 첨부를 준비했어요. 기록 저장을 눌러 확정하세요.` : `${added}개 파일을 기록에 첨부했어요.`);
@@ -919,6 +950,9 @@
     document.querySelectorAll('[data-view]').forEach(b=>b.addEventListener('click',()=>setView(b.dataset.view)));
     document.querySelectorAll('[data-format]').forEach(b=>b.addEventListener('click',()=>formatText(b.dataset.format)));
     document.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='s'){e.preventDefault();saveCurrent(true);}if((e.ctrlKey||e.metaKey)&&['b','i'].includes(e.key.toLowerCase())&&document.activeElement===el.body){e.preventDefault();formatText(e.key.toLowerCase()==='b'?'bold':'italic');}});
+    $('photoPreviewClose').addEventListener('click',()=>$('photoPreviewDialog').close());
+    $('photoPreviewDialog').addEventListener('click',e=>{if(e.target===$('photoPreviewDialog'))$('photoPreviewDialog').close();});
+    $('photoPreviewDialog').addEventListener('close',()=>{$('photoPreviewImage').removeAttribute('src');});
     $('uploadBtn').addEventListener('click',()=>el.file.click());el.file.addEventListener('change',()=>{addFiles(el.file.files);el.file.value='';});el.record.addEventListener('click',toggleRecording);
     $('deleteEntryBtn').addEventListener('click',async()=>{
       if(!current)return;
