@@ -279,7 +279,9 @@
       if(i<0)entries.push({...snapshot});else entries[i]={...snapshot};
       isDraft=false;setSavedBaseline();
       await clearPending(snapshot.id);
-      setSave('','저장됨');el.edited.textContent='방금 수정됨';
+      if(hasUnsavedChanges()){setSave('','저장 전 · 임시 보관');schedulePending();}
+      else setSave('','저장됨');
+      el.edited.textContent='방금 수정됨';
       $('deleteEntryBtn').textContent='이 일기 전체 삭제';
       renderList();toast('저장되었습니다.',true);
       return true;
@@ -327,7 +329,21 @@
     current={...stored};
     isDraft=false;fillEditor();attachments=db ? await getAll('attachments','entryId',id) : [];
     setSavedBaseline();
-    renderAttachments();renderList();setSave('','저장됨');$('deleteEntryBtn').textContent='이 일기 전체 삭제';if(navigate)showEditor();
+    let recovered=false;
+    if(navigate){
+      try{
+        await pendingWrites.catch(()=>{});
+        const draft=await pendingOperation('readonly',store=>store.get(pendingKey(id)));
+        if(draft?.entry && draft.changedAt>stored.updatedAt){
+          current={...draft.entry};attachments=draft.files||[];
+          recovered=true;fillEditor();
+        }
+      }catch(e){console.warn('선택한 기록 임시 보관 확인 실패',e);}
+    }
+    renderAttachments();renderList();
+    setSave('',recovered?'임시 보관됨 · 저장 필요':'저장됨');
+    $('deleteEntryBtn').textContent='이 일기 전체 삭제';
+    if(navigate)showEditor();
   }
   async function newEntry(date = dayString(), focusTitle = true, navigate = true) {
     if(!canLeaveDraft())return;
@@ -836,6 +852,7 @@
     if(files.childElementCount)el.attachList.append(files);
   }
   async function addFiles(fileList, entryId=current?.id){
+    if(isSavingDraft){toast('저장 중에는 첨부를 변경할 수 없어요.');return;}
     if(!db){toast('저장소에 접근할 수 없어요.');return;}
     const targetDraft=isDraft && current?.id===entryId;
     if(!targetDraft && !entries.some(e=>e.id===entryId)){toast('해당 기록이 더 이상 열려 있지 않아요.');return;}
