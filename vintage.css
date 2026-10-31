@@ -2152,3 +2152,114 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
   #cloudAuth h2{font-size:24px}
   #cloudAuth .auth-username-row button{padding:0 8px}
 }
+
+
+
+/* v42: guest access, member withdrawal and protected account deletion */
+#cloudAuth .guest-entry{
+  margin:18px 0 0;
+  padding-top:17px;
+  border-top:1px dashed #d8c4a7;
+  text-align:center;
+}
+#cloudAuth .guest-entry .outlined-button{
+  display:block;
+  width:100%;
+  min-height:44px;
+  font-size:13px;
+  font-weight:750;
+}
+#cloudAuth .guest-entry p{
+  margin:9px 0 0;
+  color:#977f67;
+  font:11px/1.6 Pretendard,-apple-system,BlinkMacSystemFont,sans-serif;
+}
+.account-danger{
+  margin-top:26px;
+  padding:17px 14px;
+  border:1px solid #dfb7a7;
+  border-radius:9px;
+  background:#fbf0e6;
+}
+.account-danger[hidden]{display:none!important}
+.account-danger h2{
+  margin:0 0 6px;
+  font:800 15px Pretendard,-apple-system,BlinkMacSystemFont,sans-serif;
+  color:#8d4e43;
+}
+.account-danger p{
+  margin:0 0 13px;
+  font:12px/1.6 Pretendard,-apple-system,BlinkMacSystemFont,sans-serif;
+  color:#9b7568;
+}
+.account-delete-button{
+  border:1px solid #be8173;
+  border-radius:6px;
+  padding:10px 14px;
+  background:#fff7f2;
+  color:#a9443e;
+  font:750 12px Pretendard,-apple-system,BlinkMacSystemFont,sans-serif;
+  cursor:pointer;
+}
+.account-delete-dialog{
+  box-sizing:border-box;
+  width:min(430px,calc(100vw - 28px));
+  max-height:90dvh;
+  overflow:auto;
+  padding:23px 21px;
+  background:#fff9f2;
+  color:#5b4035;
+  border:1px solid #d4aa9b;
+  border-radius:12px;
+  font-family:Pretendard,-apple-system,BlinkMacSystemFont,sans-serif;
+  box-shadow:0 25px 75px rgba(33,20,16,.34);
+}
+.account-delete-dialog::backdrop{background:rgba(35,25,20,.69)}
+.account-delete-dialog h2{
+  margin:0 0 16px;
+  font-size:20px;
+  font-weight:800;
+}
+.account-delete-warning{
+  padding:14px;
+  border:1px solid #d48c80;
+  border-radius:8px;
+  background:#ffebe7;
+  color:#9f312a;
+  font-size:12px;
+  line-height:1.65;
+}
+.account-delete-warning strong{font-size:13px;font-weight:850}
+.account-delete-warning p{margin:9px 0 0}
+.account-delete-form{display:flex;flex-direction:column;gap:10px;margin-top:20px}
+.account-delete-form label{font-weight:750;font-size:12px}
+.account-delete-form>p{margin:0;font-size:12px;color:#866e5e}
+.account-delete-form input{
+  width:100%;
+  box-sizing:border-box;
+  border:1px solid #d6b5a5;
+  border-radius:6px;
+  padding:12px;
+  font:15px Pretendard,sans-serif;
+  background:#fffdfa;
+  color:#513c34;
+}
+.account-delete-status{
+  min-height:19px;
+  color:#a2332f!important;
+  line-height:1.5!important;
+  overflow-wrap:anywhere;
+}
+.account-delete-buttons{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.account-delete-buttons button{
+  padding:11px;
+  border-radius:7px;
+  font-size:12px;
+  font-weight:750;
+  min-width:0;
+}
+.account-delete-confirm{border:1px solid #a94038;background:#aa4138;color:#fff}
+.account-delete-confirm:disabled{background:#ead9d5;border-color:#d0b9b1;color:#8a7a73}
+@media(max-width:740px){
+  .account-delete-dialog{padding:20px 16px}
+}
