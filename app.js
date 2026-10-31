@@ -301,7 +301,8 @@
     for(let d=1;d<=last;d++){
       const date=prefix+String(d).padStart(2,'0'),entry=byDay.get(date);
       const note=entry?(entry.shortNote||entry.title||'기록 보기'):'';
-      cells.push(`<button class="mini-day ${entry?'filled':''}" data-mini-date="${date}"><span class="mini-date">${d} ${entry?(WEATHER_EMOJI[entry.weather]||''):''}</span><span class="mini-photo" data-mini-photo="${date}">${entry?'✿':'+'}</span><span class="mini-line">${escapeHtml(note)}</span></button>`);
+      const weather=entry?(WEATHER_EMOJI[entry.weather]||''):'';
+      cells.push(`<button class="mini-day ${entry?'filled':''}" data-mini-date="${date}"><span class="mini-day-head"><span class="mini-date">${d}</span>${weather?`<span class="mini-weather" aria-label="날씨">${weather}</span>`:''}</span><span class="mini-photo" data-mini-photo="${date}">${entry?'✿':'+'}</span><span class="mini-line">${escapeHtml(note)}</span></button>`);
     }
     $('miniGrid').innerHTML=cells.join('');
     loadMiniPhotos();
