@@ -19,7 +19,7 @@
     #startupIntro.is-finished{opacity:0;visibility:hidden;pointer-events:none}
     #startupIntro[hidden]{display:none!important}
   </style>
-  <link rel="stylesheet" href="./vintage.css?v=42" />
+  <link rel="stylesheet" href="./vintage.css?v=44" />
   <title>일상 기록</title>
 </head>
 <body>
@@ -349,10 +349,21 @@
     <button id="photoPreviewClose" type="button" class="photo-preview-close" aria-label="사진 닫기">✕</button>
     <img id="photoPreviewImage" alt="확대된 첨부 사진" />
   </dialog>
+  <section id="appUpdateNotice" class="app-update-notice" aria-label="앱 업데이트 안내" role="status" hidden>
+    <span class="app-update-flower" aria-hidden="true">✿</span>
+    <div class="app-update-copy">
+      <strong>새로운 업데이트가 있어요</strong>
+      <p>작성 중인 내용은 임시 보관한 뒤 적용할 수 있어요.</p>
+    </div>
+    <div class="app-update-actions">
+      <button type="button" id="appUpdateApply" class="app-update-apply">업데이트</button>
+      <button type="button" id="appUpdateLater" class="app-update-later">나중에</button>
+    </div>
+  </section>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
   <script src="./supabase-config.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0" defer></script>
   <script src="./cloud.js?v=16" defer></script>
-  <script src="./app.js?v=43" defer></script>
+  <script src="./app.js?v=44" defer></script>
 </body>
 </html>
