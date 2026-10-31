@@ -826,3 +826,284 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
   .mini-weather{font-size:7px;max-width:9px}
   .mini-line{font-size:8px}
 }
+
+
+/* v24: Tall, screen-filling monthly scrapbook. Day photos maximize their width
+   while retaining a 4:3 image ratio and one-line captions. */
+#calendarPage:not([hidden]){
+  display:flex;
+  flex-direction:column;
+  box-sizing:border-box;
+  min-height:calc(100dvh - 145px);
+}
+.mini-calendar-toolbar{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) 37px minmax(0,1.15fr) 37px auto;
+  align-items:center;
+  gap:8px;
+}
+#miniYear{
+  font-family:Pretendard,-apple-system,BlinkMacSystemFont,sans-serif;
+  font-size:15px;
+  color:#79604a;
+  font-weight:730;
+  white-space:nowrap;
+  justify-self:start;
+}
+#miniMonth{
+  font-family:"Nanum Myeongjo","Batang",Georgia,serif;
+  font-size:29px;
+  font-weight:750;
+  color:#523925;
+  line-height:1.35;
+  text-align:center;
+  white-space:nowrap;
+  min-width:0;
+}
+.mini-calendar-grid{
+  flex:1;
+  width:100%;
+  grid-template-columns:repeat(7,minmax(0,1fr));
+  grid-auto-rows:minmax(109px,1fr);
+  gap:3px;
+  align-content:stretch;
+}
+.mini-day{
+  width:100%;
+  min-width:0;
+  height:100%;
+  min-height:0;
+  aspect-ratio:auto;
+  display:grid;
+  grid-template-columns:minmax(0,1fr);
+  grid-template-rows:17px minmax(0,1fr) 16px;
+  padding:3px;
+  gap:2px;
+  align-items:stretch;
+  overflow:hidden;
+}
+.mini-day-head{min-width:0;min-height:0;height:17px}
+.mini-date{font-size:11px}
+.mini-weather{font-size:10px;max-width:13px}
+.mini-photo{
+  box-sizing:border-box;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  width:100%;
+  height:auto;
+  min-width:0;
+  min-height:0;
+  max-width:100%;
+  max-height:100%;
+  aspect-ratio:4/3;
+  align-self:center;
+  justify-self:center;
+  padding:0;
+  border:1px solid #fff8ed;
+  border-radius:1px;
+  overflow:hidden;
+}
+.mini-photo img{width:100%;height:100%;object-fit:cover}
+.mini-line{
+  min-width:0;
+  font-family:"OngleipRyuryu",Pretendard,sans-serif;
+  font-size:13px;
+  line-height:1.13;
+  max-height:100%;
+  overflow:hidden;
+  white-space:nowrap;
+  text-overflow:ellipsis;
+  display:block;
+}
+.mini-hint{font-size:11px;padding:10px 5px 0;margin-top:7px}
+/* v24: Pinned film-photo wall (diary only). Existing audio/video controls remain. */
+.scrapbook-attachments{display:flex;flex-direction:column;gap:19px;min-width:0}
+.photo-wall{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(155px,1fr));
+  gap:22px 17px;
+  align-items:start;
+  padding:19px 13px 21px;
+  background:repeating-linear-gradient(0deg,rgba(150,112,65,.03) 0 1px,transparent 1px 28px),#f1e3cf;
+  border:1px solid #dfc8a9;
+  border-radius:6px;
+}
+.pinned-photo.attachment-item{
+  position:relative;
+  min-width:0;
+  overflow:visible;
+  border:6px solid #fff9ed;
+  border-bottom-width:7px;
+  background:#fff9ed;
+  border-radius:2px;
+  box-shadow:2px 6px 10px rgba(79,50,25,.19);
+  transform:rotate(-2deg);
+  transition:transform .2s;
+}
+.pinned-photo.attachment-item:nth-child(even){transform:rotate(2.5deg)}
+.pinned-photo.attachment-item:nth-child(3n){transform:rotate(-.8deg)}
+.pinned-photo.attachment-item:focus-within{z-index:2;transform:rotate(0)}
+.pinned-photo.attachment-item::before{
+  content:"";
+  position:absolute;
+  width:44px;
+  height:15px;
+  background:rgba(178,148,104,.56);
+  border-inline:1px dashed rgba(255,248,224,.64);
+  top:-15px;
+  left:50%;
+  transform:translateX(-50%) rotate(1deg);
+  z-index:1;
+  pointer-events:none;
+}
+.pinned-photo .attachment-visual{
+  width:100%;
+  height:auto;
+  aspect-ratio:4/3;
+  background:#e7d6be;
+  overflow:hidden;
+  display:block;
+}
+.photo-open{
+  display:block;
+  width:100%;
+  height:100%;
+  padding:0;
+  margin:0;
+  background:transparent;
+  border:0;
+  cursor:zoom-in;
+}
+.photo-open img{display:block;width:100%;height:100%;object-fit:cover}
+.pinned-photo .attachment-info{
+  display:flex;
+  gap:5px;
+  align-items:center;
+  padding:6px 2px 4px;
+}
+.pinned-photo .attachment-name{
+  font-size:10px;
+  max-width:100%;
+  line-height:1.3;
+  color:#7a614e;
+}
+.pinned-photo .attachment-remove{
+  font-size:18px;
+  line-height:1;
+  padding:2px 5px;
+  border-radius:5px;
+  background:#f5eadd;
+  color:#996b5d;
+}
+.pinned-photo .attachment-download{
+  padding:5px 0 1px;
+  border-top:1px dashed #e5d4be;
+  color:#826147;
+  text-decoration:none;
+}
+.attachment-files{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
+  gap:11px;
+  align-items:start;
+}
+.media-file-card.attachment-item{
+  min-width:0;
+  border:1px solid #d8c3a6;
+  border-radius:7px;
+  background:#fff9ed;
+  overflow:hidden;
+  box-shadow:0 2px 7px rgba(79,53,29,.08);
+}
+.media-file-card .attachment-visual{
+  min-height:68px;
+  height:auto;
+  padding:12px;
+  box-sizing:border-box;
+}
+.media-file-card video{width:100%;height:auto;max-height:160px}
+.media-file-card audio{width:100%;max-width:100%}
+.photo-preview-dialog{
+  background:#fff9ed;
+  border:6px solid #fff9ed;
+  border-radius:8px;
+  padding:12px;
+  box-shadow:0 25px 75px rgba(36,27,18,.46);
+  width:min(94vw,760px);
+  max-height:90dvh;
+  overflow:auto;
+}
+.photo-preview-dialog::backdrop{background:rgba(38,29,24,.82)}
+#photoPreviewImage{
+  display:block;
+  width:auto;
+  max-width:100%;
+  max-height:78dvh;
+  height:auto;
+  object-fit:contain;
+  margin:0 auto;
+}
+.photo-preview-close{
+  position:sticky;
+  top:0;
+  left:100%;
+  display:block;
+  margin:0 0 6px auto;
+  background:#f0e1cb;
+  border:1px solid #cab092;
+  border-radius:6px;
+  padding:6px 10px;
+  color:#694a36;
+}
+@media(max-width:740px){
+  /* The editor retains its old page padding; only calendar bleeds to near screen edges. */
+  #calendarPage:not([hidden]){
+    min-height:calc(100dvh - 116px);
+    margin-left:-9px;
+    margin-right:-9px;
+    padding:18px 7px 12px;
+    width:calc(100% + 18px);
+  }
+  .mini-calendar-toolbar{
+    gap:5px;
+    grid-template-columns:minmax(0,1fr) 30px minmax(0,1.15fr) 30px auto;
+    margin-bottom:13px;
+  }
+  .mini-calendar-toolbar button{padding:7px 7px;min-width:0}
+  #miniYear{font-size:12px}
+  #miniMonth{font-size:21px}
+  .mini-calendar-grid{grid-auto-rows:minmax(87px,1fr);gap:2px}
+  .mini-day{
+    height:100%;
+    min-height:0;
+    aspect-ratio:auto;
+    grid-template-rows:12px minmax(0,1fr) 11px;
+    padding:2px;
+    gap:2px;
+  }
+  .mini-day-head{height:12px}
+  .mini-date{font-size:9px}
+  .mini-weather{font-size:8px;max-width:10px}
+  .mini-photo{
+    width:100%;
+    height:auto;
+    min-height:0;
+    max-height:100%;
+    aspect-ratio:4/3;
+    align-self:center;
+  }
+  .mini-line{font-size:10px;line-height:1.1}
+  .mini-hint{font-size:10px;margin-top:9px}
+  .photo-wall{grid-template-columns:repeat(2,minmax(0,1fr));gap:19px 10px;padding:18px 7px}
+  .pinned-photo.attachment-item{border-width:5px;border-bottom-width:6px}
+}
+@media(max-width:370px){
+  .mini-calendar-toolbar{grid-template-columns:minmax(0,1fr) 28px minmax(0,1.1fr) 28px auto}
+  #miniYear{font-size:11px}
+  #miniMonth{font-size:18px}
+  .mini-day{height:100%;aspect-ratio:auto}
+  .mini-photo{width:100%;height:auto;aspect-ratio:4/3}
+  .mini-line{font-size:9px}
+}
+@media(prefers-reduced-motion:reduce){.pinned-photo.attachment-item{transition:none}}
