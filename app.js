@@ -1134,6 +1134,10 @@
     $('diaryCropClose').addEventListener('click',closeDiaryCrop);
     $('diaryCropCancel').addEventListener('click',closeDiaryCrop);
     $('diaryCropSave').addEventListener('click',saveDiaryCrop);
+    $('diaryCropDialog').addEventListener('close',()=>{
+      if(diaryCropImageUrl){URL.revokeObjectURL(diaryCropImageUrl);diaryCropImageUrl=null;}
+      diaryCropSource=null;diaryCropFileId=null;diaryCropPointer=null;
+    });
     $('diaryCropZoom').addEventListener('input',e=>{diaryCropZoom=Number(e.target.value);paintDiaryCrop();});
     const diaryCanvas=$('diaryCropCanvas');
     diaryCanvas.addEventListener('pointerdown',e=>{
