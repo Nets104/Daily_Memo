@@ -35,7 +35,7 @@
   function makeId() { return globalThis.crypto?.randomUUID?.() || `entry-${Date.now()}-${Math.random().toString(36).slice(2)}`; }
   function escapeHtml(s) { return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
   function safeFileName(name) { return (String(name || '').replace(/[\\/:*?"<>|\x00-\x1F]/g,'_').replace(/[.\s]+$/g,'').trim().slice(0,120) || '일상기록_기록'); }
-  function toast(message) { el.toast.textContent = message; el.toast.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => el.toast.classList.remove('show'),3200); }
+  function toast(message, centered = false) { el.toast.textContent = message; el.toast.classList.toggle('save-success', centered); el.toast.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => el.toast.classList.remove('show'), centered ? 1800 : 3200); }
   function setSave(status, label) { el.save.className=`save-state ${status || ''}`;el.save.innerHTML=`<span class="save-dot"></span> ${escapeHtml(label)}`; }
   function openDb() {
     return new Promise((resolve,reject) => {
@@ -168,7 +168,7 @@
         if(current?.id===snapshot.id){
           entries.push(current);isDraft=false;
           setSave('','저장됨');el.edited.textContent='방금 수정됨';renderList();
-          toast('기록을 저장했어요.');
+          toast('저장되었습니다.', true);
         }
         return true;
       }catch(e){
@@ -176,7 +176,7 @@
       }finally{isSavingDraft=false;}
     }
     savePromise=savePromise.catch(()=>{}).then(()=>writeRecords('entries',[snapshot]));
-    try { await savePromise; if(current?.id===snapshot.id){setSave('', '저장됨');el.edited.textContent='방금 수정됨';} renderList();return true; }
+    try { await savePromise; if(current?.id===snapshot.id){setSave('', '저장됨');el.edited.textContent='방금 수정됨';if(explicit)toast('저장되었습니다.', true);} renderList();return true; }
     catch(e){console.error(e);setSave('error','저장 실패');toast('기록 저장에 실패했어요. 기기 저장 공간을 확인해 주세요.');return false;}
   }
   async function flushSave() { if(saveTimer) await saveCurrent();else await savePromise.catch(()=>{}); }
@@ -281,7 +281,7 @@
         await writeRecords('entries',[entry]);
       }
       if(current?.id===entry.id){current=entry;attachments=await getAll('attachments','entryId',entry.id);fillEditor();renderAttachments();}
-      renderList();closeDayCard();toast('캘린더 기록을 저장했어요.');
+      renderList();closeDayCard();toast('저장되었습니다.', true);
     }catch(e){
       console.error(e);
       if(entrySaved){
@@ -788,7 +788,7 @@
     $('calendarPrev').addEventListener('click',()=>shiftCalendar(-1));
     $('calendarNext').addEventListener('click',()=>shiftCalendar(1));
     $('calendarToday').addEventListener('click',()=>{setCalendarMonth(dayString());renderCalendar();});
-    $('openCalendarPage').addEventListener('click',showMiniCalendar);
+    $('openCalendarPage').addEventListener('click',()=>{showMiniCalendar();closeSidebar();});
     $('returnEditor').addEventListener('click',showEditor);
     $('miniPrev').addEventListener('click',()=>shiftCalendar(-1));
     $('miniNext').addEventListener('click',()=>shiftCalendar(1));
