@@ -33,7 +33,8 @@
   const pendingKey=id=>pendingScope()+':'+id;
   const entryFields=e=>({
     date:e?.date||'',title:e?.title||'',body:e?.body||'',weather:e?.weather||'',
-    shortNote:e?.shortNote||'',coverAttachmentId:e?.coverAttachmentId||null
+    shortNote:e?.shortNote||'',coverAttachmentId:e?.coverAttachmentId||null,
+    calendarShowTitle:!!e?.calendarShowTitle
   });
   function setSavedBaseline(){
     savedState=entryFields(current);savedFileIds=new Set(attachments.map(f=>f.id));
@@ -349,7 +350,7 @@
     if(!canLeaveDraft())return;
     await flushSave();
     const timestamp=new Date().toISOString();
-    current={id:makeId(),date,title:'',body:'',weather:'',shortNote:'',createdAt:timestamp,updatedAt:timestamp};
+    current={id:makeId(),date,title:'',body:'',weather:'',shortNote:'',calendarShowTitle:false,createdAt:timestamp,updatedAt:timestamp};
     isDraft=true;
     fillEditor();attachments=[];savedState=null;savedFileIds=new Set();renderAttachments();renderList();setSave('','저장 전');
     el.edited.textContent='저장 전';$('deleteEntryBtn').textContent='작성 내용 지우기';if(navigate)showEditor();if(focusTitle&&navigate)el.title.focus();
@@ -412,6 +413,7 @@
     $('dayCardTitle').textContent=date+' 기록';
     const entry=entries.filter(e=>e.date===date).sort((a,b)=>b.updatedAt.localeCompare(a.updatedAt))[0];
     $('dayCardNote').value=entry?.shortNote||'';
+    $('dayCardShowTitle').checked=!!entry?.calendarShowTitle;
     $('dayCardNote').maxLength=Math.max(MAX_NOTE_CHARS,$('dayCardNote').value.length);
     $('dayCardStatus').textContent='';
     $('dayCropSection').hidden=true;$('dayCropZoom').value='1';$('dayDeletePhoto').hidden=true;$('dayDeletePhoto').textContent='✕ 썸네일 삭제';
@@ -507,9 +509,9 @@
       await flushSave();
       let entry=entries.filter(e=>e.date===date).sort((a,b)=>b.updatedAt.localeCompare(a.updatedAt))[0];
       const isNew=!entry,now=new Date().toISOString();
-      if(isNew)entry={id:makeId(),date,title:'',body:'',weather:'',shortNote:'',createdAt:now,updatedAt:now};
+      if(isNew)entry={id:makeId(),date,title:'',body:'',weather:'',shortNote:'',calendarShowTitle:false,createdAt:now,updatedAt:now};
       else entry={...entry};
-      entry.shortNote=note;entry.updatedAt=now;
+      entry.shortNote=note;entry.calendarShowTitle=$('dayCardShowTitle').checked;entry.updatedAt=now;
       const previousCoverId=cardCoverFileId||entry.coverAttachmentId||null;
       let file=null;
       if(cardPhoto){
@@ -533,7 +535,7 @@
       if(current?.id===entry.id){
         const editorDirty=hasUnsavedChanges();
         current=editorDirty?
-          {...current,shortNote:entry.shortNote,coverAttachmentId:entry.coverAttachmentId,updatedAt:entry.updatedAt}:
+          {...current,shortNote:entry.shortNote,calendarShowTitle:entry.calendarShowTitle,coverAttachmentId:entry.coverAttachmentId,updatedAt:entry.updatedAt}:
           {...entry};
         const storedFiles=await getAll('attachments','entryId',entry.id);
         if(editorDirty){
@@ -565,9 +567,9 @@
     const cells=Array.from({length:first},()=>'<div class="mini-pad"></div>');
     for(let d=1;d<=last;d++){
       const date=prefix+String(d).padStart(2,'0'),entry=byDay.get(date);
-      const note=entry?(entry.shortNote||entry.title||'기록 보기'):'';
+      const note=entry?(entry.calendarShowTitle?(entry.title||''):(entry.shortNote||'')):'';
       const weather=entry?(WEATHER_EMOJI[entry.weather]||''):'';
-      cells.push(`<button class="mini-day ${entry?'filled':''} ${date===dayString()?'today':''} ${date===highlightedCalendarDate?'jump-selected':''}" data-mini-date="${date}" aria-pressed="${date===highlightedCalendarDate}"><span class="mini-day-head"><span class="mini-date">${d}</span>${weather?`<span class="mini-weather" aria-label="날씨">${weather}</span>`:''}</span><span class="mini-photo" data-mini-photo="${date}">+</span><span class="mini-line ${note?'has-note':''}">${escapeHtml(note)}</span></button>`);
+      cells.push(`<button class="mini-day ${entry?'filled':''} ${date===dayString()?'today':''} ${date===highlightedCalendarDate?'jump-selected':''}" data-mini-date="${date}" aria-pressed="${date===highlightedCalendarDate}"><span class="mini-day-head"><span class="mini-date">${d}</span>${weather?`<span class="mini-weather" aria-label="날씨">${weather}</span>`:''}</span><span class="mini-photo" data-mini-photo="${date}">+</span><span class="mini-caption"><span class="mini-line ${note?'has-note':''}">${escapeHtml(note)}</span></span></button>`);
     }
     $('miniGrid').innerHTML=cells.join('');
     loadMiniPhotos();
@@ -605,6 +607,7 @@
   function renderCalendar() {
     if (!el.calendarGrid) return;
     el.calendarMonthLabel.textContent = `${calendarYear}년 ${calendarMonth + 1}월`;
+    $('archiveMonthLabel').textContent=`${calendarYear}년 ${calendarMonth+1}월 · 현재 달력`;
     const startDay = new Date(calendarYear, calendarMonth, 1).getDay();
     const lastDate = new Date(calendarYear, calendarMonth + 1, 0).getDate();
     const prefix = `${calendarYear}-${String(calendarMonth + 1).padStart(2, '0')}-`;
@@ -676,6 +679,7 @@
     el.date.value=current.date||dayString();
     $('entryWeather').value=current.weather||'';
     $('entryShortNote').value=current.shortNote||'';
+    $('entryMetaShowTitle').checked=!!current.calendarShowTitle;
     $('entryShortNote').maxLength=Math.max(MAX_NOTE_CHARS,$('entryShortNote').value.length);
     $('entryMetaCount').textContent=$('entryShortNote').value.length+'/'+MAX_NOTE_CHARS;
     $('entryMetaStatus').textContent='';
@@ -685,14 +689,14 @@
   }
   async function saveEntryMeta(){
     if(!current)return;
-    const date=el.date.value,weather=$('entryWeather').value,note=$('entryShortNote').value.trim();
+    const date=el.date.value,weather=$('entryWeather').value,note=$('entryShortNote').value.trim(),showTitle=$('entryMetaShowTitle').checked;
     if(!el.date.checkValidity()||!/^\d{4}-\d{2}-\d{2}$/.test(date)){
       $('entryMetaStatus').textContent='날짜를 확인해 주세요.';return;
     }
-    if(date===current.date&&weather===(current.weather||'')&&note===(current.shortNote||'')){
+    if(date===current.date&&weather===(current.weather||'')&&note===(current.shortNote||'')&&showTitle===!!current.calendarShowTitle){
       $('entryMetaDialog').close();return;
     }
-    current.date=date;current.weather=weather;current.shortNote=note;
+    current.date=date;current.weather=weather;current.shortNote=note;current.calendarShowTitle=showTitle;
     renderEntryMeta();setCalendarMonth(date);renderList();
     queueSave();
     $('entryMetaDialog').close();
