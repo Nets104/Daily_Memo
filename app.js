@@ -275,7 +275,10 @@
   async function saveDayCard(){
     if(!cardDate)return;
     const date=cardDate,note=$('dayCardNote').value.trim(),button=$('dayCardSave');
-    if(!note&&!cardPhoto&&!entries.some(e=>e.date===date)){toast('한마디나 사진을 추가해 주세요.');return;}
+    const existing=entries.filter(e=>e.date===date).sort((a,b)=>b.updatedAt.localeCompare(a.updatedAt))[0];
+    if(!note&&!cardPhoto&&!existing?.title?.trim()&&!existing?.body?.trim()&&!existing?.weather&&!existing?.coverAttachmentId){
+      toast('한마디나 사진을 추가한 뒤 저장해 주세요.');return;
+    }
     button.disabled=true;$('dayCardStatus').textContent='서버에 저장 중…';
     let entrySaved=false;
     try{
