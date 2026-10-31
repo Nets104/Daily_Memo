@@ -94,7 +94,7 @@
             </button>
             <span class="edited-at" id="editedAt"></span>
           </div>
-          <div class="title-row"><input type="text" id="entryTitle" maxlength="180" placeholder="오늘의 제목을 적어주세요" aria-label="기록 제목" /><button class="delete-button" id="deleteEntryBtn" title="현재 기록 삭제" aria-label="현재 기록 삭제"><span>⌫</span> <span class="delete-text">삭제</span></button></div><div class="title-count" id="titleCount" aria-live="off">0 / 180자</div>
+          <div class="title-row"><input type="text" id="entryTitle" maxlength="50" placeholder="오늘의 제목을 적어주세요" aria-label="기록 제목" /><button class="delete-button" id="deleteEntryBtn" title="현재 기록 삭제" aria-label="현재 기록 삭제"><span>⌫</span> <span class="delete-text">삭제</span></button></div><div class="title-count" id="titleCount" aria-live="off">0 / 50자</div>
           <div class="editor-divider"></div>
           <div class="editor-controls">
             <div class="view-tabs" role="group" aria-label="보기 모드"><button data-view="edit" class="active">작성</button><button data-view="preview">미리보기</button><button data-view="split">나란히</button></div>
@@ -106,15 +106,15 @@
             <button data-format="bullet" title="글머리 목록">≡</button><button data-format="number" title="번호 목록">1.</button><button data-format="check" title="체크 목록">☑</button><button data-format="quote" title="인용">❝</button><button data-format="rule" title="구분선">―</button><button data-format="link" title="링크">↗</button><button data-format="code" title="인라인 코드">&lt;/&gt;</button>
           </div>
           <div class="writing-area view-edit" id="writingArea">
-            <div class="editing-pane"><label class="sr-only" for="entryBody">마크다운 본문</label><textarea id="entryBody" maxlength="30000" spellcheck="true" placeholder="오늘은 어떤 하루였나요?\n\n작은 일 하나, 문득 든 생각 하나도 좋아요.\n\n- 오늘 있었던 일\n- 기억하고 싶은 순간\n- 내일의 나에게"></textarea></div>
+            <div class="editing-pane"><label class="sr-only" for="entryBody">마크다운 본문</label><textarea id="entryBody" maxlength="5000" spellcheck="true" placeholder="오늘은 어떤 하루였나요?\n\n작은 일 하나, 문득 든 생각 하나도 좋아요.\n\n- 오늘 있었던 일\n- 기억하고 싶은 순간\n- 내일의 나에게"></textarea></div>
             <div class="preview-pane" id="previewPane"><div class="md-preview" id="mdPreview"><p class="preview-placeholder">여기에 기록한 내용이 보여요 ✨</p></div></div>
           </div>
-          <div class="word-info"><span id="charCount">0 / 30,000자</span><span>글과 사진이 모두 오늘의 기록이 돼요.</span></div>
+          <div class="word-info"><span id="charCount">0 / 5,000자</span><span>글과 사진이 모두 오늘의 기록이 돼요.</span></div>
           <div class="attachments-section">
             <div class="section-label"><div><span class="section-glyph">✿</span> 첨부 파일 <span class="attachment-count" id="attachmentCount">0</span></div><span>사진 · 영상 · 오디오 · PDF</span></div>
             <div class="upload-actions"><button class="attach-button" id="uploadBtn">＋ 파일 추가</button><button class="attach-button secondary" id="recordBtn"><span aria-hidden="true">●</span> <span id="recordBtnText">음성 녹음</span></button><input type="file" id="fileInput" accept="image/*,video/*,audio/*,.pdf,application/pdf" multiple hidden /></div>
             <div id="attachmentList" class="attachment-grid"></div>
-            <p class="upload-tip">로그인 시 파일은 계정별 비공개 서버에 저장됩니다. 파일당 최대 50MB까지 첨부할 수 있어요.</p>
+            <p class="upload-tip">로그인 시 파일은 계정별 비공개 서버에 저장됩니다. 사진 5MB · 영상 30MB · 음성/PDF 10MB 이하로 첨부할 수 있어요.</p>
           </div>
         </section>
         <footer class="footer-note"><span>✦</span> Keep your days, keep your story. <span>✦</span></footer></div>
@@ -152,9 +152,9 @@
         <option value="wind">💨 바람</option>
         <option value="other">🌈 기타</option>
       </select>
-      <label for="entryShortNote" class="entry-note-label">오늘의 한마디</label>
-      <textarea id="entryShortNote" maxlength="120" rows="4" placeholder="오늘을 한 줄로 남겨요"></textarea>
-      <small class="entry-note-count" id="entryMetaCount" aria-live="off">0/120</small>
+      <label for="entryShortNote" class="entry-note-label">오늘의 한마디 (최대 50자)</label>
+      <textarea id="entryShortNote" maxlength="50" rows="4" placeholder="오늘을 한 줄로 남겨요"></textarea>
+      <small class="entry-note-count" id="entryMetaCount" aria-live="off">0/50</small>
       <p id="entryMetaStatus" class="day-card-status" role="status"></p>
       <div class="entry-meta-buttons">
         <button type="button" id="entryMetaCancel" class="outlined-button">취소</button>
@@ -177,8 +177,8 @@
         <label for="dayCropZoom">사진 확대</label>
         <input id="dayCropZoom" type="range" min="1" max="3" step=".05" value="1" />
       </div>
-      <label class="day-card-label" for="dayCardNote">사진 밑에 표시할 한마디 <small>(최대 120자)</small></label>
-      <input id="dayCardNote" type="text" maxlength="120" placeholder="오늘은 어떤 하루였나요?" />
+      <label class="day-card-label" for="dayCardNote">사진 밑에 표시할 한마디 <small>(최대 50자)</small></label>
+      <input id="dayCardNote" type="text" maxlength="50" placeholder="오늘은 어떤 하루였나요?" />
       <p id="dayCardStatus" role="status" class="day-card-status"></p>
       <div class="day-card-actions">
         <button type="button" id="dayOpenEntry" class="outlined-button">일기 보기 / 작성</button>
@@ -190,6 +190,6 @@
   <script src="./supabase-config.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0" defer></script>
   <script src="./cloud.js?v=12" defer></script>
-  <script src="./app.js?v=21" defer></script>
+  <script src="./app.js?v=22" defer></script>
 </body>
 </html>
