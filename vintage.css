@@ -438,3 +438,18 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 @media(prefers-reduced-motion:reduce){
   .mini-day{transition:none}
 }
+
+/* Match the sign-in page to the diary's paper-and-ink aesthetic. */
+#cloudAuth{
+  background:
+    radial-gradient(circle at 22% 35%,rgba(148,112,69,.045) 0 1px,transparent 1.5px) 0 0/19px 23px,
+    #fff7e8!important;
+  border:1px solid #d0b899;
+  border-radius:8px!important;
+  box-shadow:0 12px 34px rgba(86,56,31,.16)!important;
+  color:#4c3c2f;
+}
+#cloudAuth h1{color:#4b3628;font-family:"Nanum Myeongjo","Batang",Georgia,serif}
+#cloudAuth p{color:#8b765e}
+#cloudAuth input{background:#fffaf0;border-color:#d4bfa2!important;color:#48382d}
+#cloudAuth input::placeholder{color:#a58d72}
