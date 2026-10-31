@@ -19,7 +19,7 @@
     #startupIntro.is-finished{opacity:0;visibility:hidden;pointer-events:none}
     #startupIntro[hidden]{display:none!important}
   </style>
-  <link rel="stylesheet" href="./vintage.css?v=35" />
+  <link rel="stylesheet" href="./vintage.css?v=36" />
   <title>일상 기록</title>
 </head>
 <body>
@@ -71,7 +71,14 @@
           <button id="cloudImport" class="sidebar-option" type="button">이 기기의 기존 기록 가져오기</button>
           <button id="cloudLogout" class="sidebar-option" type="button">로그아웃</button>
         </div>
-        <section class="month-manage" aria-label="월별 기록 관리"><strong>월별 백업 · 정리</strong><input type="month" id="archiveMonth" aria-label="선택한 월"><button type="button" id="archiveMonthBtn" class="sidebar-option">월별 ZIP 백업</button><button type="button" id="deleteMonthBtn" class="sidebar-option">백업 확인 후 월별 삭제</button><p id="archiveStatus" role="status">먼저 ZIP 파일을 내보내세요.</p></section>
+        <section class="month-manage" aria-label="월별 기록 관리">
+  <strong>월별 백업 · 정리</strong>
+  <p class="archive-month-description">사이드 메뉴 달력에 표시된 월을 관리해요.</p>
+  <div class="archive-month-label" id="archiveMonthLabel">현재 달력의 월</div>
+  <button type="button" id="archiveMonthBtn" class="sidebar-option">월별 ZIP 백업</button>
+  <button type="button" id="deleteMonthBtn" class="sidebar-option archive-delete-button">선택한 월 기록 삭제</button>
+  <p id="archiveStatus" role="status">백업은 선택 사항이에요. 삭제한 기록은 복구할 수 없어요.</p>
+</section>
         <button class="sidebar-option" id="backupBtn"><span>⇩</span> 전체 백업 ZIP</button>
         <button class="sidebar-option" id="restoreBtn"><span>↥</span> 백업 불러오기</button>
         <input id="restoreInput" type="file" accept=".zip,application/zip" hidden />
@@ -219,6 +226,7 @@
       <label for="entryShortNote" class="entry-note-label">오늘의 한마디 (최대 20자)</label>
       <textarea id="entryShortNote" maxlength="20" rows="4" placeholder="오늘을 한 줄로 남겨요"></textarea>
       <small class="entry-note-count" id="entryMetaCount" aria-live="off">0/20</small>
+      <label class="calendar-title-toggle"><input id="entryMetaShowTitle" type="checkbox" /><span>캘린더에 한마디 대신 일기 제목 표시</span></label>
       <p id="entryMetaStatus" class="day-card-status" role="status"></p>
       <div class="entry-meta-buttons">
         <button type="button" id="entryMetaCancel" class="outlined-button">취소</button>
@@ -244,11 +252,26 @@
       </div>
       <label class="day-card-label" for="dayCardNote">사진 밑에 표시할 한마디 <small>(최대 20자)</small></label>
       <input id="dayCardNote" type="text" maxlength="20" placeholder="오늘은 어떤 하루였나요?" />
+      <label class="calendar-title-toggle"><input id="dayCardShowTitle" type="checkbox" /><span>한마디 대신 일기 제목 표시</span></label>
       <p id="dayCardStatus" role="status" class="day-card-status"></p>
       <div class="day-card-actions">
         <button type="button" id="dayOpenEntry" class="outlined-button">일기 보기 / 작성</button>
         <button type="button" id="dayCardSave" class="primary-button">저장</button>
       </div>
+    </div>
+  </dialog>
+  <dialog id="monthDeleteDialog" class="month-delete-dialog" aria-labelledby="monthDeleteTitle">
+    <h2 id="monthDeleteTitle">월별 기록 영구 삭제</h2>
+    <p class="month-delete-warning" role="alert">
+      <strong>주의! 삭제된 기록과 첨부파일은 복구할 수 없습니다.</strong>
+      <span id="monthDeleteDescription"></span>
+    </p>
+    <p class="month-delete-hint">백업 여부와 관계없이 삭제할 수 있습니다. 확인을 위해 아래에 삭제할 연월을 직접 입력하세요.</p>
+    <label for="monthDeleteVerification">삭제할 연월 입력 (예: 2026-10)</label>
+    <input id="monthDeleteVerification" type="text" autocomplete="off" inputmode="numeric" placeholder="YYYY-MM" maxlength="7" />
+    <div class="month-delete-actions">
+      <button type="button" class="outlined-button" id="monthDeleteCancel">취소</button>
+      <button type="button" class="month-delete-confirm" id="monthDeleteConfirm" disabled>영구 삭제</button>
     </div>
   </dialog>
   <dialog id="photoPreviewDialog" class="photo-preview-dialog" aria-label="첨부 원본 사진 크게 보기">
@@ -259,6 +282,6 @@
   <script src="./supabase-config.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0" defer></script>
   <script src="./cloud.js?v=12" defer></script>
-  <script src="./app.js?v=35" defer></script>
+  <script src="./app.js?v=36" defer></script>
 </body>
 </html>
