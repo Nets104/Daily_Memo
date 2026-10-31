@@ -258,6 +258,7 @@
     const date=cardDate,note=$('dayCardNote').value.trim(),button=$('dayCardSave');
     if(!note&&!cardPhoto&&!entries.some(e=>e.date===date)){toast('한마디나 사진을 추가해 주세요.');return;}
     button.disabled=true;$('dayCardStatus').textContent='서버에 저장 중…';
+    let entrySaved=false;
     try{
       await flushSave();
       let entry=entries.filter(e=>e.date===date).sort((a,b)=>b.updatedAt.localeCompare(a.updatedAt))[0];
@@ -270,15 +271,25 @@
         const canvas=$('dayCropCanvas');
         const blob=await new Promise((resolve,reject)=>canvas.toBlob(b=>b?resolve(b):reject(Error('이미지를 자르지 못했어요.')),'image/jpeg',.86));
         file={id:makeId(),entryId:entry.id,name:'달력_썸네일_'+date+'.jpg',type:'image/jpeg',size:blob.size,blob,createdAt:now};
-        entry.coverAttachmentId=file.id;
       }
       await writeRecords('entries',[entry]);
-      if(file)await writeRecords('attachments',[file]);
+      entrySaved=true;
       if(isNew)entries.push(entry);else entries=entries.map(e=>e.id===entry.id?entry:e);
+      if(file){
+        await writeRecords('attachments',[file]);
+        entry.coverAttachmentId=file.id;
+        await writeRecords('entries',[entry]);
+      }
       if(current?.id===entry.id){current=entry;attachments=await getAll('attachments','entryId',entry.id);fillEditor();renderAttachments();}
       renderList();closeDayCard();toast('캘린더 기록을 저장했어요.');
-    }catch(e){console.error(e);$('dayCardStatus').textContent='저장 실패: '+e.message;toast('저장에 실패했어요.');}
-    finally{button.disabled=false;}
+    }catch(e){
+      console.error(e);
+      if(entrySaved){
+        renderList();
+        $('dayCardStatus').textContent='일기 정보는 저장됐지만 사진 저장에 실패했어요: '+e.message;
+      }else $('dayCardStatus').textContent='저장 실패: '+e.message;
+      toast('일부 저장에 실패했어요. 내용을 확인해 주세요.');
+    }finally{button.disabled=false;}
   }
   function renderMiniCalendar(){
     if(!calendarPageOpen)return;
