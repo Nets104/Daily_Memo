@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" />
   <link rel="stylesheet" href="./style.css?v=13" />
-  <link rel="stylesheet" href="./vintage.css?v=16" />
+  <link rel="stylesheet" href="./vintage.css?v=17" />
   <title>일상 기록</title>
 </head>
 <body>
@@ -80,11 +80,16 @@
           <div class="date-sticker" aria-hidden="true"><span id="stickerMonth">OCT</span><strong id="stickerDay">31</strong><small id="stickerWeek">SATURDAY</small></div>
         </section>
         <section class="editor-card" aria-label="일기 편집기">
-          <div class="editor-meta">
-            <div class="field-group"><label for="entryDate">DATE <span class="required">*</span></label><div class="date-input-wrap"><input type="date" id="entryDate" required /><span class="date-display" id="dateDisplay">2026-10-31(土)</span></div></div>
+          <div class="entry-meta-area">
+            <button type="button" class="entry-meta-card" id="openMetaDialog" aria-label="날짜, 날씨, 오늘의 한마디 함께 수정">
+              <span class="entry-meta-cell"><span class="entry-meta-label">DATE</span><strong class="entry-meta-value" id="dateDisplay">날짜 선택</strong></span>
+              <span class="entry-meta-cell"><span class="entry-meta-label">날씨</span><strong class="entry-meta-value" id="metaWeatherText">선택하지 않음</strong></span>
+              <span class="entry-meta-cell entry-meta-note"><span class="entry-meta-label">오늘의 한마디</span><strong class="entry-meta-value" id="metaNoteText">오늘의 한마디를 남겨주세요</strong></span>
+              <span class="entry-meta-action" aria-hidden="true">✎ 수정</span>
+            </button>
             <span class="edited-at" id="editedAt"></span>
           </div>
-          <div class="mini-fields"><label>날씨 <select id="entryWeather"><option value="">선택 안 함</option><option value="sunny">☀️ 맑음</option><option value="partly_cloudy">🌤️ 구름 조금</option><option value="cloudy">☁️ 흐림</option><option value="rain">🌧️ 비</option><option value="snow">❄️ 눈</option><option value="wind">💨 바람</option><option value="other">🌈 기타</option></select></label><label>오늘의 한마디 <input id="entryShortNote" maxlength="120" placeholder="오늘을 한 줄로"></label></div><div class="title-row"><input type="text" id="entryTitle" maxlength="180" placeholder="오늘의 제목을 적어주세요" aria-label="기록 제목" /><button class="delete-button" id="deleteEntryBtn" title="현재 기록 삭제" aria-label="현재 기록 삭제"><span>⌫</span> <span class="delete-text">삭제</span></button></div>
+          <div class="title-row"><input type="text" id="entryTitle" maxlength="180" placeholder="오늘의 제목을 적어주세요" aria-label="기록 제목" /><button class="delete-button" id="deleteEntryBtn" title="현재 기록 삭제" aria-label="현재 기록 삭제"><span>⌫</span> <span class="delete-text">삭제</span></button></div>
           <div class="editor-divider"></div>
           <div class="editor-controls">
             <div class="view-tabs" role="group" aria-label="보기 모드"><button data-view="edit" class="active">작성</button><button data-view="preview">미리보기</button><button data-view="split">나란히</button></div>
@@ -123,6 +128,34 @@
     </div>
     <div class="export-progress" id="exportProgress" aria-live="polite"></div>
   </dialog>
+  <dialog id="entryMetaDialog" class="entry-meta-dialog" aria-labelledby="entryMetaTitle" tabindex="-1">
+    <div class="day-card-header">
+      <h2 id="entryMetaTitle">날짜와 하루 정보</h2>
+      <button type="button" class="icon-button" id="entryMetaClose" aria-label="닫기">✕</button>
+    </div>
+    <div class="entry-meta-form">
+      <label for="entryDate">DATE <span class="required">*</span></label>
+      <input type="date" id="entryDate" required />
+      <label for="entryWeather">날씨</label>
+      <select id="entryWeather">
+        <option value="">선택하지 않음</option>
+        <option value="sunny">☀️ 맑음</option>
+        <option value="partly_cloudy">🌤️ 구름 조금</option>
+        <option value="cloudy">☁️ 흐림</option>
+        <option value="rain">🌧️ 비</option>
+        <option value="snow">❄️ 눈</option>
+        <option value="wind">💨 바람</option>
+        <option value="other">🌈 기타</option>
+      </select>
+      <label for="entryShortNote">오늘의 한마디 <small>(최대 120자)</small></label>
+      <input type="text" id="entryShortNote" maxlength="120" placeholder="오늘을 한 줄로 남겨요" />
+      <p id="entryMetaStatus" class="day-card-status" role="status"></p>
+      <div class="entry-meta-buttons">
+        <button type="button" id="entryMetaCancel" class="outlined-button">취소</button>
+        <button type="button" id="entryMetaSave" class="primary-button">저장</button>
+      </div>
+    </div>
+  </dialog>
   <dialog id="dayCardDialog" class="day-card-dialog" aria-labelledby="dayCardTitle">
     <div class="day-card-header">
       <h2 id="dayCardTitle">날짜의 기록</h2>
@@ -151,6 +184,6 @@
   <script src="./supabase-config.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0" defer></script>
   <script src="./cloud.js?v=12" defer></script>
-  <script src="./app.js?v=15" defer></script>
+  <script src="./app.js?v=17" defer></script>
 </body>
 </html>
