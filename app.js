@@ -1047,40 +1047,212 @@
   function stripMd(s){return s.replace(/!\[([^\]]*)\]\([^)]*\)/g,'$1').replace(/\[([^\]]+)\]\([^)]+\)/g,'$1').replace(/<\/?u>/g,'').replace(/\*\*|__|~~|[`*_]/g,'');}
   async function canvasPages(entry,attached) {
     await document.fonts?.ready;
-    const W=1240,H=1754,left=94,right=1146,bottom=1590;
+    const W=1240,H=1754,L=125,R=1115,BOTTOM=1558;
+    const colors={paper:'#fcf6e8',ink:'#554032',muted:'#937b63',
+      trim:'#ddc8aa',sage:'#a0a48b',highlight:'#ead3aa',photo:'#fff9ed'};
     const pages=[];let ctx,y;
-    const col={ink:'#303248',muted:'#8d90a3',purple:'#786bd1',light:'#e8e7f3'};
-    function page(){const c=document.createElement('canvas');c.width=W;c.height=H;ctx=c.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);pages.push(c);y=130;ctx.fillStyle=col.muted;ctx.font='22px Pretendard, sans-serif';ctx.fillText('일상 기록  /  MY JOURNAL',left,85);ctx.strokeStyle=col.light;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(left,103);ctx.lineTo(right,103);ctx.stroke();}
-    function setFont(size,bold=false){ctx.font=`${bold?750:400} ${size}px Pretendard, "Noto Sans KR", sans-serif`;ctx.textBaseline='alphabetic';}
-    function ensure(h){if(y+h>bottom)page();}
-    function drawWrapped(s,options={}){
-      const size=options.size||28,lineHeight=options.lineHeight||46,bold=!!options.bold,indent=options.indent||0,color=options.color||col.ink;
-      setFont(size,bold);let line='',lines=[];const maxWidth=right-left-indent;
-      for(const char of String(s||' ')){
-        if(char==='\n'){lines.push(line);line='';continue;}
-        if(ctx.measureText(line+char).width>maxWidth && line){lines.push(line);line=char;}else line+=char;
-      }lines.push(line);ctx.fillStyle=color;
-      for(const part of lines){ensure(lineHeight);setFont(size,bold);ctx.fillStyle=color;ctx.fillText(part,left+indent,y+lineHeight*.78);y+=lineHeight;}
+    const handwriting='"OngleipRyuryu", "Nanum Myeongjo", Pretendard, sans-serif';
+    const sans='Pretendard, "Noto Sans KR", sans-serif';
+    function font(size,bold=false,family=handwriting){
+      ctx.font=(bold?'700 ':'400 ')+size+'px '+family;
+      ctx.textBaseline='alphabetic';ctx.textAlign='left';
     }
-    page();drawWrapped(dateText(entry.date),{size:25,bold:true,color:col.purple,lineHeight:48});y+=13;
-    drawWrapped(entry.title.trim()||'제목 없는 기록',{size:54,bold:true,lineHeight:76});y+=23;
-    ensure(20);ctx.strokeStyle=col.light;ctx.beginPath();ctx.moveTo(left,y);ctx.lineTo(right,y);ctx.stroke();y+=36;
-    for(const b of parseBlocks(entry.body)){
-      if(b.kind==='heading'){y+=b.level===1?18:8;drawWrapped(stripMd(b.text),{size:b.level===1?40:b.level===2?35:31,bold:true,lineHeight:b.level===1?62:55});y+=15;}
-      else if(b.kind==='paragraph'){drawWrapped(stripMd(b.text),{lineHeight:47});y+=24;}
-      else if(b.kind==='quote'){ensure(70);ctx.fillStyle='#a9a1dd';ctx.fillRect(left,y,5,40);drawWrapped(stripMd(b.text),{indent:24,color:'#686883',lineHeight:45});y+=20;}
-      else if(b.kind==='code'){for(const line of b.text.split('\n'))drawWrapped(line,{size:23,color:'#646481',indent:14,lineHeight:39});y+=21;}
-      else if(b.kind==='rule'){ensure(40);ctx.strokeStyle=col.light;ctx.beginPath();ctx.moveTo(left,y+15);ctx.lineTo(right,y+15);ctx.stroke();y+=44;}
-      else if(b.kind==='list'){for(let i=0;i<b.items.length;i++){const item=b.items[i];const prefix=b.ordered?`${i+1}.  `:item.check===null?'•  ':item.check?'☑  ':'☐  ';drawWrapped(prefix+stripMd(item.text),{indent:14,lineHeight:44});}y+=20;}
+    function stroke(x1,y1,x2,y2,color=colors.trim,width=2){
+      ctx.beginPath();ctx.strokeStyle=color;ctx.lineWidth=width;
+      ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();
     }
-    if(attached.length){y+=15;ensure(100);drawWrapped('첨부 파일',{size:37,bold:true,lineHeight:64});y+=10;
-      for(const a of attached){if(a.type.startsWith('image/')){
-          let image=null,url='';try{url=URL.createObjectURL(a.blob);image=await new Promise((resolve,reject)=>{const img=new Image();img.onload=()=>resolve(img);img.onerror=reject;img.src=url;});}catch(e){}finally{if(url)URL.revokeObjectURL(url);}
-          if(image){const width=Math.min(right-left,Math.round(image.naturalWidth * Math.min(1,(right-left)/image.naturalWidth,560/image.naturalHeight)));const height=Math.round(image.naturalHeight*width/image.naturalWidth);ensure(height+70);ctx.drawImage(image,left,y,width,height);y+=height+9;drawWrapped(a.name,{size:21,color:col.muted,lineHeight:36});y+=19;}
-          else{drawWrapped(`사진: ${a.name}`,{size:23,lineHeight:42});y+=10;}
-        }else{drawWrapped(`📎 ${a.name}  (원본 파일은 ZIP 내보내기에서 확인)`,{size:22,color:col.muted,lineHeight:39});y+=8;}}
+    function flower(x,y,scale=1){
+      ctx.save();ctx.translate(x,y);ctx.scale(scale,scale);
+      for(let i=0;i<5;i++){
+        const angle=(i*Math.PI*2)/5-Math.PI/2;
+        ctx.fillStyle=i%2?'#e4c6ac':'#dbc1a6';
+        ctx.beginPath();ctx.ellipse(Math.cos(angle)*18,Math.sin(angle)*18,12,18,angle,0,2*Math.PI);ctx.fill();
+      }
+      ctx.fillStyle='#c6a06f';ctx.beginPath();ctx.arc(0,0,8,0,2*Math.PI);ctx.fill();
+      ctx.restore();
     }
-    for(let i=0;i<pages.length;i++){const c=pages[i],cctx=c.getContext('2d');cctx.fillStyle=col.muted;cctx.font='19px Pretendard, sans-serif';cctx.fillText(`일상 기록  ·  ${i+1} / ${pages.length}`,left,1685);}
+    function page(){
+      const canvas=document.createElement('canvas');
+      canvas.width=W;canvas.height=H;ctx=canvas.getContext('2d');
+      pages.push(canvas);y=183;
+      ctx.fillStyle=colors.paper;ctx.fillRect(0,0,W,H);
+      ctx.strokeStyle='#e5d5bd';ctx.lineWidth=3;ctx.strokeRect(64,67,W-128,H-134);
+      stroke(99,112,99,H-112,'#e5ceb0',2);
+      for(let k=0;k<12;k++){
+        const dotY=192+k*121;
+        ctx.fillStyle='#e2cdb1';ctx.beginPath();ctx.arc(85,dotY,5,0,2*Math.PI);ctx.fill();
+      }
+      font(23,true,sans);ctx.fillStyle=colors.muted;
+      ctx.fillText('DAILY RECORD  /  일상 기록',L,137);
+      stroke(L,152,R,152);
+      flower(1085,106,.67);flower(1122,113,.28);
+      flower(100,1600,.43);
+      return canvas;
+    }
+    function ensure(height){if(y+height>BOTTOM)page();}
+    function writeLine(value,options={}){
+      const size=options.size||34,leading=options.leading||54,bold=!!options.bold;
+      ensure(leading);
+      font(size,bold,options.family||handwriting);
+      ctx.fillStyle=options.color||colors.ink;
+      ctx.fillText(value||' ',L+(options.indent||0),y+leading*.74);
+      y+=leading;
+    }
+    function text(value,options={}){
+      const size=options.size||34,leading=options.leading||54;
+      const indent=options.indent||0,maxWidth=R-L-indent;
+      const raw=String(value||'');
+      const segments=raw.split('\n');
+      for(const paragraph of segments){
+        if(!paragraph){writeLine(' ',{...options,size,leading});continue;}
+        let line='';
+        for(const character of paragraph){
+          font(size,!!options.bold,options.family||handwriting);
+          if(line&&ctx.measureText(line+character).width>maxWidth){
+            writeLine(line,{...options,size,leading,indent});line=character;
+          }else line+=character;
+        }
+        if(line)writeLine(line,{...options,size,leading,indent});
+      }
+    }
+    function rule(){
+      ensure(24);stroke(L,y+8,R,y+8,'#dfc9a9',2);y+=28;
+    }
+    function section(label){
+      y+=29;ensure(90);
+      flower(L+17,y+20,.34);
+      font(32,true,handwriting);ctx.fillStyle='#725139';
+      ctx.fillText(label,L+53,y+31);y+=66;
+    }
+    function cardImage(image,x,top,width=450){
+      const innerW=width-25,innerH=310;
+      ctx.save();ctx.shadowColor='rgba(72,46,27,.18)';
+      ctx.shadowBlur=13;ctx.shadowOffsetY=8;
+      ctx.fillStyle=colors.photo;ctx.fillRect(x,top,width,394);
+      ctx.restore();
+      ctx.fillStyle='#ebdfca';ctx.fillRect(x+12,top+12,innerW,innerH);
+      if(image){
+        const ratio=Math.max(innerW/image.naturalWidth,innerH/image.naturalHeight);
+        const sw=innerW/ratio,sh=innerH/ratio;
+        const sx=(image.naturalWidth-sw)/2,sy=(image.naturalHeight-sh)/2;
+        ctx.save();ctx.beginPath();ctx.rect(x+12,top+12,innerW,innerH);ctx.clip();
+        ctx.drawImage(image,sx,sy,sw,sh,x+12,top+12,innerW,innerH);
+        ctx.restore();
+      }else{
+        font(23,false,sans);ctx.fillStyle=colors.muted;
+        ctx.fillText('사진을 표시할 수 없어요',x+27,top+160);
+      }
+      ctx.fillStyle='rgba(185,158,119,.52)';
+      ctx.fillRect(x+width/2-35,top-10,70,23);
+    }
+    function caption(filename,x,top,maxWidth=400){
+      font(22,false,sans);ctx.fillStyle='#886b54';
+      let label=String(filename||'사진');
+      while(label.length>1&&ctx.measureText(label).width>maxWidth)label=label.slice(0,-2)+'…';
+      ctx.fillText(label,x,top);
+    }
+    async function loadImage(file){
+      const src=URL.createObjectURL(file.blob);
+      try{
+        return await new Promise((resolve,reject)=>{
+          const img=new Image();img.onload=()=>resolve(img);
+          img.onerror=()=>reject(Error('이미지를 표시할 수 없어요'));img.src=src;
+        });
+      }catch(e){console.warn('내보내기 사진 미리보기:',e);return null;}
+      finally{URL.revokeObjectURL(src);}
+    }
+    page();
+    const dt=new Date(entry.date+'T12:00:00');
+    const week=WEEK_KR[dt.getDay()]+'요일';
+    const dated=entry.date.replace(/-/g,'.')+'  ·  '+week;
+    font(25,true,sans);ctx.fillStyle=colors.muted;
+    ctx.fillText(dated,L,y+24);y+=71;
+    text(entry.title.trim()||'제목 없는 기록',{size:65,leading:83,bold:true,color:'#493425'});
+    y+=10;
+    const weatherLabels={sunny:'맑음',partly_cloudy:'구름 조금',cloudy:'흐림',
+      rain:'비',snow:'눈',wind:'바람',other:'기타'};
+    if(entry.weather){
+      ensure(49);
+      ctx.fillStyle='#f3e8d7';ctx.fillRect(L,y,200,42);
+      font(24,true,sans);ctx.fillStyle='#7e674e';
+      ctx.fillText('날씨  ·  '+(weatherLabels[entry.weather]||'기록'),L+12,y+29);y+=65;
+    }
+    if(entry.shortNote?.trim()){
+      const note=entry.shortNote.trim();
+      ensure(76);
+      font(34,false,handwriting);
+      const noteWidth=Math.min(R-L,ctx.measureText(note).width+36);
+      ctx.fillStyle=colors.highlight;ctx.fillRect(L,y+28,noteWidth,23);
+      ctx.fillStyle='#5d4634';ctx.fillText(note,L+15,y+45);y+=81;
+    }
+    y+=6;rule();y+=22;
+    if(entry.body?.trim()){
+      const blocks=parseBlocks(entry.body);
+      for(const block of blocks){
+        if(block.kind==='heading'){
+          y+=block.level===1?15:6;
+          text(stripMd(block.text),{size:block.level===1?46:block.level===2?40:36,
+            leading:block.level===1?65:57,bold:true,color:'#64452f'});y+=19;
+        }else if(block.kind==='paragraph'){
+          text(stripMd(block.text),{size:34,leading:55});y+=21;
+        }else if(block.kind==='quote'){
+          ensure(18);ctx.fillStyle='#bba78c';ctx.fillRect(L,y,5,29);
+          text(stripMd(block.text),{size:32,leading:50,indent:26,color:'#816954'});y+=19;
+        }else if(block.kind==='rule'){
+          y+=14;rule();y+=14;
+        }else if(block.kind==='code'){
+          for(const line of block.text.split('\n'))text(line,{size:24,leading:42,family:sans});
+          y+=20;
+        }else if(block.kind==='list'){
+          for(let i=0;i<block.items.length;i++){
+            const item=block.items[i];
+            const marker=block.ordered?String(i+1)+'.':item.check===null?'•':item.check?'☑':'☐';
+            text(marker+'  '+stripMd(item.text),{size:33,leading:53,indent:12}); 
+          }
+          y+=20;
+        }
+      }
+    }
+    const visible=attached.filter(file=>file.id!==entry.coverAttachmentId&&
+      !/^달력_썸네일_|^일기_미리보기_/.test(file.name||''));
+    const photos=visible.filter(file=>file.type.startsWith('image/'));
+    const other=visible.filter(file=>!file.type.startsWith('image/'));
+    const crops=new Map(attached.filter(file=>/^일기_미리보기_/.test(file.name||''))
+      .map(file=>[file.name,file]));
+    if(photos.length){
+      section('PHOTO MEMORIES   /   사진 기록');
+      const firstX=L+12,secondX=L+508;
+      for(let i=0;i<photos.length;i+=2){
+        ensure(460);
+        const rowTop=y+11;
+        for(let j=i;j<Math.min(i+2,photos.length);j++){
+          const photo=photos[j],x=j===i?firstX:secondX;
+          const preview=crops.get('일기_미리보기_'+photo.id+'.jpg')||photo;
+          const img=await loadImage(preview);
+          cardImage(img,x,rowTop);
+          caption(photo.name,x+16,rowTop+365);
+        }
+        y+=457;
+      }
+    }
+    if(other.length){
+      section('KEPT MOMENTS   /   함께 보관한 파일');
+      for(const file of other){
+        text('•  '+String(file.name||'첨부 파일'),{size:25,leading:44,family:sans,color:'#806851'});
+      }
+      y+=18;
+      text('음성·영상·PDF 원본은 ZIP 내보내기에서 확인할 수 있어요.',{
+        size:21,leading:39,family:sans,color:colors.muted});
+    }
+    for(let index=0;index<pages.length;index++){
+      const pen=pages[index].getContext('2d');
+      pen.strokeStyle=colors.trim;pen.lineWidth=2;pen.beginPath();
+      pen.moveTo(L,1633);pen.lineTo(R,1633);pen.stroke();
+      pen.fillStyle=colors.muted;
+      pen.font='22px '+sans;
+      pen.textAlign='left';pen.fillText('일상 기록  ·  소중한 하루를 남기다',L,1681);
+      pen.textAlign='right';pen.fillText((index+1)+' / '+pages.length,R,1681);
+    }
     return pages;
   }
   async function makePdf(pages){
