@@ -64,6 +64,25 @@
     },
     async login(email,password){return fail(await client.auth.signInWithPassword({email,password}));},
     async logout(){fail(await client.auth.signOut());user=null;},
+    async deleteAccount(password){
+      own(); // Only the signed-in user may request their own account deletion.
+      const {data,error}=await client.functions.invoke('delete-diary-account',{
+        body:{password,confirmation:'탈퇴합니다'}
+      });
+      if(error){
+        let message='탈퇴 요청에 실패했어요. 잠시 후 다시 시도해 주세요.';
+        try{
+          const payload=await error.context?.json?.();
+          if(typeof payload?.message==='string')message=payload.message;
+        }catch{}
+        throw Error(message);
+      }
+      if(data?.success!==true)throw Error(data?.message||'서버의 탈퇴 완료 응답을 확인하지 못했어요.');
+      // The Auth user was permanently deleted on the server, including its refresh tokens.
+      try{await client.auth.signOut({scope:'local'});}catch(e){console.warn('로컬 로그인 정보 정리 실패',e);}
+      user=null;
+      return true;
+    },
     async entries(){return (await pageAll('diary_entries')).map(toEntry);},
     async photoPreviews(entryIds){
       if(!entryIds.length)return [];
