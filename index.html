@@ -19,7 +19,7 @@
     #startupIntro.is-finished{opacity:0;visibility:hidden;pointer-events:none}
     #startupIntro[hidden]{display:none!important}
   </style>
-  <link rel="stylesheet" href="./vintage.css?v=32" />
+  <link rel="stylesheet" href="./vintage.css?v=33" />
   <title>일상 기록</title>
 </head>
 <body>
@@ -251,15 +251,6 @@
       </div>
     </div>
   </dialog>
-  <dialog id="diaryCropDialog" class="diary-crop-dialog" aria-labelledby="diaryCropTitle">
-    <div class="day-card-header"><h2 id="diaryCropTitle">첨부 사진 맞추기 · 4:3</h2><button type="button" id="diaryCropClose" class="icon-button" aria-label="사진 자르기 취소">✕</button></div>
-    <p class="diary-crop-help">사진을 드래그하고 확대 비율을 조절하세요. 원본은 그대로 보관돼요.</p>
-    <canvas id="diaryCropCanvas" width="640" height="480" aria-label="사진 4대3 잘라내기 미리보기"></canvas>
-    <label class="diary-crop-zoom-label" for="diaryCropZoom">사진 확대</label>
-    <input id="diaryCropZoom" type="range" min="1" max="3" step=".05" value="1" />
-    <p class="diary-crop-status" id="diaryCropStatus" role="status"></p>
-    <div class="diary-crop-actions"><button type="button" class="outlined-button" id="diaryCropCancel">취소</button><button type="button" class="primary-button" id="diaryCropSave">사진 맞추기 저장</button></div>
-  </dialog>
   <dialog id="photoPreviewDialog" class="photo-preview-dialog" aria-label="첨부 원본 사진 크게 보기">
     <button id="photoPreviewClose" type="button" class="photo-preview-close" aria-label="사진 닫기">✕</button>
     <img id="photoPreviewImage" alt="확대된 첨부 사진" />
@@ -268,6 +259,6 @@
   <script src="./supabase-config.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0" defer></script>
   <script src="./cloud.js?v=12" defer></script>
-  <script src="./app.js?v=32" defer></script>
+  <script src="./app.js?v=33" defer></script>
 </body>
 </html>
