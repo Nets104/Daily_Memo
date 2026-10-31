@@ -10,15 +10,15 @@
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" />
   <link rel="stylesheet" href="./style.css?v=13" />
-  <link rel="stylesheet" href="./vintage.css?v=19" />
+  <link rel="stylesheet" href="./vintage.css?v=21" />
   <title>일상 기록</title>
 </head>
 <body>
   <section id="cloudAuth" hidden style="max-width:420px;margin:7vh auto;padding:24px;border-radius:18px;background:white;box-shadow:0 8px 40px #2221;font-family:Pretendard,sans-serif">
     <h1>일상 기록</h1><p>계정으로 로그인하면 내 기록이 안전하게 동기화돼요.</p>
     <form id="cloudAuthForm" style="display:grid;gap:12px">
-      <input id="cloudEmail" type="email" required autocomplete="username" placeholder="이메일" style="padding:13px;border:1px solid #ddd;border-radius:9px">
-      <input id="cloudPassword" type="password" required minlength="6" autocomplete="current-password" placeholder="비밀번호 (6자 이상)" style="padding:13px;border:1px solid #ddd;border-radius:9px">
+      <input id="cloudEmail" type="email" maxlength="254" required autocomplete="username" placeholder="이메일" style="padding:13px;border:1px solid #ddd;border-radius:9px">
+      <input id="cloudPassword" type="password" required minlength="6" maxlength="128" autocomplete="current-password" placeholder="비밀번호 (6자 이상)" style="padding:13px;border:1px solid #ddd;border-radius:9px">
       <button type="submit" class="primary-button" id="cloudLogin">로그인</button>
       <button type="button" class="outlined-button" id="cloudSignup">새 계정 만들기</button>
       <p id="cloudAuthStatus" role="status" style="font-size:12px;line-height:1.6"></p>
@@ -32,7 +32,7 @@
       </div>
       <p class="brand-subtitle">평범한 날의 작은 조각들</p>
       <button class="primary-button full" id="newEntrySidebar"><span>＋</span> 새로운 기록</button>
-      <button type="button" class="sidebar-option" id="openCalendarPage">▦ 캘린더</button><div class="sidebar-search"><span aria-hidden="true">⌕</span><input type="search" id="searchInput" placeholder="날짜 · 제목 · 본문 검색" aria-label="기록 검색" /></div>
+      <button type="button" class="sidebar-option" id="openCalendarPage">▦ 캘린더</button><div class="sidebar-search"><span aria-hidden="true">⌕</span><input type="search" id="searchInput" maxlength="100" placeholder="날짜 · 제목 · 본문 검색" aria-label="기록 검색" /></div>
       <section class="calendar-card" aria-label="월별 기록 달력">
         <div class="calendar-header">
           <button type="button" class="calendar-arrow" id="calendarPrev" aria-label="이전 달">‹</button>
@@ -44,7 +44,7 @@
         <div class="calendar-grid" id="calendarGrid" role="group" aria-label="날짜 선택"></div>
         <p class="calendar-legend"><span class="calendar-legend-dot"></span> 저장된 날 · 빈 날짜는 저장 전까지 추가되지 않아요</p>
       </section>
-      <div class="list-heading"><span>나의 기록</span><span class="list-count" id="entryCount">0</span><button type="button" class="cleanup-empty-button" id="cleanupEmptyBtn" title="내용과 첨부 파일이 없는 저장 기록만 삭제">빈 기록 정리</button></div>
+      <div class="list-heading"><span>나의 기록</span><span class="list-count" id="entryCount">0</span></div>
       <div class="entry-list" id="entryList" aria-label="저장된 기록"></div>
       <div class="sidebar-bottom">
         <div id="cloudAccount" hidden style="padding:8px 8px 12px;font-size:11px;color:#6b6195">
@@ -94,7 +94,7 @@
             </button>
             <span class="edited-at" id="editedAt"></span>
           </div>
-          <div class="title-row"><input type="text" id="entryTitle" maxlength="180" placeholder="오늘의 제목을 적어주세요" aria-label="기록 제목" /><button class="delete-button" id="deleteEntryBtn" title="현재 기록 삭제" aria-label="현재 기록 삭제"><span>⌫</span> <span class="delete-text">삭제</span></button></div>
+          <div class="title-row"><input type="text" id="entryTitle" maxlength="180" placeholder="오늘의 제목을 적어주세요" aria-label="기록 제목" /><button class="delete-button" id="deleteEntryBtn" title="현재 기록 삭제" aria-label="현재 기록 삭제"><span>⌫</span> <span class="delete-text">삭제</span></button></div><div class="title-count" id="titleCount" aria-live="off">0 / 180자</div>
           <div class="editor-divider"></div>
           <div class="editor-controls">
             <div class="view-tabs" role="group" aria-label="보기 모드"><button data-view="edit" class="active">작성</button><button data-view="preview">미리보기</button><button data-view="split">나란히</button></div>
@@ -106,15 +106,15 @@
             <button data-format="bullet" title="글머리 목록">≡</button><button data-format="number" title="번호 목록">1.</button><button data-format="check" title="체크 목록">☑</button><button data-format="quote" title="인용">❝</button><button data-format="rule" title="구분선">―</button><button data-format="link" title="링크">↗</button><button data-format="code" title="인라인 코드">&lt;/&gt;</button>
           </div>
           <div class="writing-area view-edit" id="writingArea">
-            <div class="editing-pane"><label class="sr-only" for="entryBody">마크다운 본문</label><textarea id="entryBody" spellcheck="true" placeholder="오늘은 어떤 하루였나요?\n\n작은 일 하나, 문득 든 생각 하나도 좋아요.\n\n- 오늘 있었던 일\n- 기억하고 싶은 순간\n- 내일의 나에게"></textarea></div>
+            <div class="editing-pane"><label class="sr-only" for="entryBody">마크다운 본문</label><textarea id="entryBody" maxlength="30000" spellcheck="true" placeholder="오늘은 어떤 하루였나요?\n\n작은 일 하나, 문득 든 생각 하나도 좋아요.\n\n- 오늘 있었던 일\n- 기억하고 싶은 순간\n- 내일의 나에게"></textarea></div>
             <div class="preview-pane" id="previewPane"><div class="md-preview" id="mdPreview"><p class="preview-placeholder">여기에 기록한 내용이 보여요 ✨</p></div></div>
           </div>
-          <div class="word-info"><span id="charCount">0자</span><span>글과 사진이 모두 오늘의 기록이 돼요.</span></div>
+          <div class="word-info"><span id="charCount">0 / 30,000자</span><span>글과 사진이 모두 오늘의 기록이 돼요.</span></div>
           <div class="attachments-section">
             <div class="section-label"><div><span class="section-glyph">✿</span> 첨부 파일 <span class="attachment-count" id="attachmentCount">0</span></div><span>사진 · 영상 · 오디오 · PDF</span></div>
             <div class="upload-actions"><button class="attach-button" id="uploadBtn">＋ 파일 추가</button><button class="attach-button secondary" id="recordBtn"><span aria-hidden="true">●</span> <span id="recordBtnText">음성 녹음</span></button><input type="file" id="fileInput" accept="image/*,video/*,audio/*,.pdf,application/pdf" multiple hidden /></div>
             <div id="attachmentList" class="attachment-grid"></div>
-            <p class="upload-tip">로그인 시 파일은 계정별 비공개 서버에 저장됩니다. 파일당 50MB 이하를 권장해요.</p>
+            <p class="upload-tip">로그인 시 파일은 계정별 비공개 서버에 저장됩니다. 파일당 최대 50MB까지 첨부할 수 있어요.</p>
           </div>
         </section>
         <footer class="footer-note"><span>✦</span> Keep your days, keep your story. <span>✦</span></footer></div>
@@ -123,7 +123,7 @@
   </div>
   <dialog id="exportDialog" class="export-dialog">
     <div class="dialog-heading"><div><p class="eyebrow">SAVE THIS MOMENT</p><h2>기록 내보내기</h2></div><button class="icon-button" id="closeExportBtn" aria-label="닫기">✕</button></div>
-    <label class="dialog-label" for="exportFilename">파일 이름 <small>(기록 제목은 변경되지 않아요)</small></label><input class="dialog-input" type="text" id="exportFilename" maxlength="160" placeholder="파일 이름" />
+    <label class="dialog-label" for="exportFilename">파일 이름 <small>(기록 제목은 변경되지 않아요)</small></label><input class="dialog-input" type="text" id="exportFilename" maxlength="120" placeholder="파일 이름" />
     <p class="export-help">원하는 형식으로 현재 기록을 저장해 보세요. 첨부 파일 원본은 ‘현재 기록 ZIP’에서 함께 받을 수 있어요.</p>
     <div class="export-options">
       <button data-export="md"><span class="export-icon md-icon">MD</span><span><strong>Markdown</strong><small>.md 텍스트 파일</small></span><span class="option-arrow">↗</span></button>
@@ -190,6 +190,6 @@
   <script src="./supabase-config.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0" defer></script>
   <script src="./cloud.js?v=12" defer></script>
-  <script src="./app.js?v=20" defer></script>
+  <script src="./app.js?v=21" defer></script>
 </body>
 </html>
