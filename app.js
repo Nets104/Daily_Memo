@@ -182,7 +182,7 @@
       initialized=true;
       const auth=$('cloudAuth'),app=$('diaryApp');
       const msg=$('cloudAuthStatus');
-      const usernameRule=/^[a-z][a-z0-9_]{3,19}$/;
+      const usernameRule=/^[a-z][a-z0-9_]{3,11}$/;
       let checkedUsername='';
       function authPanel(which){
         $('cloudLoginPanel').hidden=which!=='login';
@@ -243,7 +243,7 @@
         $('cloudUsername').value=name;
         checkedUsername='';
         if(!usernameRule.test(name)){
-          $('cloudUsernameStatus').textContent='영문 소문자로 시작하는 4~20자 아이디를 입력해 주세요.';
+          $('cloudUsernameStatus').textContent='영문 소문자로 시작하는 4~12자 아이디를 입력해 주세요.';
           return;
         }
         $('cloudUsernameCheck').disabled=true;
@@ -265,8 +265,8 @@
         if(!usernameRule.test(username)||checkedUsername!==username){
           msg.textContent='아이디 중복확인을 먼저 완료해 주세요.';return;
         }
-        if(password.length<8||password!==confirmation){
-          msg.textContent=password.length<8?'비밀번호는 8자 이상이어야 해요.':'비밀번호 확인이 일치하지 않아요.';
+        if(password.length<8||password.length>16||password!==confirmation){
+          msg.textContent=(password.length<8||password.length>16)?'비밀번호는 8~16자여야 해요.':'비밀번호 확인이 일치하지 않아요.';
           return;
         }
         $('cloudSignupComplete').disabled=true;msg.textContent='계정을 완성하는 중…';
