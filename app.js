@@ -795,12 +795,9 @@
         if(!confirm('"'+file.name+'" 파일을 삭제할까요?'))return;
         try{
           const related=attachments.find(f=>isDiaryCropPreview(f)&&f.name===cropPreviewName(file.id));
-          if(!isDraft){
-            if(related)await deleteOne('attachments',related.id);
-            await deleteOne('attachments',file.id);
-          }
           attachments=attachments.filter(x=>x.id!==file.id&&x.id!==related?.id);
-          renderAttachments();toast('첨부 파일을 삭제했어요.');
+          renderAttachments();queueSave();
+          toast('첨부를 목록에서 제외했어요. 일기 저장 버튼으로 확정해 주세요.');
         }catch(e){toast('삭제하지 못했어요.');}
       });
       info.append(name);
@@ -830,20 +827,22 @@
       if(isPhoto&&diaryPhotoCount>=MAX_DIARY_PHOTOS){toast('일기 사진은 최대 10장까지 첨부할 수 있어요.');continue;}
       const record={id:makeId(),entryId,name:file.name,type,size:file.size,blob:file,createdAt:new Date().toISOString()};
       try{
-        if(!targetDraft)await writeRecords('attachments',[record]);
         if(current?.id===entryId)attachments.push(record);
         added++;
         if(isPhoto){
           diaryPhotoCount++;
           try{
             const preview=await createDiaryPreview(record);
-            if(!targetDraft)await writeRecords('attachments',[preview]);
             if(current?.id===entryId)attachments.push(preview);
           }catch(error){console.warn('자동 사진 맞추기 실패, 원본은 유지됩니다.',error);}
         }
       }catch(e){console.error(e);toast('저장 공간이 부족할 수 있어요. 첨부 파일을 저장하지 못했어요.');break;}
     }
-    if(current?.id===entryId)renderAttachments();if(added)toast(targetDraft ? `${added}개 첨부를 준비했어요. 기록 저장을 눌러 확정하세요.` : `${added}개 파일을 기록에 첨부했어요.`);
+    if(current?.id===entryId){
+      renderAttachments();
+      if(added)queueSave();
+    }
+    if(added)toast(`${added}개 파일을 임시 보관했어요. 일기 저장을 눌러 확정하세요.`);
   }
   async function toggleRecording(){
     if(recorder && recorder.state==='recording'){recorder.stop();return;}
@@ -1190,7 +1189,15 @@
     $('deleteMonthBtn').addEventListener('click',monthlyDelete);
     $('backupBtn').addEventListener('click',async()=>{try{if(isDraft && (el.title.value.trim() || el.body.value.trim() || attachments.length))toast('저장하지 않은 새 기록은 백업에 포함되지 않아요.');await flushSave();await buildBackup([...entries],`일상기록_전체백업_${dayString()}`);toast('전체 기록과 첨부 파일 백업을 저장했어요.');}catch(e){toast(`백업 실패: ${e.message}`);}});
     $('restoreBtn').addEventListener('click',()=>el.restoreInput.click());el.restoreInput.addEventListener('change',async()=>{const file=el.restoreInput.files[0];if(file)await restoreBackup(file);el.restoreInput.value='';});
-    window.addEventListener('pagehide',()=>{if(saveTimer)saveCurrent();});document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden'&&saveTimer)saveCurrent();});
+    window.addEventListener('beforeunload',e=>{
+      if(!hasUnsavedChanges())return;
+      stagePending();
+      e.preventDefault();e.returnValue='';
+    });
+    window.addEventListener('pagehide',()=>{if(hasUnsavedChanges())stagePending();});
+    document.addEventListener('visibilitychange',()=>{
+      if(document.visibilityState==='hidden'&&hasUnsavedChanges())stagePending();
+    });
   }
   bindEvents();
   // Dismiss the opening screen even when authentication or a cached stylesheet is slow.
