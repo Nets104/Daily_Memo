@@ -49,6 +49,10 @@
       <div class="auth-switch">아직 계정이 없나요?
         <button type="button" class="auth-text-button" id="cloudSignup">회원가입</button>
       </div>
+      <div class="guest-entry">
+        <button type="button" class="outlined-button" id="guestLogin">회원가입 없이 이용하기</button>
+        <p>비회원 기록은 이 기기에만 저장되며, 서버 동기화는 지원하지 않아요.</p>
+      </div>
     </div>
     <div id="cloudSignupEmailPanel" hidden>
       <p class="auth-eyebrow">SIGN UP · 1 / 2</p>
@@ -69,17 +73,17 @@
       <form id="cloudSignupFinishForm" class="auth-form">
         <label for="cloudUsername">아이디</label>
         <div class="auth-username-row">
-          <input id="cloudUsername" type="text" minlength="4" maxlength="12" required autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="영문 소문자로 시작, 4~12자">
+          <input id="cloudUsername" type="text" minlength="4" maxlength="12" required autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="영문·숫자 4~12자">
           <button type="button" class="outlined-button" id="cloudUsernameCheck">중복확인</button>
         </div>
         <p id="cloudUsernameStatus" class="auth-field-status" role="status"></p>
         <label for="cloudNewPassword">비밀번호</label>
-        <input id="cloudNewPassword" type="password" minlength="8" maxlength="16" required autocomplete="new-password" placeholder="8~16자">
+        <input id="cloudNewPassword" type="password" minlength="8" maxlength="16" required autocomplete="new-password" placeholder="영문·숫자·특수문자 8~16자">
         <label for="cloudNewPasswordConfirm">비밀번호 확인</label>
         <input id="cloudNewPasswordConfirm" type="password" minlength="8" maxlength="16" required autocomplete="new-password" placeholder="비밀번호 다시 입력">
         <button type="submit" class="primary-button" id="cloudSignupComplete">회원가입 완료</button>
       </form>
-      <p class="auth-help">아이디는 4~12자(영문 소문자로 시작, 숫자·밑줄 사용 가능), 비밀번호는 8~16자예요.</p>
+      <p class="auth-help">아이디는 영문·숫자 4~12자, 비밀번호는 영문·숫자·특수문자 8~16자예요. 한글은 사용할 수 없어요.</p>
       <button type="button" class="auth-text-button" id="cloudSignupCancel">가입 취소</button>
     </div>
     <p id="cloudAuthStatus" role="status" class="auth-message" aria-live="polite"></p>
@@ -176,7 +180,13 @@
     <button type="button" class="outlined-button" id="myPageBackup">⇩ 전체 기록 ZIP 백업</button>
     <button type="button" class="outlined-button" id="myPageArchive">▦ 월별 백업 · 정리</button>
     <button type="button" class="outlined-button" id="myPageLogout" hidden>로그아웃</button>
+    <button type="button" class="outlined-button" id="myPageSignIn" hidden>로그인 · 회원가입</button>
   </div>
+  <section class="account-danger" id="myPageDanger" hidden>
+    <h2>계정 관리</h2>
+    <p>탈퇴 시 서버에 저장된 모든 일기와 첨부파일, 계정이 영구 삭제돼요.</p>
+    <button type="button" class="account-delete-button" id="myPageDelete">회원 탈퇴</button>
+  </section>
   <p class="my-hint">기존 기록과 첨부 파일은 계정 또는 기기 저장소에 그대로 보관돼요.</p>
 </section><section id="calendarPage" class="mini-calendar-page" hidden><header class="mini-calendar-header"><h2>캘린더</h2><button type="button" id="returnEditor" class="outlined-button">일기 작성</button></header><nav class="mini-calendar-toolbar"><button type="button" id="miniPrev">‹</button><strong id="miniYear"></strong><strong id="miniMonth"></strong><button type="button" id="miniNext">›</button><button type="button" id="miniToday">오늘</button></nav><div class="mini-calendar-weekdays"><span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span></div><div class="mini-calendar-grid" id="miniGrid"></div>
           <p class="mini-hint">날짜를 누르면 사진과 한마디를 추가할 수 있어요.</p></section><div id="editorPage" hidden>
@@ -300,6 +310,25 @@
         <button type="button" id="dayCardSave" class="primary-button">저장</button>
       </div>
     </div>
+  </dialog>
+  <dialog id="accountDeleteDialog" class="account-delete-dialog" aria-labelledby="accountDeleteTitle">
+    <h2 id="accountDeleteTitle">회원 탈퇴</h2>
+    <div class="account-delete-warning" role="alert">
+      <strong>계정과 서버의 모든 기록이 영구 삭제됩니다.</strong>
+      <p>일기, 사진·영상·녹음·캘린더 썸네일, 아이디가 삭제되며 복구할 수 없어요. 필요하다면 탈퇴 전에 ZIP으로 백업하세요.</p>
+    </div>
+    <form id="accountDeleteForm" class="account-delete-form">
+      <label for="accountDeletePassword">현재 비밀번호 확인</label>
+      <input id="accountDeletePassword" type="password" autocomplete="current-password" required maxlength="128" placeholder="현재 계정 비밀번호" />
+      <label for="accountDeletePhrase">확인 문구</label>
+      <p>아래에 <strong>탈퇴합니다</strong>를 똑같이 입력해 주세요.</p>
+      <input id="accountDeletePhrase" type="text" autocomplete="off" required maxlength="12" placeholder="탈퇴합니다" />
+      <p class="account-delete-status" id="accountDeleteStatus" role="status"></p>
+      <div class="account-delete-buttons">
+        <button type="button" class="outlined-button" id="accountDeleteCancel">취소</button>
+        <button type="submit" class="account-delete-confirm" id="accountDeleteConfirm" disabled>계정 영구 삭제</button>
+      </div>
+    </form>
   </dialog>
   <dialog id="monthDeleteDialog" class="month-delete-dialog" aria-labelledby="monthDeleteTitle">
     <h2 id="monthDeleteTitle">월별 기록 영구 삭제</h2>
