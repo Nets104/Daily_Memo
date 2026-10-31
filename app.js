@@ -607,7 +607,6 @@
   function renderCalendar() {
     if (!el.calendarGrid) return;
     el.calendarMonthLabel.textContent = `${calendarYear}년 ${calendarMonth + 1}월`;
-    $('archiveMonthLabel').textContent=`${calendarYear}년 ${calendarMonth+1}월 · 현재 달력`;
     const startDay = new Date(calendarYear, calendarMonth, 1).getDay();
     const lastDate = new Date(calendarYear, calendarMonth + 1, 0).getDate();
     const prefix = `${calendarYear}-${String(calendarMonth + 1).padStart(2, '0')}-`;
@@ -969,7 +968,8 @@
 
   }
   function monthEntries(){
-    const month=`${calendarYear}-${String(calendarMonth+1).padStart(2,'0')}`;
+    const month=$('archiveMonth').value;
+    if(!/^\d{4}-\d{2}$/.test(month))throw Error('백업 또는 삭제할 달을 선택하세요.');
     return {month,items:entries.filter(e=>e.date.startsWith(month+'-'))};
   }
   async function monthlyBackup(){
@@ -1174,7 +1174,7 @@
     $('homeCalendar').addEventListener('click',showMiniCalendar);
     $('homeRecent').addEventListener('click',()=>{const id=$('homeRecent').dataset.entryId;if(id)selectEntry(id);});
     $('myPageBackup').addEventListener('click',()=>$('backupBtn').click());
-    $('myPageArchive').addEventListener('click',()=>{openSidebar();$('archiveMonthLabel').scrollIntoView({block:'center'});});
+    $('myPageArchive').addEventListener('click',()=>{openSidebar();$('archiveMonth').scrollIntoView({block:'center'});});
     $('myPageLogout').addEventListener('click',()=>$('cloudLogout').click());
     $('returnEditor').addEventListener('click',showEditor);
     $('miniPrev').addEventListener('click',()=>shiftCalendar(-1));
@@ -1259,6 +1259,8 @@
     $('openExportBtn').addEventListener('click',async()=>{if(isDraft){toast('새 기록을 먼저 저장한 뒤 내보내 주세요.');return;}await flushSave();el.exportFilename.value=(current?.title.trim()||`${current?.date}_기록`).slice(0,MAX_EXPORT_NAME_CHARS);el.exportProgress.textContent='';el.dialog.showModal();});
     $('closeExportBtn').addEventListener('click',()=>el.dialog.close());el.dialog.addEventListener('click',e=>{if(e.target===el.dialog)el.dialog.close();});
     document.querySelectorAll('[data-export]').forEach(b=>b.addEventListener('click',()=>exportRecord(b.dataset.export)));
+    $('archiveMonth').value=dayString().slice(0,7);
+    $('archiveMonth').addEventListener('change',()=>{archivedMonth=null;});
     $('archiveMonthBtn').addEventListener('click',monthlyBackup);
     $('monthDeleteVerification').addEventListener('input',e=>{
       $('monthDeleteConfirm').disabled=!pendingMonthDeletion||e.target.value.trim()!==pendingMonthDeletion.month;
