@@ -9,7 +9,7 @@
     attachList:$('attachmentList'),attachCount:$('attachmentCount'),file:$('fileInput'),record:$('recordBtn'),recordText:$('recordBtnText'),
     dialog:$('exportDialog'),exportFilename:$('exportFilename'),exportProgress:$('exportProgress'),restoreInput:$('restoreInput'),toast:$('toast')
   };
-  const MAX_TITLE_CHARS=50, MAX_BODY_CHARS=5000, MAX_NOTE_CHARS=50;
+  const MAX_TITLE_CHARS=30, MAX_BODY_CHARS=1500, MAX_NOTE_CHARS=20, MAX_EXPORT_NAME_CHARS=30;
   const FILE_LIMITS={image:5*1024*1024,video:30*1024*1024,audio:10*1024*1024,pdf:10*1024*1024};
   const fileLimit=(type,name='')=>{
     if(type.startsWith('image/')||/\.(jpe?g|png|gif|webp|heic|heif|avif)$/i.test(name))return FILE_LIMITS.image;
@@ -173,7 +173,7 @@
     updateInputCounts();
     if(!textWithinLimits()){
       setSave('error','글자 수 초과');
-      if(explicit)toast('제목 50자, 본문 5,000자, 한마디 50자 이내로 입력해 주세요.');
+      if(explicit)toast('제목 30자, 본문 1,500자, 한마디 20자 이내로 입력해 주세요.');
       return false;
     }
     const hasInput=!!(current.title?.trim()||current.body?.trim()||current.shortNote?.trim()||current.weather||current.coverAttachmentId||attachments.length);
@@ -635,7 +635,7 @@
     }catch(e){recordStream?.getTracks().forEach(t=>t.stop());toast('마이크 권한이 필요해요. HTTPS 사이트에서 사용해 주세요.');}
   }
   function downloadBlob(blob,filename){const url=URL.createObjectURL(blob);const link=document.createElement('a');link.href=url;link.download=safeFileName(filename.replace(/\.[^.]*$/,''))+(filename.match(/\.[^.]*$/)?.[0]||'');document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);}
-  function currentExportName(){return safeFileName(el.exportFilename.value || current?.title || `${current?.date}_기록`);}
+  function currentExportName(){return safeFileName(el.exportFilename.value || current?.title || `${current?.date}_기록`).slice(0,MAX_EXPORT_NAME_CHARS);}
   function mdOfEntry(entry,attached){
     let md=`# ${entry.title.trim()||'제목 없는 기록'}\n\n${dateText(entry.date)}\n\n${entry.body.trim()}\n`;
     if(attached.length)md+=`\n---\n\n## 첨부 파일\n\n${attached.map(x=>`- ${x.name.replace(/\n/g,' ')}`).join('\n')}\n`;
@@ -932,7 +932,7 @@
       }
       await deleteSavedRecord(current.id);
     });
-    $('openExportBtn').addEventListener('click',async()=>{if(isDraft){toast('새 기록을 먼저 저장한 뒤 내보내 주세요.');return;}await flushSave();el.exportFilename.value=current?.title.trim()||`${current?.date}_기록`;el.exportProgress.textContent='';el.dialog.showModal();});
+    $('openExportBtn').addEventListener('click',async()=>{if(isDraft){toast('새 기록을 먼저 저장한 뒤 내보내 주세요.');return;}await flushSave();el.exportFilename.value=(current?.title.trim()||`${current?.date}_기록`).slice(0,MAX_EXPORT_NAME_CHARS);el.exportProgress.textContent='';el.dialog.showModal();});
     $('closeExportBtn').addEventListener('click',()=>el.dialog.close());el.dialog.addEventListener('click',e=>{if(e.target===el.dialog)el.dialog.close();});
     document.querySelectorAll('[data-export]').forEach(b=>b.addEventListener('click',()=>exportRecord(b.dataset.export)));
     $('archiveMonth').value=dayString().slice(0,7);
