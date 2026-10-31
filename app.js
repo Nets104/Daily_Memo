@@ -159,64 +159,58 @@
     if(!current) return;
     current.title=el.title.value;current.body=el.body.value;
   }
-  function queueSave() {
-    if(!current || !db) return;
-    refreshCurrentFromForm();
-    updateInputCounts();
+  function queueSave(){
+    if(!current||!db)return;
+    refreshCurrentFromForm();updateInputCounts();
     if(!textWithinLimits()){setSave('error','글자 수 초과');return;}
-    if(isDraft){setSave('','저장 전');renderCalendar();return;}
-    setSave('saving','저장 중…');clearTimeout(saveTimer);
-    saveTimer=setTimeout(()=>{ saveTimer=null;saveCurrent(); },450);
-    renderList();
+    setSave('','저장 전 · 임시 보관');
+    schedulePending();
   }
-  async function saveCurrent(explicit = false) {
-    clearTimeout(saveTimer);saveTimer=null;
-    if(!current || !db) return false;
-    if(isDraft && (!explicit || isSavingDraft)) return false;
-    refreshCurrentFromForm();
-    updateInputCounts();
+  async function saveCurrent(explicit=false){
+    // Persist to the account/server only following an explicit save action.
+    if(!explicit||!current||!db||isSavingDraft)return false;
+    refreshCurrentFromForm();updateInputCounts();
     if(!textWithinLimits()){
-      setSave('error','글자 수 초과');
-      if(explicit)toast('제목 30자, 본문 1,500자, 한마디 20자 이내로 입력해 주세요.');
+      setSave('error','글자 수 초과');toast('글자 수 제한을 확인해 주세요.');return false;
+    }
+    if(!(current.title?.trim()||current.body?.trim()||current.shortNote?.trim()||
+      current.weather||current.coverAttachmentId||attachments.length)){
+      toast('내용을 입력한 뒤 저장해 주세요.');return false;
+    }
+    if(!hasUnsavedChanges()){
+      setSave('','저장됨');toast('이미 저장된 기록이에요.',true);return true;
+    }
+    isSavingDraft=true;setSave('saving','저장 중…');
+    stagePending();
+    const snapshot={...current,updatedAt:new Date().toISOString()};
+    const additions=attachments.filter(f=>!savedFileIds.has(f.id));
+    const removals=[...savedFileIds].filter(id=>!attachments.some(f=>f.id===id));
+    try{
+      await pendingWrites.catch(()=>{});
+      await writeRecords('entries',[snapshot]);
+      if(additions.length)await writeRecords('attachments',additions);
+      for(const id of removals)await deleteOne('attachments',id);
+      current=snapshot;
+      const i=entries.findIndex(e=>e.id===snapshot.id);
+      if(i<0)entries.push({...snapshot});else entries[i]={...snapshot};
+      isDraft=false;setSavedBaseline();
+      await clearPending(snapshot.id);
+      setSave('','저장됨');el.edited.textContent='방금 수정됨';
+      $('deleteEntryBtn').textContent='이 일기 전체 삭제';
+      renderList();toast('저장되었습니다.',true);
+      return true;
+    }catch(e){
+      console.error(e);setSave('error','저장 실패');
+      toast('저장 중 오류가 발생했어요. 임시 보관 내용은 유지합니다.');
       return false;
-    }
-    const hasInput=!!(current.title?.trim()||current.body?.trim()||current.shortNote?.trim()||current.weather||current.coverAttachmentId||attachments.length);
-    if(!hasInput){
-      setSave(isDraft?'':'error',isDraft?'저장 전':'내용 없음');
-      if(explicit)toast('내용을 입력한 뒤 저장해 주세요.');
-      return false;
-    }
-    current.updatedAt=new Date().toISOString();
-    const snapshot={...current};
-    if(isDraft){
-      isSavingDraft=true;setSave('saving','저장 중…');
-      const staged=[...attachments];
-      savePromise=savePromise.catch(()=>{}).then(async()=>{
-        if(cloudMode){await cloud().saveEntry(snapshot);await cloud().saveAttachments(staged);return;}
-        await new Promise((resolve,reject)=>{
-          const tx=db.transaction(['entries','attachments'],'readwrite');
-          tx.objectStore('entries').put(snapshot);
-          for(const file of staged)tx.objectStore('attachments').put(file);
-          tx.oncomplete=()=>resolve();tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error||Error('저장 실패'));
-        });
-      });
-      try{
-        await savePromise;
-        if(current?.id===snapshot.id){
-          entries.push(current);isDraft=false;
-          setSave('','저장됨');el.edited.textContent='방금 수정됨';renderList();
-          toast('저장되었습니다.', true);
-        }
-        return true;
-      }catch(e){
-        console.error(e);setSave('error','저장 실패');toast('기록을 저장하지 못했어요. 저장 공간을 확인해 주세요.');return false;
-      }finally{isSavingDraft=false;}
-    }
-    savePromise=savePromise.catch(()=>{}).then(()=>writeRecords('entries',[snapshot]));
-    try { await savePromise; if(current?.id===snapshot.id){setSave('', '저장됨');el.edited.textContent='방금 수정됨';if(explicit)toast('저장되었습니다.', true);} renderList();return true; }
-    catch(e){console.error(e);setSave('error','저장 실패');toast('기록 저장에 실패했어요. 기기 저장 공간을 확인해 주세요.');return false;}
+    }finally{isSavingDraft=false;}
   }
-  async function flushSave() { if(saveTimer) await saveCurrent();else await savePromise.catch(()=>{}); }
+  async function flushSave(){
+    // Navigation and page exit must never commit unsaved content.
+    clearTimeout(pendingTimer);
+    if(hasUnsavedChanges())stagePending();
+    await pendingWrites.catch(()=>{});
+  }
   function renderEntryMeta() {
     const date=current?.date||dayString();
     const parts=date.split('-'),weekday=WEEK_KR[new Date(date+'T12:00:00').getDay()];
@@ -450,7 +444,7 @@
       const date=prefix+String(d).padStart(2,'0'),entry=byDay.get(date);
       const note=entry?(entry.shortNote||entry.title||'기록 보기'):'';
       const weather=entry?(WEATHER_EMOJI[entry.weather]||''):'';
-      cells.push(`<button class="mini-day ${entry?'filled':''} ${date===dayString()?'today':''} ${date===highlightedCalendarDate?'jump-selected':''}" data-mini-date="${date}" aria-pressed="${date===highlightedCalendarDate}"><span class="mini-day-head"><span class="mini-date">${d}</span>${weather?`<span class="mini-weather" aria-label="날씨">${weather}</span>`:''}</span><span class="mini-photo" data-mini-photo="${date}">${entry?'✿':'+'}</span><span class="mini-line ${note?'has-note':''}">${escapeHtml(note)}</span></button>`);
+      cells.push(`<button class="mini-day ${entry?'filled':''} ${date===dayString()?'today':''} ${date===highlightedCalendarDate?'jump-selected':''}" data-mini-date="${date}" aria-pressed="${date===highlightedCalendarDate}"><span class="mini-day-head"><span class="mini-date">${d}</span>${weather?`<span class="mini-weather" aria-label="날씨">${weather}</span>`:''}</span><span class="mini-photo" data-mini-photo="${date}">${entry?.coverAttachmentId?'✿':'+'}</span><span class="mini-line ${note?'has-note':''}">${escapeHtml(note)}</span></button>`);
     }
     $('miniGrid').innerHTML=cells.join('');
     loadMiniPhotos();
