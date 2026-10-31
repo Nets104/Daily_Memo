@@ -135,7 +135,7 @@
   }
   function refreshCurrentFromForm() {
     if(!current) return;
-    current.date=el.date.value || dayString();current.title=el.title.value;current.body=el.body.value;current.weather=$('entryWeather').value;current.shortNote=$('entryShortNote').value;
+    current.title=el.title.value;current.body=el.body.value;
   }
   function queueSave() {
     if(!current || !db) return;
@@ -180,11 +180,22 @@
     catch(e){console.error(e);setSave('error','저장 실패');toast('기록 저장에 실패했어요. 기기 저장 공간을 확인해 주세요.');return false;}
   }
   async function flushSave() { if(saveTimer) await saveCurrent();else await savePromise.catch(()=>{}); }
+  function renderEntryMeta() {
+    const date=current?.date||dayString();
+    el.dateDisplay.textContent=dateText(date);
+    const labels={sunny:'☀️ 맑음',partly_cloudy:'🌤️ 구름 조금',cloudy:'☁️ 흐림',rain:'🌧️ 비',snow:'❄️ 눈',wind:'💨 바람',other:'🌈 기타'};
+    $('metaWeatherText').textContent=labels[current?.weather]||'선택하지 않음';
+    const note=$('metaNoteText'),hasNote=!!current?.shortNote?.trim();
+    note.textContent=hasNote?current.shortNote.trim():'오늘의 한마디를 남겨주세요';
+    note.classList.toggle('entry-meta-placeholder',!hasNote);
+    const d=new Date(`${date}T12:00:00`);
+    $('stickerMonth').textContent=MONTH_EN[d.getMonth()];
+    $('stickerDay').textContent=String(d.getDate());
+    $('stickerWeek').textContent=WEEK_EN[d.getDay()];
+  }
   function fillEditor() {
-    el.date.value=current?.date || dayString();el.title.value=current?.title || '';el.body.value=current?.body || '';$('entryWeather').value=current?.weather||'';$('entryShortNote').value=current?.shortNote||'';
-    setCalendarMonth(el.date.value);
-    el.dateDisplay.textContent=dateText(el.date.value);
-    const d=new Date(`${el.date.value}T12:00:00`);$('stickerMonth').textContent=MONTH_EN[d.getMonth()];$('stickerDay').textContent=String(d.getDate());$('stickerWeek').textContent=WEEK_EN[d.getDay()];
+    el.title.value=current?.title||'';el.body.value=current?.body||'';
+    renderEntryMeta();setCalendarMonth(current?.date||dayString());
     el.edited.textContent=current?.updatedAt ? `${new Date(current.updatedAt).toLocaleDateString('ko-KR')} 수정` : '';
     el.charCount.textContent=`${[...el.body.value].length.toLocaleString()}자`;renderPreview();
   }
@@ -429,11 +440,47 @@
       renderList();toast(`빈 기록 ${empty.length}개를 정리했어요.`);
     }catch(e){console.error(e);toast('빈 기록 정리에 실패했어요.');}
   }
-  function updateDate() {
-    const iso=el.date.value;if(!iso)return;
-    setCalendarMonth(iso);
-    el.dateDisplay.textContent=dateText(iso);
-    const d=new Date(`${iso}T12:00:00`);$('stickerMonth').textContent=MONTH_EN[d.getMonth()];$('stickerDay').textContent=d.getDate();$('stickerWeek').textContent=WEEK_EN[d.getDay()];queueSave();
+  function openEntryMeta() {
+    if(!current)return;
+    el.date.value=current.date||dayString();
+    $('entryWeather').value=current.weather||'';
+    $('entryShortNote').value=current.shortNote||'';
+    $('entryMetaStatus').textContent='';
+    document.activeElement?.blur?.();
+    $('entryMetaDialog').showModal();
+    $('entryMetaCancel').focus({preventScroll:true});
+  }
+  async function saveEntryMeta() {
+    if(!current)return;
+    const date=el.date.value,weather=$('entryWeather').value,note=$('entryShortNote').value.trim();
+    if(!el.date.checkValidity()||!/^\d{4}-\d{2}-\d{2}$/.test(date)){
+      $('entryMetaStatus').textContent='날짜를 확인해 주세요.';return;
+    }
+    const old={date:current.date,weather:current.weather||'',shortNote:current.shortNote||'',updatedAt:current.updatedAt};
+    if(date===old.date&&weather===old.weather&&note===old.shortNote){
+      $('entryMetaDialog').close();return;
+    }
+    const button=$('entryMetaSave');
+    button.disabled=true;$('entryMetaStatus').textContent='저장 중…';
+    try{
+      await flushSave();
+      current.date=date;current.weather=weather;current.shortNote=note;
+      if(isDraft){
+        renderEntryMeta();setCalendarMonth(date);renderList();setSave('','저장 전');
+        $('entryMetaDialog').close();
+        toast('정보를 반영했어요. 일기 저장 버튼을 누르면 저장돼요.');
+      }else{
+        const saved=await saveCurrent(true);
+        if(!saved)throw Error('서버 저장을 확인하지 못했어요.');
+        renderEntryMeta();setCalendarMonth(date);renderList();
+        $('entryMetaDialog').close();
+      }
+    }catch(e){
+      current.date=old.date;current.weather=old.weather;current.shortNote=old.shortNote;current.updatedAt=old.updatedAt;
+      renderEntryMeta();
+      $('entryMetaStatus').textContent='저장 실패: 변경하지 않았어요. 다시 시도해 주세요.';
+      console.error(e);
+    }finally{button.disabled=false;}
   }
   function inlineMarkdown(raw) {
     const tokens=[];
@@ -840,7 +887,11 @@
       if(open)selectEntry(open.dataset.entryId);
     });
     $('cleanupEmptyBtn').addEventListener('click',cleanupEmptyRecords);
-    el.date.addEventListener('change',updateDate);el.title.addEventListener('input',queueSave);$('entryWeather').addEventListener('change',queueSave);$('entryShortNote').addEventListener('input',queueSave);
+    $('openMetaDialog').addEventListener('click',openEntryMeta);
+    $('entryMetaClose').addEventListener('click',()=>$('entryMetaDialog').close());
+    $('entryMetaCancel').addEventListener('click',()=>$('entryMetaDialog').close());
+    $('entryMetaSave').addEventListener('click',saveEntryMeta);
+    el.title.addEventListener('input',queueSave);
     el.body.addEventListener('input',()=>{queueSave();renderPreview();el.charCount.textContent=`${[...el.body.value].length.toLocaleString()}자`;});
     document.querySelectorAll('[data-view]').forEach(b=>b.addEventListener('click',()=>setView(b.dataset.view)));
     document.querySelectorAll('[data-format]').forEach(b=>b.addEventListener('click',()=>formatText(b.dataset.format)));
