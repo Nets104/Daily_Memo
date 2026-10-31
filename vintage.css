@@ -1967,3 +1967,14 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
   #miniGrid .mini-day{padding:1px}
   #miniGrid .mini-line{font-size:7px}
 }
+
+
+/* v34: lift calendar picture and handwritten note slightly without stretching tiles. */
+#miniGrid .mini-day-head{height:11px;min-height:11px;flex-basis:11px}
+#miniGrid .mini-day{gap:1px}
+#miniGrid .mini-line{position:relative;top:-2px}
+@media(max-width:740px){
+  #miniGrid .mini-day-head{height:10px;min-height:10px;flex-basis:10px}
+  #miniGrid .mini-day{gap:1px}
+  #miniGrid .mini-line{top:-2px}
+}
