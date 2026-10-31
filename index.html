@@ -73,7 +73,7 @@
           <button class="primary-button export-main" id="openExportBtn">내보내기 <span>↗</span></button>
         </div>
       </header>
-      <div class="page-wrap"><section id="homePage" class="home-dashboard" hidden aria-label="홈">
+      <div class="page-wrap"><section id="homePage" class="home-dashboard" aria-label="홈">
   <div class="home-hero">
     <p class="eyebrow">A LITTLE MOMENT, EVERY DAY</p>
     <h1>하루의 조각들을 모아요 ✿</h1>
@@ -109,7 +109,7 @@
   </div>
   <p class="my-hint">기존 기록과 첨부 파일은 계정 또는 기기 저장소에 그대로 보관돼요.</p>
 </section><section id="calendarPage" class="mini-calendar-page" hidden><header class="mini-calendar-header"><h2>캘린더</h2><button type="button" id="returnEditor" class="outlined-button">일기 작성</button></header><nav class="mini-calendar-toolbar"><button type="button" id="miniPrev">‹</button><strong id="miniYear"></strong><strong id="miniMonth"></strong><button type="button" id="miniNext">›</button><button type="button" id="miniToday">오늘</button></nav><div class="mini-calendar-weekdays"><span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span></div><div class="mini-calendar-grid" id="miniGrid"></div>
-          <p class="mini-hint">날짜를 누르면 사진과 한마디를 추가할 수 있어요.</p></section><div id="editorPage">
+          <p class="mini-hint">날짜를 누르면 사진과 한마디를 추가할 수 있어요.</p></section><div id="editorPage" hidden>
         <section class="page-intro">
           <div><p class="eyebrow">A LITTLE MOMENT, EVERY DAY</p><h1>오늘을 <em>기록</em>하다<span class="sparkle">✳</span></h1><p class="intro-desc">매일의 장면과 마음을 나만의 방식으로 남겨요.</p></div>
           <div class="date-sticker" aria-hidden="true"><span id="stickerMonth">OCT</span><strong id="stickerDay">31</strong><small id="stickerWeek">SATURDAY</small></div>
@@ -235,6 +235,6 @@
   <script src="./supabase-config.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0" defer></script>
   <script src="./cloud.js?v=12" defer></script>
-  <script src="./app.js?v=26" defer></script>
+  <script src="./app.js?v=27" defer></script>
 </body>
 </html>
