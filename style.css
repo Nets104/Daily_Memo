@@ -84,3 +84,8 @@
 .day-card-actions{display:flex;gap:8px}
 .day-card-actions button{flex:1;min-width:0}
 @media(max-width:740px){.mini-day{overflow:hidden}.day-card-dialog{padding:17px}.mini-calendar-page{overflow:hidden}}
+
+/* Calendar navigation and center-screen confirmation after explicit saves */
+#openCalendarPage{margin-top:12px}
+.toast.save-success{top:50%;bottom:auto;transform:translate(-50%,-50%) scale(.96);padding:14px 22px;font-size:14px;font-weight:750;border-radius:12px;white-space:nowrap}
+.toast.save-success.show{transform:translate(-50%,-50%) scale(1)}
