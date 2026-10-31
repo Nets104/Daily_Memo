@@ -1,5 +1,5 @@
-const CACHE='harugyeol-v29';
-const RESOURCES=['./index.html','./style.css?v=13','./vintage.css?v=28','./app.js?v=29','./assets/vintage-flowers.svg','./manifest.webmanifest','./supabase-config.js','./cloud.js?v=12','./icons/icon-192.png','./icons/icon-512.png'];
+const CACHE='harugyeol-v30';
+const RESOURCES=['./index.html','./style.css?v=13','./vintage.css?v=30','./app.js?v=30','./assets/vintage-flowers.svg','./manifest.webmanifest','./supabase-config.js','./cloud.js?v=12','./icons/icon-192.png','./icons/icon-512.png'];
 self.addEventListener('install',event=>{event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(RESOURCES)).then(()=>self.skipWaiting()));});
 self.addEventListener('activate',event=>{event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim()));});
 self.addEventListener('fetch',event=>{
