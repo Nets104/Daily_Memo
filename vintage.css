@@ -1359,3 +1359,245 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
   #miniToday{padding:6px 7px}
   .mini-day .mini-line{font-size:7.5px}
 }
+
+
+/* v28: consistent brown photo mat in the calendar and 4:3 thumbnail editor. */
+.mini-day .mini-photo.has-image,
+.mini-day .mini-photo.has-image img,
+.day-existing-photo,
+.day-existing-photo img,
+#dayCropCanvas{
+  background:#75563f !important;
+}
+.mini-day .mini-photo.has-image{
+  box-sizing:border-box;
+  width:100%;
+  height:auto;
+  aspect-ratio:4 / 3;
+  max-height:100%;
+  justify-self:center;
+  align-self:center;
+  overflow:hidden;
+}
+.mini-day .mini-photo.has-image img{
+  display:block;
+  width:100%;
+  height:100%;
+  object-fit:contain !important;
+}
+.day-existing-photo{
+  display:flex;
+  width:min(100%,460px);
+  height:auto;
+  max-height:none;
+  aspect-ratio:4 / 3;
+  margin:0 auto;
+  overflow:hidden;
+  border:3px solid #fff8e9;
+  border-radius:6px;
+}
+.day-existing-photo[hidden]{display:none!important}
+.day-existing-photo img{
+  display:block;
+  width:100%;
+  height:100%;
+  object-fit:contain;
+}
+#dayCropCanvas{
+  width:min(100%,460px);
+  aspect-ratio:4 / 3;
+  height:auto;
+  border:3px solid #fff8e9;
+  border-radius:6px;
+  box-sizing:border-box;
+}
+.day-delete-photo{
+  align-self:flex-end;
+  padding:8px 12px;
+  border:1px solid #bca18a;
+  border-radius:6px;
+  color:#915848;
+  background:#f8eadb;
+  font:700 12px Pretendard,sans-serif;
+  cursor:pointer;
+}
+.day-delete-photo:hover,.day-delete-photo:focus-visible{
+  border-color:#9f6251;
+  background:#f2ded1;
+}
+.day-delete-photo:disabled{opacity:.55;cursor:wait}
+/* Vintage flower illustration; the light paper carries the ink, not the other way around. */
+.home-dashboard{
+  position:relative;
+  padding:18px;
+  background:linear-gradient(150deg,#fff9eb,#f4e8d3);
+}
+.home-hero{
+  position:relative;
+  min-height:245px;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  box-sizing:border-box;
+  padding:35px 26px 30px;
+  overflow:hidden;
+  border:1px solid #d9bea0;
+  border-radius:5px;
+  background:linear-gradient(110deg,rgba(255,250,237,.98),rgba(253,240,221,.92));
+  box-shadow:inset 0 0 0 4px rgba(255,255,255,.24);
+}
+.home-hero-flower{
+  position:absolute;
+  width:290px;
+  height:280px;
+  top:-18px;
+  right:-85px;
+  background:url("./assets/vintage-flowers.svg") no-repeat center/contain;
+  transform:scaleX(-1) rotate(-7deg);
+  opacity:.59;
+  pointer-events:none;
+}
+.home-hero .eyebrow,.home-hero h1,.home-hero>p:not(.eyebrow),.home-vintage-stamp,.home-hero-caption{
+  position:relative;
+  z-index:1;
+}
+.home-hero .eyebrow{font-family:Georgia,serif;color:#997a5d;letter-spacing:2px;font-size:10px}
+.home-hero h1{
+  font-family:"Nanum Myeongjo","Batang",serif;
+  font-size:clamp(25px,3.5vw,35px);
+  line-height:1.45;
+  letter-spacing:-1.3px;
+  margin:16px 0 11px;
+  color:#4e382b;
+  font-weight:750;
+}
+.home-hero h1 em{font-style:normal;color:#986a50}
+.home-hero>p:not(.eyebrow){margin:0;font-family:Pretendard,sans-serif;line-height:1.8;color:#826b59;font-size:12px}
+.home-vintage-stamp{
+  width:max-content;
+  display:inline-block;
+  margin-top:8px;
+  padding:5px 10px;
+  border:1px dashed #c6aa86;
+  border-radius:3px;
+  font:10px Georgia,serif;
+  letter-spacing:1.5px;
+  color:#94775b;
+  transform:rotate(-2deg);
+}
+.home-hero-caption{
+  position:absolute;
+  right:14px;
+  bottom:11px;
+  color:#a08a6d;
+  font:italic 12px Georgia,serif;
+}
+.home-stats{margin-top:19px}
+.home-stats>div{
+  position:relative;
+  border-radius:4px;
+  background:#fff9ed;
+  border:1px solid #d6bd9b;
+  box-shadow:2px 4px 0 rgba(132,93,60,.07);
+}
+.home-stats>div:before{
+  content:"✻";
+  position:absolute;
+  right:13px;
+  top:10px;
+  font-size:16px;
+  color:#c0a080;
+}
+.home-recent-entry{
+  position:relative;
+  border-radius:4px;
+  margin-top:16px;
+  padding:20px 17px;
+  background:#fff9ed;
+  box-shadow:2px 4px 0 rgba(132,93,60,.08);
+}
+.home-recent-entry:before{
+  content:"";
+  position:absolute;
+  top:-9px;left:50%;
+  width:65px;height:16px;
+  background:rgba(192,161,117,.52);
+  transform:translateX(-50%) rotate(-3deg);
+}
+.home-recent h2{font-family:"Nanum Myeongjo","Batang",serif}
+/* Opening intro: one display per page launch, disappears after app initialization. */
+.startup-intro{
+  position:fixed;
+  inset:0;
+  z-index:120;
+  display:grid;
+  place-items:center;
+  box-sizing:border-box;
+  padding:22px;
+  background:radial-gradient(ellipse at 42% 34%,#fffaed,#ecd9bf 95%);
+  opacity:1;
+  visibility:visible;
+  transition:opacity .55s ease,visibility 0s linear .55s;
+  overflow:hidden;
+}
+.startup-intro.is-finished{
+  opacity:0;
+  visibility:hidden;
+  pointer-events:none;
+}
+.intro-flower{
+  position:absolute;
+  top:-68px;
+  left:-130px;
+  width:clamp(310px,65vw,600px);
+  height:clamp(310px,65vw,600px);
+  background:url("./assets/vintage-flowers.svg") no-repeat center/contain;
+  opacity:.8;
+  pointer-events:none;
+}
+.intro-card{
+  position:relative;
+  z-index:1;
+  text-align:center;
+  width:min(100%,410px);
+  padding:40px 22px;
+  border-top:1px solid rgba(167,125,81,.34);
+  border-bottom:1px solid rgba(167,125,81,.34);
+}
+.intro-overline{
+  color:#96755c;
+  font:10px Georgia,serif;
+  letter-spacing:2.2px;
+  margin-bottom:21px;
+}
+.intro-emblem{font-size:26px;color:#b28c6b}
+.intro-card h1{
+  font-family:"Nanum Myeongjo","Batang",serif;
+  color:#4b3528;
+  font-size:clamp(36px,7vw,52px);
+  letter-spacing:-2.2px;
+  margin:13px 0;
+}
+.intro-card h1 span{color:#ae8463;font-size:.44em;margin-left:7px;vertical-align:top}
+.intro-card>p:not(.intro-overline){color:#8c745e;font-size:13px;margin:14px 0 25px}
+.intro-loading{display:flex;gap:7px;justify-content:center}
+.intro-loading span{
+  width:5px;height:5px;background:#a28260;border-radius:50%;
+  animation:introPulse 1.1s ease-in-out infinite;
+}
+.intro-loading span:nth-child(2){animation-delay:.15s}
+.intro-loading span:nth-child(3){animation-delay:.3s}
+@keyframes introPulse{0%,80%,100%{opacity:.2;transform:scale(.7)}40%{opacity:1;transform:scale(1)}}
+@media(max-width:740px){
+  .home-dashboard{padding:12px}
+  .home-hero{min-height:260px;padding:26px 17px}
+  .home-hero-flower{width:205px;height:230px;right:-84px;top:3px;opacity:.44}
+  .home-hero h1{font-size:27px}
+  .home-hero>p:not(.eyebrow){font-size:11px}
+  .home-hero-caption{font-size:10px}
+  .intro-flower{top:-40px;left:-140px;width:420px;height:420px}
+}
+@media(prefers-reduced-motion:reduce){
+  .startup-intro{transition:none}
+  .intro-loading span{animation:none}
+}
