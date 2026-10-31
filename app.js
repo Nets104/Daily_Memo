@@ -9,7 +9,14 @@
     attachList:$('attachmentList'),attachCount:$('attachmentCount'),file:$('fileInput'),record:$('recordBtn'),recordText:$('recordBtnText'),
     dialog:$('exportDialog'),exportFilename:$('exportFilename'),exportProgress:$('exportProgress'),restoreInput:$('restoreInput'),toast:$('toast')
   };
-  const MAX_TITLE_CHARS=180, MAX_BODY_CHARS=30000, MAX_NOTE_CHARS=120, MAX_FILE_BYTES=50*1024*1024;
+  const MAX_TITLE_CHARS=50, MAX_BODY_CHARS=5000, MAX_NOTE_CHARS=50;
+  const FILE_LIMITS={image:5*1024*1024,video:30*1024*1024,audio:10*1024*1024,pdf:10*1024*1024};
+  const fileLimit=(type,name='')=>{
+    if(type.startsWith('image/')||/\.(jpe?g|png|gif|webp|heic|heif|avif)$/i.test(name))return FILE_LIMITS.image;
+    if(type.startsWith('video/')||/\.(mp4|mov|webm|m4v)$/i.test(name))return FILE_LIMITS.video;
+    if(type.startsWith('audio/')||/\.(mp3|wav|m4a|ogg|flac|aac)$/i.test(name))return FILE_LIMITS.audio;
+    return FILE_LIMITS.pdf;
+  };
   const WEEK_KR = ['일','월','화','수','목','금','토'];
   const WEEK_JP = ['日','月','火','水','木','金','土'];
   const MONTH_EN = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
@@ -139,6 +146,8 @@
     el.charCount.textContent=el.body.value.length.toLocaleString()+' / '+MAX_BODY_CHARS.toLocaleString()+'자';
   }
   function textWithinLimits(){
+    // Retain long records created before these limits; never truncate existing data.
+    if(!isDraft)return true;
     return el.title.value.length<=MAX_TITLE_CHARS && el.body.value.length<=MAX_BODY_CHARS &&
       (current?.shortNote||'').length<=MAX_NOTE_CHARS;
   }
@@ -164,7 +173,7 @@
     updateInputCounts();
     if(!textWithinLimits()){
       setSave('error','글자 수 초과');
-      if(explicit)toast('제목은 180자, 본문은 30,000자 이내로 입력해 주세요.');
+      if(explicit)toast('제목 50자, 본문 5,000자, 한마디 50자 이내로 입력해 주세요.');
       return false;
     }
     const hasInput=!!(current.title?.trim()||current.body?.trim()||current.shortNote?.trim()||current.weather||current.coverAttachmentId||attachments.length);
@@ -220,6 +229,8 @@
   }
   function fillEditor() {
     el.title.value=current?.title||'';el.body.value=current?.body||'';
+    el.title.maxLength=Math.max(MAX_TITLE_CHARS,el.title.value.length);
+    el.body.maxLength=Math.max(MAX_BODY_CHARS,el.body.value.length);
     renderEntryMeta();setCalendarMonth(current?.date||dayString());
     el.edited.textContent=current?.updatedAt ? `${new Date(current.updatedAt).toLocaleDateString('ko-KR')} 수정` : '';
     updateInputCounts();renderPreview();
@@ -267,6 +278,7 @@
     $('dayCardTitle').textContent=date+' 기록';
     const entry=entries.filter(e=>e.date===date).sort((a,b)=>b.updatedAt.localeCompare(a.updatedAt))[0];
     $('dayCardNote').value=entry?.shortNote||'';
+    $('dayCardNote').maxLength=Math.max(MAX_NOTE_CHARS,$('dayCardNote').value.length);
     $('dayCardStatus').textContent='';
     $('dayCropSection').hidden=true;$('dayCropZoom').value='1';
     const view=$('dayExistingPhoto');view.replaceChildren();view.hidden=true;
@@ -309,7 +321,7 @@
       if(cardPhoto){
         const canvas=$('dayCropCanvas');
         const blob=await new Promise((resolve,reject)=>canvas.toBlob(b=>b?resolve(b):reject(Error('이미지를 자르지 못했어요.')),'image/jpeg',.86));
-        if(blob.size>MAX_FILE_BYTES)throw Error('사진 파일은 50MB를 초과할 수 없어요.');
+        if(blob.size>FILE_LIMITS.image)throw Error('썸네일은 5MB 이하여야 해요.');
         file={id:makeId(),entryId:entry.id,name:'달력_썸네일_'+date+'.jpg',type:'image/jpeg',size:blob.size,blob,createdAt:now};
       }
       await writeRecords('entries',[entry]);
@@ -448,7 +460,8 @@
     el.date.value=current.date||dayString();
     $('entryWeather').value=current.weather||'';
     $('entryShortNote').value=current.shortNote||'';
-    $('entryMetaCount').textContent=$('entryShortNote').value.length+'/120';
+    $('entryShortNote').maxLength=Math.max(MAX_NOTE_CHARS,$('entryShortNote').value.length);
+    $('entryMetaCount').textContent=$('entryShortNote').value.length+'/'+MAX_NOTE_CHARS;
     $('entryMetaStatus').textContent='';
     document.activeElement?.blur?.();
     $('entryMetaDialog').showModal();
@@ -545,7 +558,7 @@
       const slice=ta.value.slice(ls,actualEnd);
       const modified=slice.split('\n').map((line,j)=>prefix(j)+line).join('\n');
       const updated=ta.value.slice(0,ls)+modified+ta.value.slice(actualEnd);
-      if(updated.length>MAX_BODY_CHARS){toast('본문은 30,000자까지 입력할 수 있어요.');return;}
+      if(updated.length>ta.maxLength){toast('본문 글자 수 제한을 초과했어요.');return;}
       ta.value=updated;ta.focus();ta.setSelectionRange(ls,ls+modified.length);queueSave();renderPreview();el.charCount.textContent=`${[...ta.value].length.toLocaleString()}자`;return;
     };
     switch(kind){
@@ -559,7 +572,7 @@
       default:return;
     }
     const updated=a+edit.insert+b;
-    if(updated.length>MAX_BODY_CHARS){toast('본문은 30,000자까지 입력할 수 있어요.');return;}
+    if(updated.length>ta.maxLength){toast('본문 글자 수 제한을 초과했어요.');return;}
     ta.value=updated;ta.focus();ta.setSelectionRange(start+edit.selStart,start+edit.selEnd);queueSave();renderPreview();el.charCount.textContent=`${[...ta.value].length.toLocaleString()}자`;
   }
   function closeSidebar(){el.sidebar.classList.remove('open');el.scrim.classList.remove('visible');$('openSidebar').setAttribute('aria-expanded','false');}
@@ -591,7 +604,8 @@
     let added=0;
     for(const file of [...fileList]) {
       if(!/^(image\/|video\/|audio\/|application\/pdf$)/.test(file.type) && !/\.(jpe?g|png|gif|webp|heic|heif|avif|mp4|mov|webm|m4v|mp3|wav|m4a|ogg|flac|aac|pdf)$/i.test(file.name)){toast(`${file.name}: 지원하지 않는 형식이에요.`);continue;}
-      if(file.size>MAX_FILE_BYTES){toast(`${file.name}: 50MB를 초과해 첨부할 수 없어요.`);continue;}
+      const maxBytes=fileLimit(file.type||'',file.name);
+      if(file.size>maxBytes){toast(`${file.name}: 최대 ${Math.round(maxBytes/1024/1024)}MB까지만 첨부할 수 있어요.`);continue;}
       const ext=file.name.split('.').pop().toLowerCase();
       const inferred={jpg:'image/jpeg',jpeg:'image/jpeg',png:'image/png',gif:'image/gif',webp:'image/webp',heic:'image/heic',heif:'image/heif',avif:'image/avif',mp4:'video/mp4',mov:'video/quicktime',m4v:'video/mp4',webm:'video/webm',mp3:'audio/mpeg',wav:'audio/wav',m4a:'audio/mp4',ogg:'audio/ogg',flac:'audio/flac',aac:'audio/aac',pdf:'application/pdf'};
       const type=file.type || inferred[ext] || 'application/octet-stream';
@@ -862,7 +876,7 @@
     $('dayPhotoInput').addEventListener('change',async()=>{
       const file=$('dayPhotoInput').files[0];$('dayPhotoInput').value='';if(!file)return;
       if(!file.type.startsWith('image/')){toast('이미지 파일을 선택해 주세요.');return;}
-      if(file.size>MAX_FILE_BYTES){toast('사진은 50MB 이하만 선택할 수 있어요.');return;}
+      if(file.size>FILE_LIMITS.image){toast('사진은 5MB 이하만 선택할 수 있어요.');return;}
       const url=URL.createObjectURL(file),image=new Image();
       try{
         await new Promise((res,rej)=>{image.onload=res;image.onerror=()=>rej(Error('이미지를 열 수 없어요.'));image.src=url;});
@@ -899,7 +913,7 @@
     $('entryMetaClose').addEventListener('click',()=>$('entryMetaDialog').close());
     $('entryMetaCancel').addEventListener('click',()=>$('entryMetaDialog').close());
     $('entryMetaSave').addEventListener('click',saveEntryMeta);
-    $('entryShortNote').addEventListener('input',()=>{$('entryMetaCount').textContent=$('entryShortNote').value.length+'/120';});
+    $('entryShortNote').addEventListener('input',()=>{$('entryMetaCount').textContent=$('entryShortNote').value.length+'/'+MAX_NOTE_CHARS;});
     el.title.addEventListener('input',queueSave);
     el.body.addEventListener('input',()=>{queueSave();renderPreview();});
     document.querySelectorAll('[data-view]').forEach(b=>b.addEventListener('click',()=>setView(b.dataset.view)));
