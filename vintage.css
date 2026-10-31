@@ -1978,3 +1978,141 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
   #miniGrid .mini-day{gap:1px}
   #miniGrid .mini-line{top:-2px}
 }
+
+
+/* v36: Center the calendar caption in the free space beneath its square image. */
+#miniGrid .mini-day .mini-caption{
+  display:flex;
+  flex:1 1 26px;
+  min-height:26px;
+  width:100%;
+  max-width:100%;
+  align-items:center;
+  justify-content:center;
+  overflow:hidden;
+}
+#miniGrid .mini-day .mini-caption .mini-line{
+  display:inline-block;
+  position:static;
+  top:auto;
+  flex:0 1 auto;
+  align-self:center;
+  width:auto;
+  min-width:0;
+  max-width:100%;
+  height:auto;
+  min-height:0;
+  margin:0;
+  padding:0 1px;
+  font-size:9px;
+  line-height:1.17;
+  text-align:center;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+#miniGrid .mini-day .mini-caption .mini-line.has-note{
+  width:max-content;
+  max-width:100%;
+  padding:1px 2px;
+}
+@media(max-width:740px){
+  #miniGrid .mini-day .mini-caption{flex-basis:21px;min-height:21px}
+  #miniGrid .mini-day .mini-caption .mini-line{font-size:8px}
+}
+@media(max-width:370px){
+  #miniGrid .mini-day .mini-caption{flex-basis:18px;min-height:18px}
+  #miniGrid .mini-day .mini-caption .mini-line{font-size:7px}
+}
+/* Title on the mini-calendar is an opt-in choice for each saved diary. */
+.calendar-title-toggle{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:11px 10px;
+  margin:12px 0 7px;
+  font:700 12px Pretendard,-apple-system,BlinkMacSystemFont,sans-serif;
+  color:#765a40;
+  background:rgba(230,208,176,.25);
+  border:1px solid #ddc6a7;
+  border-radius:7px;
+  cursor:pointer;
+}
+.calendar-title-toggle input{
+  flex:0 0 17px;
+  width:17px;
+  height:17px;
+  margin:0;
+  accent-color:#846146;
+}
+.archive-month-description{
+  margin:8px 0 8px;
+  color:#8c7762;
+  font:12px/1.5 Pretendard,sans-serif;
+}
+.archive-month-label{
+  padding:11px 13px;
+  border:1px solid #d2b99a;
+  border-radius:7px;
+  background:#fff7ea;
+  color:#604a37;
+  font:750 14px Pretendard,sans-serif;
+}
+#deleteMonthBtn{
+  color:#aa3932;
+  border:1px solid #ddaa9f;
+  background:#fff1ec;
+  text-align:center;
+  justify-content:center;
+  font-weight:750;
+}
+#deleteMonthBtn:hover{background:#ffe4dc}
+.month-delete-dialog{
+  box-sizing:border-box;
+  width:min(440px,calc(100vw - 28px));
+  padding:23px;
+  border:1px solid #cda89e;
+  border-radius:12px;
+  background:#fffaf3;
+  color:#533d31;
+  box-shadow:0 22px 70px rgba(33,21,17,.34);
+  max-height:90dvh;
+  overflow:auto;
+  font-family:Pretendard,-apple-system,BlinkMacSystemFont,sans-serif;
+}
+.month-delete-dialog::backdrop{background:rgba(36,25,20,.7)}
+.month-delete-dialog h2{
+  margin:0 0 16px;
+  font-size:19px;
+  font-weight:800;
+}
+.month-delete-warning{
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  background:#ffebe7;
+  border:1px solid #d37e73;
+  border-radius:8px;
+  padding:15px;
+  color:#9b2925;
+  font-size:13px;
+  line-height:1.65;
+}
+.month-delete-warning strong{font-weight:850}
+.month-delete-hint{color:#8a6f63;font-size:12px;line-height:1.65;margin:14px 0}
+.month-delete-dialog label{display:block;font-size:12px;font-weight:750;margin-bottom:7px}
+#monthDeleteVerification{
+  width:100%;
+  box-sizing:border-box;
+  border:1px solid #d4b19e;
+  background:#fffdf8;
+  color:#533d31;
+  border-radius:6px;
+  font-size:16px;
+  padding:12px;
+  outline-offset:2px;
+}
+.month-delete-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin-top:19px}
+.month-delete-actions button{min-width:0;padding:11px;border-radius:7px;font-size:13px;font-weight:750}
+.month-delete-confirm{border:1px solid #a22f2e;background:#aa3830;color:white}
+.month-delete-confirm:disabled{background:#e7d6d0;color:#8c807a;border-color:#d4bdb3}
