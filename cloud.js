@@ -27,7 +27,8 @@
     }
     return arr;
   };
-  const pathFor=f=>own()+'/'+f.entryId+'/'+f.id+'/'+encodeURIComponent(f.name).replace(/%2F/gi,'_');
+  // Storage keys must be ASCII-safe. Keep the original filename in diary_attachments.file_name.
+  const pathFor=f=>own()+'/'+f.entryId+'/'+f.id;
   const api={
     configured:true,client,
     get user(){return user;},
