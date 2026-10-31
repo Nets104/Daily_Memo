@@ -10,8 +10,8 @@
   let user=null;
   const fail=(result)=>{if(result.error)throw result.error;return result.data;};
   const own=()=>{if(!user)throw Error('로그인 정보가 없어요.');return user.id;};
-  const entryRow=e=>({user_id:own(),id:e.id,entry_date:e.date,title:e.title||'',body:e.body||'',short_note:e.shortNote||'',weather:e.weather||'',cover_attachment_id:e.coverAttachmentId||null,created_at:e.createdAt,updated_at:e.updatedAt});
-  const toEntry=r=>({id:r.id,date:r.entry_date,title:r.title,body:r.body,shortNote:r.short_note||'',weather:r.weather||'',coverAttachmentId:r.cover_attachment_id||null,createdAt:r.created_at,updatedAt:r.updated_at});
+  const entryRow=e=>({user_id:own(),id:e.id,entry_date:e.date,title:e.title||'',body:e.body||'',short_note:e.shortNote||'',weather:e.weather||'',cover_attachment_id:e.coverAttachmentId||null,calendar_show_title:!!e.calendarShowTitle,created_at:e.createdAt,updated_at:e.updatedAt});
+  const toEntry=r=>({id:r.id,date:r.entry_date,title:r.title,body:r.body,shortNote:r.short_note||'',weather:r.weather||'',coverAttachmentId:r.cover_attachment_id||null,calendarShowTitle:!!r.calendar_show_title,createdAt:r.created_at,updatedAt:r.updated_at});
   const toFile=async r=>{
     const data=fail(await client.storage.from('diary-media').download(r.storage_path));
     return {id:r.id,entryId:r.entry_id,name:r.file_name,type:r.content_type,size:r.file_size,createdAt:r.created_at,blob:data};
