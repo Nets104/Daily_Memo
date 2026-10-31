@@ -567,7 +567,7 @@
       const date=prefix+String(d).padStart(2,'0'),entry=byDay.get(date);
       const note=entry?(entry.shortNote||entry.title||'기록 보기'):'';
       const weather=entry?(WEATHER_EMOJI[entry.weather]||''):'';
-      cells.push(`<button class="mini-day ${entry?'filled':''} ${date===dayString()?'today':''} ${date===highlightedCalendarDate?'jump-selected':''}" data-mini-date="${date}" aria-pressed="${date===highlightedCalendarDate}"><span class="mini-day-head"><span class="mini-date">${d}</span>${weather?`<span class="mini-weather" aria-label="날씨">${weather}</span>`:''}</span><span class="mini-photo" data-mini-photo="${date}">${entry?.coverAttachmentId?'✿':'+'}</span><span class="mini-line ${note?'has-note':''}">${escapeHtml(note)}</span></button>`);
+      cells.push(`<button class="mini-day ${entry?'filled':''} ${date===dayString()?'today':''} ${date===highlightedCalendarDate?'jump-selected':''}" data-mini-date="${date}" aria-pressed="${date===highlightedCalendarDate}"><span class="mini-day-head"><span class="mini-date">${d}</span>${weather?`<span class="mini-weather" aria-label="날씨">${weather}</span>`:''}</span><span class="mini-photo" data-mini-photo="${date}">+</span><span class="mini-line ${note?'has-note':''}">${escapeHtml(note)}</span></button>`);
     }
     $('miniGrid').innerHTML=cells.join('');
     loadMiniPhotos();
@@ -986,7 +986,7 @@
       if(!confirm('다운로드한 ZIP 파일을 확인하고 보관했나요? '+items.length+'개 기록과 첨부파일을 영구 삭제합니다.'))return;
       if(prompt('확인을 위해 '+month+' 입력')!==month)return;
       let deleted=0;
-      for(const entry of items){try{await deleteEntryData(entry.id);entries=entries.filter(e=>e.id!==entry.id);deleted++;}catch(e){console.error(e);}}
+      for(const entry of items){try{await deleteEntryData(entry.id);await clearPending(entry.id);entries=entries.filter(e=>e.id!==entry.id);deleted++;}catch(e){console.error(e);}}
       if(current&&!isDraft&&!entries.some(e=>e.id===current.id)){
         current=null;attachments=[];isDraft=false;
         const next=[...entries].sort((a,b)=>b.updatedAt.localeCompare(a.updatedAt))[0];
