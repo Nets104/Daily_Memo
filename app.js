@@ -36,8 +36,6 @@
   const isCalendarCover=f=>f.id===current?.coverAttachmentId||/^달력_썸네일_/.test(f.name||'');
   const isDiaryCropPreview=f=>/^일기_미리보기_/.test(f.name||'');
   const cropPreviewName=id=>'일기_미리보기_'+id+'.jpg';
-  let diaryCropSource=null,diaryCropFileId=null,diaryCropImageUrl=null;
-  let diaryCropZoom=1,diaryCropOffsetX=0,diaryCropOffsetY=0,diaryCropPointer=null;
 
   function dayString(date = new Date()) {
     return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
@@ -678,56 +676,27 @@
   function closeSidebar(){el.sidebar.classList.remove('open');el.scrim.classList.remove('visible');$('openSidebar').setAttribute('aria-expanded','false');}
   function openSidebar(){el.sidebar.classList.add('open');el.scrim.classList.add('visible');$('openSidebar').setAttribute('aria-expanded','true');}
   function revokeMediaUrls(){for(const u of mediaUrls)URL.revokeObjectURL(u);mediaUrls=[];}
-  async function openDiaryCrop(file){
-    const original=attachments.find(f=>f.id===file.id&&!isDiaryCropPreview(f));
-    if(!original)return;
-    closeDiaryCrop();
-    const url=URL.createObjectURL(original.blob);
-    const img=new Image();
+  async function createDiaryPreview(file){
+    // Make a centered 4:3 display image while retaining the exact original file.
+    const url=URL.createObjectURL(file.blob);
     try{
-      await new Promise((resolve,reject)=>{img.onload=resolve;img.onerror=()=>reject(Error('사진을 열 수 없어요.'));img.src=url;});
-      diaryCropSource=img;diaryCropFileId=original.id;diaryCropImageUrl=url;
-      diaryCropZoom=1;diaryCropOffsetX=0;diaryCropOffsetY=0;
-      $('diaryCropZoom').value='1';
-      $('diaryCropStatus').textContent='';
-      paintDiaryCrop();
-      $('diaryCropDialog').showModal();
-    }catch(e){URL.revokeObjectURL(url);toast(e.message);}
-  }
-  function closeDiaryCrop(){
-    if($('diaryCropDialog').open)$('diaryCropDialog').close();
-    if(diaryCropImageUrl){URL.revokeObjectURL(diaryCropImageUrl);diaryCropImageUrl=null;}
-    diaryCropSource=null;diaryCropFileId=null;diaryCropPointer=null;
-  }
-  function paintDiaryCrop(){
-    if(!diaryCropSource)return;
-    const canvas=$('diaryCropCanvas'),ctx=canvas.getContext('2d'),image=diaryCropSource;
-    const scale=Math.max(canvas.width/image.naturalWidth,canvas.height/image.naturalHeight)*diaryCropZoom;
-    const w=image.naturalWidth*scale,h=image.naturalHeight*scale;
-    const limitX=Math.max(0,(w-canvas.width)/2),limitY=Math.max(0,(h-canvas.height)/2);
-    diaryCropOffsetX=Math.max(-limitX,Math.min(limitX,diaryCropOffsetX));
-    diaryCropOffsetY=Math.max(-limitY,Math.min(limitY,diaryCropOffsetY));
-    ctx.fillStyle='#e8d7c0';ctx.fillRect(0,0,canvas.width,canvas.height);
-    ctx.drawImage(image,(canvas.width-w)/2+diaryCropOffsetX,(canvas.height-h)/2+diaryCropOffsetY,w,h);
-  }
-  async function saveDiaryCrop(){
-    const source=attachments.find(f=>f.id===diaryCropFileId);
-    if(!source||!diaryCropSource)return;
-    const button=$('diaryCropSave');button.disabled=true;
-    $('diaryCropStatus').textContent='사진 배치 저장 중…';
-    try{
-      const canvas=$('diaryCropCanvas');
-      const blob=await new Promise((resolve,reject)=>canvas.toBlob(b=>b?resolve(b):reject(Error('사진을 자르지 못했어요.')),'image/jpeg',.88));
-      if(blob.size>FILE_LIMITS.image)throw Error('사진 미리보기 용량이 5MB를 초과했어요.');
-      const name=cropPreviewName(source.id);
-      const old=attachments.find(f=>isDiaryCropPreview(f)&&f.name===name);
-      const preview={id:old?.id||makeId(),entryId:source.entryId,name,type:'image/jpeg',size:blob.size,blob,createdAt:old?.createdAt||new Date().toISOString()};
-      if(!isDraft)await writeRecords('attachments',[preview]);
-      attachments=attachments.filter(f=>f.id!==preview.id);
-      attachments.push(preview);
-      closeDiaryCrop();renderAttachments();toast('사진 배치를 저장했어요. 원본은 그대로예요.',true);
-    }catch(e){console.error(e);$('diaryCropStatus').textContent='저장 실패: '+e.message;}
-    finally{button.disabled=false;}
+      const image=new Image();
+      await new Promise((resolve,reject)=>{
+        image.onload=resolve;image.onerror=()=>reject(Error('미리보기 이미지를 열 수 없어요.'));
+        image.src=url;
+      });
+      const canvas=document.createElement('canvas');
+      canvas.width=640;canvas.height=480;
+      const ctx=canvas.getContext('2d');
+      const scale=Math.max(canvas.width/image.naturalWidth,canvas.height/image.naturalHeight);
+      const width=image.naturalWidth*scale,height=image.naturalHeight*scale;
+      ctx.drawImage(image,(canvas.width-width)/2,(canvas.height-height)/2,width,height);
+      const blob=await new Promise((resolve,reject)=>{
+        canvas.toBlob(b=>b?resolve(b):reject(Error('미리보기 생성 실패')),'image/jpeg',.85);
+      });
+      return {id:makeId(),entryId:file.entryId,name:cropPreviewName(file.id),
+        type:'image/jpeg',size:blob.size,blob,createdAt:new Date().toISOString()};
+    }finally{URL.revokeObjectURL(url);}
   }
   function renderAttachments(){
     if($('photoPreviewDialog').open)$('photoPreviewDialog').close();
@@ -775,12 +744,6 @@
         }catch(e){toast('삭제하지 못했어요.');}
       });
       info.append(name);
-      if(isPhoto){
-        const cropButton=document.createElement('button');cropButton.type='button';cropButton.className='attachment-crop';
-        cropButton.textContent='사진 맞추기';cropButton.title='사진은 4:3으로 자르고 원본은 보관해요.';
-        cropButton.addEventListener('click',()=>openDiaryCrop(file));
-        info.append(cropButton);
-      }
       info.append(remove);
       const dl=document.createElement('a');dl.className='attachment-download';
       dl.textContent='원본 다운로드 ↓';dl.href=url;dl.download=file.name;
@@ -806,8 +769,19 @@
       const isPhoto=type.startsWith('image/');
       if(isPhoto&&diaryPhotoCount>=MAX_DIARY_PHOTOS){toast('일기 사진은 최대 10장까지 첨부할 수 있어요.');continue;}
       const record={id:makeId(),entryId,name:file.name,type,size:file.size,blob:file,createdAt:new Date().toISOString()};
-      try{if(!targetDraft)await writeRecords('attachments',[record]);if(current?.id===entryId)attachments.push(record);added++;if(isPhoto)diaryPhotoCount++;}
-      catch(e){console.error(e);toast('저장 공간이 부족할 수 있어요. 첨부 파일을 저장하지 못했어요.');break;}
+      try{
+        if(!targetDraft)await writeRecords('attachments',[record]);
+        if(current?.id===entryId)attachments.push(record);
+        added++;
+        if(isPhoto){
+          diaryPhotoCount++;
+          try{
+            const preview=await createDiaryPreview(record);
+            if(!targetDraft)await writeRecords('attachments',[preview]);
+            if(current?.id===entryId)attachments.push(preview);
+          }catch(error){console.warn('자동 사진 맞추기 실패, 원본은 유지됩니다.',error);}
+        }
+      }catch(e){console.error(e);toast('저장 공간이 부족할 수 있어요. 첨부 파일을 저장하지 못했어요.');break;}
     }
     if(current?.id===entryId)renderAttachments();if(added)toast(targetDraft ? `${added}개 첨부를 준비했어요. 기록 저장을 눌러 확정하세요.` : `${added}개 파일을 기록에 첨부했어요.`);
   }
@@ -1131,29 +1105,6 @@
     document.querySelectorAll('[data-view]').forEach(b=>b.addEventListener('click',()=>setView(b.dataset.view)));
     document.querySelectorAll('[data-format]').forEach(b=>b.addEventListener('click',()=>formatText(b.dataset.format)));
     document.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='s'){e.preventDefault();saveCurrent(true);}if((e.ctrlKey||e.metaKey)&&['b','i'].includes(e.key.toLowerCase())&&document.activeElement===el.body){e.preventDefault();formatText(e.key.toLowerCase()==='b'?'bold':'italic');}});
-    $('diaryCropClose').addEventListener('click',closeDiaryCrop);
-    $('diaryCropCancel').addEventListener('click',closeDiaryCrop);
-    $('diaryCropSave').addEventListener('click',saveDiaryCrop);
-    $('diaryCropDialog').addEventListener('close',()=>{
-      if(diaryCropImageUrl){URL.revokeObjectURL(diaryCropImageUrl);diaryCropImageUrl=null;}
-      diaryCropSource=null;diaryCropFileId=null;diaryCropPointer=null;
-    });
-    $('diaryCropZoom').addEventListener('input',e=>{diaryCropZoom=Number(e.target.value);paintDiaryCrop();});
-    const diaryCanvas=$('diaryCropCanvas');
-    diaryCanvas.addEventListener('pointerdown',e=>{
-      if(!diaryCropSource)return;
-      diaryCropPointer={x:e.clientX,y:e.clientY};
-      diaryCanvas.setPointerCapture(e.pointerId);
-    });
-    diaryCanvas.addEventListener('pointermove',e=>{
-      if(!diaryCropPointer||!diaryCropSource)return;
-      const scale=diaryCanvas.width/diaryCanvas.getBoundingClientRect().width;
-      diaryCropOffsetX+=(e.clientX-diaryCropPointer.x)*scale;
-      diaryCropOffsetY+=(e.clientY-diaryCropPointer.y)*scale;
-      diaryCropPointer={x:e.clientX,y:e.clientY};paintDiaryCrop();
-    });
-    diaryCanvas.addEventListener('pointerup',()=>diaryCropPointer=null);
-    diaryCanvas.addEventListener('pointercancel',()=>diaryCropPointer=null);
     $('photoPreviewClose').addEventListener('click',()=>$('photoPreviewDialog').close());
     $('photoPreviewDialog').addEventListener('click',e=>{if(e.target===$('photoPreviewDialog'))$('photoPreviewDialog').close();});
     $('photoPreviewDialog').addEventListener('close',()=>{$('photoPreviewImage').removeAttribute('src');});
