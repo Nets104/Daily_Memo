@@ -73,7 +73,7 @@
           <button class="primary-button export-main" id="openExportBtn">내보내기 <span>↗</span></button>
         </div>
       </header>
-      <div class="page-wrap"><section id="calendarPage" class="mini-calendar-page" hidden><header class="mini-calendar-header"><h2>캘린더</h2><button type="button" id="returnEditor" class="outlined-button">일기 작성</button></header><nav class="mini-calendar-toolbar"><button type="button" id="miniPrev">‹</button><strong id="miniMonth"></strong><button type="button" id="miniNext">›</button><button type="button" id="miniToday">오늘</button></nav><div class="mini-calendar-weekdays"><span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span></div><div class="mini-calendar-grid" id="miniGrid"></div>
+      <div class="page-wrap"><section id="calendarPage" class="mini-calendar-page" hidden><header class="mini-calendar-header"><h2>캘린더</h2><button type="button" id="returnEditor" class="outlined-button">일기 작성</button></header><nav class="mini-calendar-toolbar"><button type="button" id="miniPrev">‹</button><strong id="miniYear"></strong><strong id="miniMonth"></strong><button type="button" id="miniNext">›</button><button type="button" id="miniToday">오늘</button></nav><div class="mini-calendar-weekdays"><span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span></div><div class="mini-calendar-grid" id="miniGrid"></div>
           <p class="mini-hint">날짜를 누르면 사진과 한마디를 추가할 수 있어요.</p></section><div id="editorPage">
         <section class="page-intro">
           <div><p class="eyebrow">A LITTLE MOMENT, EVERY DAY</p><h1>오늘을 <em>기록</em>하다<span class="sparkle">✳</span></h1><p class="intro-desc">매일의 장면과 마음을 나만의 방식으로 남겨요.</p></div>
@@ -113,8 +113,8 @@
           <div class="attachments-section">
             <div class="section-label"><div><span class="section-glyph">✿</span> 첨부 파일 <span class="attachment-count" id="attachmentCount">0</span></div><span>사진 · 영상 · 오디오 · PDF</span></div>
             <div class="upload-actions"><button class="attach-button" id="uploadBtn">＋ 파일 추가</button><button class="attach-button secondary" id="recordBtn"><span aria-hidden="true">●</span> <span id="recordBtnText">음성 녹음</span></button><input type="file" id="fileInput" accept="image/*,video/*,audio/*,.pdf,application/pdf" multiple hidden /></div>
-            <div id="attachmentList" class="attachment-grid"></div>
-            <p class="upload-tip">로그인 시 파일은 계정별 비공개 서버에 저장됩니다. 사진 5MB · 영상 30MB · 음성/PDF 10MB 이하로 첨부할 수 있어요.</p>
+            <div id="attachmentList" class="scrapbook-attachments"></div>
+            <p class="upload-tip">로그인 시 파일은 계정별 비공개 서버에 저장됩니다. 사진 최대 10장(각 5MB) · 영상 30MB · 음성/PDF 10MB 이하로 첨부할 수 있어요. 캘린더 썸네일은 사진 개수에서 제외돼요.</p>
           </div>
         </section>
         <footer class="footer-note"><span>✦</span> Keep your days, keep your story. <span>✦</span></footer></div>
@@ -186,10 +186,14 @@
       </div>
     </div>
   </dialog>
+  <dialog id="photoPreviewDialog" class="photo-preview-dialog" aria-label="첨부 사진 크게 보기">
+    <button id="photoPreviewClose" type="button" class="photo-preview-close" aria-label="사진 닫기">✕</button>
+    <img id="photoPreviewImage" alt="확대된 첨부 사진" />
+  </dialog>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
   <script src="./supabase-config.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0" defer></script>
   <script src="./cloud.js?v=12" defer></script>
-  <script src="./app.js?v=23" defer></script>
+  <script src="./app.js?v=24" defer></script>
 </body>
 </html>
