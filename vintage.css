@@ -2024,27 +2024,6 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
   #miniGrid .mini-day .mini-caption{flex-basis:18px;min-height:18px}
   #miniGrid .mini-day .mini-caption .mini-line{font-size:7px}
 }
-/* Title on the mini-calendar is an opt-in choice for each saved diary. */
-.calendar-title-toggle{
-  display:flex;
-  align-items:center;
-  gap:10px;
-  padding:11px 10px;
-  margin:12px 0 7px;
-  font:700 12px Pretendard,-apple-system,BlinkMacSystemFont,sans-serif;
-  color:#765a40;
-  background:rgba(230,208,176,.25);
-  border:1px solid #ddc6a7;
-  border-radius:7px;
-  cursor:pointer;
-}
-.calendar-title-toggle input{
-  flex:0 0 17px;
-  width:17px;
-  height:17px;
-  margin:0;
-  accent-color:#846146;
-}
 .archive-month-description{
   margin:8px 0 8px;
   color:#8c7762;
