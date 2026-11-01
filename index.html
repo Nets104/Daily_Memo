@@ -19,7 +19,7 @@
     #startupIntro.is-finished{opacity:0;visibility:hidden;pointer-events:none}
     #startupIntro[hidden]{display:none!important}
   </style>
-  <link rel="stylesheet" href="./vintage.css?v=44" />
+  <link rel="stylesheet" href="./vintage.css?v=46" />
   <title>일상 기록</title>
 </head>
 <body>
@@ -278,7 +278,6 @@
       <label for="entryShortNote" class="entry-note-label">오늘의 한마디 (최대 20자)</label>
       <textarea id="entryShortNote" maxlength="20" rows="4" placeholder="오늘을 한 줄로 남겨요"></textarea>
       <small class="entry-note-count" id="entryMetaCount" aria-live="off">0/20</small>
-      <label class="calendar-title-toggle"><input id="entryMetaShowTitle" type="checkbox" /><span>캘린더에 한마디 대신 일기 제목 표시</span></label>
       <p id="entryMetaStatus" class="day-card-status" role="status"></p>
       <div class="entry-meta-buttons">
         <button type="button" id="entryMetaCancel" class="outlined-button">취소</button>
@@ -302,9 +301,8 @@
         <label for="dayCropZoom">사진 확대</label>
         <input id="dayCropZoom" type="range" min=".5" max="3" step=".05" value="1" />
       </div>
-      <label class="day-card-label" for="dayCardNote">사진 밑에 표시할 한마디 <small>(최대 20자)</small></label>
+      <label class="day-card-label" for="dayCardNote">오늘의 한마디 <small>(최대 20자)</small></label>
       <input id="dayCardNote" type="text" maxlength="20" placeholder="오늘은 어떤 하루였나요?" />
-      <label class="calendar-title-toggle"><input id="dayCardShowTitle" type="checkbox" /><span>한마디 대신 일기 제목 표시</span></label>
       <p id="dayCardStatus" role="status" class="day-card-status"></p>
       <div class="day-card-actions">
         <button type="button" id="dayOpenEntry" class="outlined-button">일기 보기 / 작성</button>
@@ -364,6 +362,6 @@
   <script src="./supabase-config.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0" defer></script>
   <script src="./cloud.js?v=16" defer></script>
-  <script src="./app.js?v=44" defer></script>
+  <script src="./app.js?v=46" defer></script>
 </body>
 </html>
