@@ -632,7 +632,7 @@
       if(cardPhoto){
         const canvas=$('dayCropCanvas');
         const blob=await new Promise((resolve,reject)=>canvas.toBlob(b=>b?resolve(b):reject(Error('이미지를 자르지 못했어요.')),'image/jpeg',.86));
-        if(blob.size>FILE_LIMITS.image)throw Error('썸네일은 5MB 이하여야 해요.');
+        if(blob.size>FILE_LIMITS.image)throw Error('썸네일은 2MB 이하여야 해요.');
         file={id:makeId(),entryId:entry.id,name:'달력_썸네일_'+date+'.jpg',type:'image/jpeg',size:blob.size,blob,createdAt:now};
       }
       await writeRecords('entries',[entry]);
@@ -1138,24 +1138,27 @@
     let added=0;
     let diaryPhotoCount=visiblePhotos().length;
     let usedBytes=attachmentBytes();
+    const failures=[],uploadStatus=$('uploadStatus');
+    uploadStatus.textContent=fileList.length+'개 파일 확인 중…';
     for(const selected of [...fileList]){
       if(current?.id!==entryId){toast('기록이 변경되어 첨부를 중단했어요.');break;}
       if(!/^(image\/|video\/|audio\/|application\/pdf$)/.test(selected.type)&&
         !/\.(jpe?g|png|gif|webp|heic|heif|avif|mp4|mov|webm|m4v|mp3|wav|m4a|ogg|flac|aac|pdf)$/i.test(selected.name)){
+        failures.push(selected.name+': 지원하지 않는 파일 형식');
         toast(selected.name+': 지원하지 않는 파일 형식이에요.');continue;
       }
       const ext=selected.name.split('.').pop().toLowerCase();
       const types={jpg:'image/jpeg',jpeg:'image/jpeg',png:'image/png',gif:'image/gif',webp:'image/webp',heic:'image/heic',heif:'image/heif',avif:'image/avif',mp4:'video/mp4',mov:'video/quicktime',m4v:'video/mp4',webm:'video/webm',mp3:'audio/mpeg',wav:'audio/wav',m4a:'audio/mp4',ogg:'audio/ogg',flac:'audio/flac',aac:'audio/aac',pdf:'application/pdf'};
       let file=selected,type=selected.type||types[ext]||'application/octet-stream';
       const isPhoto=type.startsWith('image/');
-      if(isPhoto&&diaryPhotoCount>=MAX_DIARY_PHOTOS){toast('스티커와 사진은 합쳐서 최대 6장이에요.');continue;}
+      if(isPhoto&&diaryPhotoCount>=MAX_DIARY_PHOTOS){failures.push('사진 최대 6장 초과');toast('스티커와 사진은 합쳐서 최대 6장이에요.');continue;}
       if(isPhoto){
         try{file=await compressPhoto(selected.type?selected:new File([selected],selected.name,{type}));type=file.type;}
-        catch(error){toast(selected.name+': '+error.message);continue;}
+        catch(error){failures.push(selected.name+': '+error.message);toast(selected.name+': '+error.message);continue;}
       }
       const maxBytes=fileLimit(type,file.name);
-      if(file.size>maxBytes){toast(file.name+': 최대 '+Math.round(maxBytes/1048576)+'MB예요.');continue;}
-      if(usedBytes+file.size>MAX_ATTACHMENT_BYTES){toast('기록당 첨부 용량은 최대 50MB예요. 남은 공간: '+(formatAttachmentUsage(Math.max(0,MAX_ATTACHMENT_BYTES-usedBytes))));continue;}
+      if(file.size>maxBytes){failures.push(file.name+': 용량 초과');toast(file.name+': 최대 '+Math.round(maxBytes/1048576)+'MB예요.');continue;}
+      if(usedBytes+file.size>MAX_ATTACHMENT_BYTES){failures.push('기록 전체 50MB 용량 초과');toast('기록당 첨부 용량은 최대 50MB예요. 남은 공간: '+(formatAttachmentUsage(Math.max(0,MAX_ATTACHMENT_BYTES-usedBytes))));continue;}
       if(current?.id!==entryId){toast('기록이 변경되어 첨부를 중단했어요.');break;}
       const record={id:makeId(),entryId,name:file.name,type,size:file.size,blob:file,createdAt:new Date().toISOString()};
       attachments.push(record);
@@ -1171,6 +1174,9 @@
       renderAttachments();
       if(added)queueSave();
     }
+    uploadStatus.textContent=added
+      ?added+'개 추가됨 · 일기 저장을 누르면 확정돼요.'+(failures.length?' ('+failures[0]+')':'')
+      :failures.length? '파일 추가 실패: '+failures[0] : '파일을 추가하지 못했어요. 다른 사진을 선택해 주세요.';
     if(added)toast(`${added}개 파일을 임시 보관했어요. 일기 저장을 눌러 확정하세요.`);
   }
   async function toggleRecording(){
@@ -1712,7 +1718,7 @@
     $('dayPhotoInput').addEventListener('change',async()=>{
       const file=$('dayPhotoInput').files[0];$('dayPhotoInput').value='';if(!file)return;
       if(!file.type.startsWith('image/')){toast('이미지 파일을 선택해 주세요.');return;}
-      if(file.size>FILE_LIMITS.image){toast('사진은 5MB 이하만 선택할 수 있어요.');return;}
+      if(file.size>FILE_LIMITS.image){toast('사진은 2MB 이하만 선택할 수 있어요.');return;}
       const url=URL.createObjectURL(file),image=new Image();
       try{
         await new Promise((res,rej)=>{image.onload=res;image.onerror=()=>rej(Error('이미지를 열 수 없어요.'));image.src=url;});
@@ -1761,11 +1767,15 @@
     $('photoPreviewDialog').addEventListener('click',e=>{if(e.target===$('photoPreviewDialog'))$('photoPreviewDialog').close();});
     $('photoPreviewDialog').addEventListener('close',()=>{$('photoPreviewImage').removeAttribute('src');});
     $('uploadBtn').addEventListener('click',()=>el.file.click());
-    el.file.addEventListener('change',()=>{const selected=[...el.file.files];el.file.value='';addFiles(selected);});
-    $('photoAddBtn').addEventListener('click',()=>$('photoInput').click());
-    $('photoInput').addEventListener('change',()=>{
-      const selected=[...$('photoInput').files],mode=$('photoInsertMode').value;
-      $('photoInput').value='';addFiles(selected,current?.id,mode);
+    el.file.addEventListener('change',()=>{
+      const selected=[...el.file.files],entryId=current?.id,mode=$('photoInsertMode').value;
+      el.file.value='';
+      if(!selected.length)return;
+      addFiles(selected,entryId,mode).catch(error=>{
+        console.error('첨부파일 처리 실패',error);
+        $('uploadStatus').textContent='파일 추가 실패: '+(error.message||'알 수 없는 오류');
+        toast('파일을 추가하지 못했어요. 아래 오류를 확인해 주세요.');
+      });
     });
     el.record.addEventListener('click',toggleRecording);
     $('deleteEntryBtn').addEventListener('click',async()=>{
