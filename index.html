@@ -19,7 +19,7 @@
     #startupIntro.is-finished{opacity:0;visibility:hidden;pointer-events:none}
     #startupIntro[hidden]{display:none!important}
   </style>
-  <link rel="stylesheet" href="./vintage.css?v=46" />
+  <link rel="stylesheet" href="./vintage.css?v=47" />
   <title>일상 기록</title>
 </head>
 <body>
@@ -303,6 +303,7 @@
       </div>
       <label class="day-card-label" for="dayCardNote">오늘의 한마디 <small>(최대 20자)</small></label>
       <input id="dayCardNote" type="text" maxlength="20" placeholder="오늘은 어떤 하루였나요?" />
+      <label class="calendar-title-toggle"><input id="dayCardShowTitle" type="checkbox" /><span>한마디 대신 일기 제목 표시</span></label>
       <p id="dayCardStatus" role="status" class="day-card-status"></p>
       <div class="day-card-actions">
         <button type="button" id="dayOpenEntry" class="outlined-button">일기 보기 / 작성</button>
@@ -362,6 +363,6 @@
   <script src="./supabase-config.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0" defer></script>
   <script src="./cloud.js?v=16" defer></script>
-  <script src="./app.js?v=46" defer></script>
+  <script src="./app.js?v=47" defer></script>
 </body>
 </html>
