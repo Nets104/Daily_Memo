@@ -2346,3 +2346,29 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
   accent-color:#846146;
 }
 .day-card-content .calendar-title-toggle span{flex:1;min-width:0;white-space:normal;word-break:keep-all}
+
+
+/* v48: in-entry photos and touch-friendly movable photo stickers */
+.entry-photo-section{margin:16px 0 19px;padding:16px;border:1px solid #dfc7a8;border-radius:9px;background:#f8eddd}
+.entry-photo-section[hidden],.entry-sticker-board[hidden]{display:none!important}
+.entry-photo-heading{display:flex;gap:8px;flex-wrap:wrap;align-items:baseline;justify-content:space-between;margin-bottom:11px;color:#6d5039;font:700 13px Pretendard,sans-serif}
+.entry-photo-heading span{font-size:11px;font-weight:500;color:#90765f}
+.entry-inline-photos{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,210px),1fr));gap:11px}
+.entry-photo-inline{min-width:0;padding:9px;background:#fffaf1;border:1px solid #e4d3bd;border-radius:6px;box-shadow:0 2px 6px rgba(60,39,22,.08)}
+.entry-photo-image{display:block;width:100%;padding:0;border:0;background:#181818;cursor:zoom-in;overflow:hidden}
+.entry-photo-image img{width:100%;height:auto;aspect-ratio:4/3;object-fit:contain;display:block}
+.entry-photo-inline small{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px;color:#85735f;margin:5px 0}
+.entry-sticker-board{position:relative;margin-top:13px;height:clamp(350px,60vw,460px);border-radius:8px;border:1px dashed #bda181;background:repeating-linear-gradient(0deg,transparent 0 26px,rgba(145,106,69,.08) 27px),#f0e0c9;overflow:hidden;touch-action:pan-y}
+.entry-photo-sticker{position:absolute;box-sizing:border-box;padding:5px;background:#fffaf1;border:1px solid #d4bea3;border-radius:4px;box-shadow:2px 4px 8px rgba(51,33,20,.18);z-index:1}
+.entry-photo-sticker:focus-within{z-index:3}
+.entry-photo-sticker .entry-photo-image img{aspect-ratio:4/3}
+.entry-photo-controls{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:4px;margin-top:7px}
+.entry-photo-controls button{font:700 11px Pretendard,sans-serif;color:#715239;border:1px solid #d7bda1;border-radius:5px;background:#f4e6d2;padding:5px 8px;min-height:28px;cursor:pointer}
+.entry-photo-sticker .entry-photo-controls{gap:2px}
+.entry-photo-sticker .entry-photo-controls button{font-size:10px;padding:4px 5px}
+.entry-photo-drag{touch-action:none;cursor:grab!important;user-select:none;-webkit-user-select:none}
+.entry-photo-drag:active{cursor:grabbing!important}
+.photo-mode-label{display:inline-flex;align-items:center;gap:7px;font:700 12px Pretendard,sans-serif;color:#7c5b41}
+.photo-mode-label select{padding:9px 8px;min-height:38px;border-radius:6px;border:1px solid #ccb294;background:#fffbf4;color:#604936;font:600 12px Pretendard,sans-serif}
+.upload-actions{flex-wrap:wrap}
+@media(max-width:740px){.entry-photo-section{padding:11px}.entry-photo-heading span{font-size:10px}.entry-photo-sticker .entry-photo-controls button{font-size:9px;padding:4px}.entry-sticker-board{height:400px}.entry-inline-photos{grid-template-columns:1fr 1fr;gap:7px}}
