@@ -2320,3 +2320,29 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
   .app-update-copy p{font-size:10px}
   .app-update-apply{padding:8px 10px;font-size:11px}
 }
+
+
+/* Calendar day card only: choose whether the calendar caption uses the title. */
+.day-card-content .calendar-title-toggle{
+  box-sizing:border-box;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  width:100%;
+  margin:12px 0 7px;
+  padding:11px 12px;
+  font:700 12px/1.5 Pretendard,-apple-system,BlinkMacSystemFont,sans-serif;
+  color:#765a40;
+  background:rgba(230,208,176,.25);
+  border:1px solid #ddc6a7;
+  border-radius:7px;
+  cursor:pointer;
+}
+.day-card-content .calendar-title-toggle input{
+  flex:0 0 17px;
+  width:17px;
+  height:17px;
+  margin:0;
+  accent-color:#846146;
+}
+.day-card-content .calendar-title-toggle span{flex:1;min-width:0;white-space:normal;word-break:keep-all}
