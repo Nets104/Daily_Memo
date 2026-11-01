@@ -2372,3 +2372,104 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .photo-mode-label select{padding:9px 8px;min-height:38px;border-radius:6px;border:1px solid #ccb294;background:#fffbf4;color:#604936;font:600 12px Pretendard,sans-serif}
 .upload-actions{flex-wrap:wrap}
 @media(max-width:740px){.entry-photo-section{padding:11px}.entry-photo-heading span{font-size:10px}.entry-photo-sticker .entry-photo-controls button{font-size:9px;padding:4px}.entry-sticker-board{height:400px}.entry-inline-photos{grid-template-columns:1fr 1fr;gap:7px}}
+
+
+/* v51: real diary stickers layered directly over the writing paper */
+.writing-area{position:relative;isolation:isolate}
+.writing-area .entry-sticker-board{
+  position:absolute;
+  inset:0;
+  display:block;
+  width:100%;
+  height:100%;
+  min-height:0;
+  margin:0;
+  padding:0;
+  background:transparent;
+  border:0;
+  border-radius:0;
+  overflow:visible;
+  pointer-events:none;
+  touch-action:auto;
+  z-index:6;
+}
+.writing-area .entry-sticker-board[hidden]{display:none!important}
+.writing-area .entry-photo-sticker{
+  position:absolute;
+  box-sizing:border-box;
+  padding:0;
+  margin:0;
+  background:transparent;
+  border:1px dashed rgba(129,92,58,.6);
+  border-radius:5px;
+  box-shadow:0 3px 8px rgba(65,43,27,.14);
+  z-index:1;
+  transform-origin:center center;
+  pointer-events:auto;
+  touch-action:none;
+  cursor:move;
+  user-select:none;
+  -webkit-user-select:none;
+}
+.writing-area .entry-photo-sticker:focus-within,
+.writing-area .entry-photo-sticker:active{z-index:3;border-color:#967250;outline:1px solid #967250}
+.writing-area .entry-photo-sticker > img{
+  display:block;
+  width:100%;
+  height:auto;
+  max-height:260px;
+  object-fit:contain;
+  border-radius:3px;
+  pointer-events:none;
+  -webkit-user-drag:none;
+}
+.writing-area .sticker-control{
+  position:absolute;
+  z-index:4;
+  box-sizing:border-box;
+  width:30px;
+  height:30px;
+  display:grid;
+  place-items:center;
+  background:#fff9eb;
+  color:#74573b;
+  border:1px solid #c09a73;
+  border-radius:50%;
+  box-shadow:0 2px 5px #42301733;
+  font-size:19px;
+  line-height:1;
+  font-weight:700;
+  touch-action:none;
+  cursor:grab;
+  padding:0;
+}
+.writing-area .sticker-control:active{cursor:grabbing}
+.writing-area .sticker-rotate{top:-16px;right:-16px}
+.writing-area .sticker-resize{bottom:-14px;right:-14px}
+.writing-area .sticker-menu{
+  position:absolute;
+  left:0;
+  bottom:-30px;
+  display:flex;
+  gap:3px;
+  white-space:nowrap;
+  transform:rotate(0);
+}
+.writing-area .sticker-menu button{
+  background:#fff8ea;
+  border:1px solid #d9bfa2;
+  border-radius:5px;
+  color:#735138;
+  font:700 10px Pretendard,sans-serif;
+  min-height:26px;
+  padding:4px 6px;
+  cursor:pointer;
+  touch-action:manipulation;
+}
+.upload-status{margin:4px 0 11px;min-height:0;font:600 11px/1.5 Pretendard,sans-serif;color:#785a40}
+.upload-status:empty{display:none}
+@media(max-width:740px){
+  .writing-area .sticker-control{width:32px;height:32px}
+  .writing-area .entry-photo-sticker > img{max-height:230px}
+  .writing-area .sticker-menu button{min-height:30px}
+}
