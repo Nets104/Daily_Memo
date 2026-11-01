@@ -11,7 +11,9 @@
   };
   const MAX_TITLE_CHARS=30, MAX_BODY_CHARS=1500, MAX_NOTE_CHARS=20, MAX_EXPORT_NAME_CHARS=30;
   const FILE_LIMITS={image:2*1024*1024,video:30*1024*1024,audio:10*1024*1024,pdf:10*1024*1024};
-  const MAX_ATTACHMENTS=10;
+  const MAX_ATTACHMENT_BYTES=50*1024*1024;
+  const formatAttachmentUsage=bytes=>bytes<1024*1024?(bytes/1024).toFixed(0)+'KB':(bytes/1048576).toFixed(1)+'MB';
+  const attachmentBytes=()=>attachments.reduce((total,file)=>total+(Number(file.size)||file.blob?.size||0),0);
   const fileLimit=(type,name='')=>{
     if(type.startsWith('image/')||/\.(jpe?g|png|gif|webp|heic|heif|avif)$/i.test(name))return FILE_LIMITS.image;
     if(type.startsWith('video/')||/\.(mp4|mov|webm|m4v)$/i.test(name))return FILE_LIMITS.video;
@@ -995,7 +997,10 @@
     revokeMediaUrls();
     const shown=attachments.filter(f=>!isCalendarCover(f)&&!isDiaryCropPreview(f));
     const cropMap=new Map(attachments.filter(isDiaryCropPreview).map(f=>[f.name,f]));
-    el.attachCount.textContent=shown.length+' / '+MAX_ATTACHMENTS;el.attachList.replaceChildren();
+    const bytes=attachmentBytes();
+    el.attachCount.textContent=(bytes?formatAttachmentUsage(bytes):'0MB')+' / 50MB';
+    el.attachCount.title='현재 기록의 전체 첨부 용량 · 최대 50MB';
+    el.attachList.replaceChildren();
     const wall=document.createElement('div');wall.className='photo-wall';
     const files=document.createElement('div');files.className='attachment-files';
     for(const file of shown){
@@ -1085,10 +1090,9 @@
     if(!targetDraft && !entries.some(e=>e.id===entryId)){toast('해당 기록이 더 이상 열려 있지 않아요.');return;}
     let added=0;
     let diaryPhotoCount=visiblePhotos().length;
-    let totalCount=attachments.filter(f=>!isCalendarCover(f)&&!isDiaryCropPreview(f)).length;
+    let usedBytes=attachmentBytes();
     for(const selected of [...fileList]){
       if(current?.id!==entryId){toast('기록이 변경되어 첨부를 중단했어요.');break;}
-      if(totalCount>=MAX_ATTACHMENTS){toast('사진과 첨부파일은 합쳐서 최대 10개예요.');break;}
       if(!/^(image\/|video\/|audio\/|application\/pdf$)/.test(selected.type)&&
         !/\.(jpe?g|png|gif|webp|heic|heif|avif|mp4|mov|webm|m4v|mp3|wav|m4a|ogg|flac|aac|pdf)$/i.test(selected.name)){
         toast(selected.name+': 지원하지 않는 파일 형식이에요.');continue;
@@ -1104,6 +1108,7 @@
       }
       const maxBytes=fileLimit(type,file.name);
       if(file.size>maxBytes){toast(file.name+': 최대 '+Math.round(maxBytes/1048576)+'MB예요.');continue;}
+      if(usedBytes+file.size>MAX_ATTACHMENT_BYTES){toast('기록당 첨부 용량은 최대 50MB예요. 남은 공간: '+(formatAttachmentUsage(Math.max(0,MAX_ATTACHMENT_BYTES-usedBytes))));continue;}
       if(current?.id!==entryId){toast('기록이 변경되어 첨부를 중단했어요.');break;}
       const record={id:makeId(),entryId,name:file.name,type,size:file.size,blob:file,createdAt:new Date().toISOString()};
       attachments.push(record);
@@ -1113,7 +1118,7 @@
           [record.id]:{mode:photoMode==='sticker'?'sticker':'photo',
             width:36,x:8+((diaryPhotoCount-1)%3)*14,y:8+Math.floor((diaryPhotoCount-1)/3)*24}};
       }
-      totalCount++;added++;
+      usedBytes+=file.size;added++;
     }
     if(current?.id===entryId){
       renderAttachments();
