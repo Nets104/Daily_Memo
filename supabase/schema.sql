@@ -84,3 +84,6 @@ create policy "diary_media_delete_own" on storage.objects for delete to authenti
 alter table public.diary_entries add column if not exists short_note text not null default '';
 alter table public.diary_entries add column if not exists weather text not null default '';
 alter table public.diary_entries add column if not exists cover_attachment_id text;
+
+-- 기록별 사진/스티커 배치 정보 (사용자별 RLS는 diary_entries 정책을 따름)
+alter table public.diary_entries add column if not exists photo_layout jsonb not null default '{}'::jsonb;
