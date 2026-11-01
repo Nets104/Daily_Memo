@@ -19,7 +19,7 @@
     #startupIntro.is-finished{opacity:0;visibility:hidden;pointer-events:none}
     #startupIntro[hidden]{display:none!important}
   </style>
-  <link rel="stylesheet" href="./vintage.css?v=47" />
+  <link rel="stylesheet" href="./vintage.css?v=48" />
   <title>일상 기록</title>
 </head>
 <body>
@@ -225,12 +225,17 @@
             <div class="editing-pane"><label class="sr-only" for="entryBody">마크다운 본문</label><textarea id="entryBody" maxlength="1500" spellcheck="true" placeholder="오늘은 어떤 하루였나요? 기억하고 싶은 이야기를 자유롭게 적어주세요."></textarea></div>
             <div class="preview-pane" id="previewPane"><div class="md-preview" id="mdPreview"><p class="preview-placeholder">여기에 기록한 내용이 보여요 ✨</p></div></div>
           </div>
+          <section class="entry-photo-section" id="entryPhotoSection" aria-label="기록 속 사진과 스티커" hidden>
+            <div class="entry-photo-heading"><strong>기록 속 사진</strong><span>사진은 아래에, 스티커는 자유롭게 배치해요.</span></div>
+            <div id="entryInlinePhotos" class="entry-inline-photos"></div>
+            <div id="entryStickerBoard" class="entry-sticker-board" aria-label="사진 스티커 배치 공간" hidden></div>
+          </section>
           <div class="word-info"><span id="charCount">0 / 1,500자</span><span>글과 사진이 모두 오늘의 기록이 돼요.</span></div>
           <div class="attachments-section">
             <div class="section-label"><div><span class="section-glyph">✿</span> 첨부 파일 <span class="attachment-count" id="attachmentCount">0</span></div><span>사진 · 영상 · 오디오 · PDF</span></div>
-            <div class="upload-actions"><button class="attach-button" id="uploadBtn">＋ 파일 추가</button><button class="attach-button secondary" id="recordBtn"><span aria-hidden="true">●</span> <span id="recordBtnText">음성 녹음</span></button><input type="file" id="fileInput" accept="image/*,video/*,audio/*,.pdf,application/pdf" multiple hidden /></div>
+            <div class="upload-actions"><label class="photo-mode-label" for="photoInsertMode">사진 형식 <select id="photoInsertMode"><option value="photo">일반 사진</option><option value="sticker">스티커</option></select></label><button type="button" class="attach-button" id="photoAddBtn">＋ 사진 추가</button><input type="file" id="photoInput" accept="image/jpeg,image/png,image/webp,image/avif,image/heic,image/heif,image/gif" multiple hidden /><button class="attach-button" id="uploadBtn">＋ 파일 추가</button><button class="attach-button secondary" id="recordBtn"><span aria-hidden="true">●</span> <span id="recordBtnText">음성 녹음</span></button><input type="file" id="fileInput" accept="image/*,video/*,audio/*,.pdf,application/pdf" multiple hidden /></div>
             <div id="attachmentList" class="scrapbook-attachments"></div>
-            <p class="upload-tip">로그인 시 파일은 계정별 비공개 서버에 저장됩니다. 사진 최대 10장(각 5MB) · 영상 30MB · 음성/PDF 10MB 이하로 첨부할 수 있어요. 캘린더 썸네일은 사진 개수에서 제외돼요.</p>
+            <p class="upload-tip">로그인 시 파일은 계정별 비공개 서버에 저장됩니다. 스티커와 일반 사진 합산 최대 6장(자동 압축, 각 2MB) · 모든 첨부파일 합산 최대 10개 · 영상 30MB · 음성/PDF 10MB까지 추가할 수 있어요. 캘린더 썸네일은 사진 개수에서 제외돼요.</p>
           </div>
           <div class="record-delete-area"><span>이 기록과 첨부파일 전체를 삭제합니다.</span><button type="button" class="delete-button record-delete-button" id="deleteEntryBtn" title="현재 기록 전체 삭제" aria-label="현재 기록 전체 삭제">이 일기 전체 삭제</button></div>
         </section>
@@ -362,7 +367,7 @@
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
   <script src="./supabase-config.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0" defer></script>
-  <script src="./cloud.js?v=16" defer></script>
-  <script src="./app.js?v=47" defer></script>
+  <script src="./cloud.js?v=17" defer></script>
+  <script src="./app.js?v=48" defer></script>
 </body>
 </html>
