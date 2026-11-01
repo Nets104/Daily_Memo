@@ -922,8 +922,8 @@
     const a=current?.photoLayout?.[file.id]||{};
     const width=Math.max(24,Math.min(65,Number(a.width)||36));
     return {mode:a.mode==='sticker'?'sticker':'photo',width,
-      x:Math.max(0,Math.min(100-width,Number(a.x)||8)),
-      y:Math.max(0,Math.min(78,Number(a.y)||8))};
+      x:Math.max(0,Math.min(100-width,Number.isFinite(Number(a.x))?Number(a.x):8)),
+      y:Math.max(0,Math.min(78,Number.isFinite(Number(a.y))?Number(a.y):8))};
   }
   function updatePhotoLayout(file,changes){
     if(!current||isSavingDraft)return;
