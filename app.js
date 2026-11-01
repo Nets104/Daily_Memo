@@ -1099,7 +1099,7 @@
       const isPhoto=type.startsWith('image/');
       if(isPhoto&&diaryPhotoCount>=MAX_DIARY_PHOTOS){toast('스티커와 사진은 합쳐서 최대 6장이에요.');continue;}
       if(isPhoto){
-        try{file=await compressPhoto(selected);type=file.type;}
+        try{file=await compressPhoto(selected.type?selected:new File([selected],selected.name,{type}));type=file.type;}
         catch(error){toast(selected.name+': '+error.message);continue;}
       }
       const maxBytes=fileLimit(type,file.name);
