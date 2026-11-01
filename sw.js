@@ -1,5 +1,5 @@
-const CACHE='harugyeol-v50';
-const RESOURCES=['./index.html','./style.css?v=13','./vintage.css?v=48','./app.js?v=50','./assets/vintage-flowers.svg','./manifest.webmanifest?v=39','./supabase-config.js','./cloud.js?v=17','./icons/icon-192.png?v=39','./icons/icon-512.png?v=39'];
+const CACHE='harugyeol-v51';
+const RESOURCES=['./index.html','./style.css?v=13','./vintage.css?v=51','./app.js?v=51','./assets/vintage-flowers.svg','./manifest.webmanifest?v=39','./supabase-config.js','./cloud.js?v=17','./icons/icon-192.png?v=39','./icons/icon-512.png?v=39'];
 self.addEventListener('install',event=>{
   // Keep the previous app running until the user chooses "업데이트".
   event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(RESOURCES)));
