@@ -524,6 +524,7 @@
     $('dayCardTitle').textContent=date+' 기록';
     const entry=entries.filter(e=>e.date===date).sort((a,b)=>b.updatedAt.localeCompare(a.updatedAt))[0];
     $('dayCardNote').value=entry?.shortNote||'';
+    $('dayCardShowTitle').checked=entry ? entry.calendarShowTitle!==false : true;
     $('dayCardNote').maxLength=Math.max(MAX_NOTE_CHARS,$('dayCardNote').value.length);
     $('dayCardStatus').textContent='';
     $('dayCropSection').hidden=true;$('dayCropZoom').value='1';$('dayDeletePhoto').hidden=true;$('dayDeletePhoto').textContent='✕ 썸네일 삭제';
@@ -621,7 +622,7 @@
       const isNew=!entry,now=new Date().toISOString();
       if(isNew)entry={id:makeId(),date,title:'',body:'',weather:'',shortNote:'',calendarShowTitle:true,createdAt:now,updatedAt:now};
       else entry={...entry};
-      entry.shortNote=note;entry.updatedAt=now;
+      entry.shortNote=note;entry.calendarShowTitle=$('dayCardShowTitle').checked;entry.updatedAt=now;
       const previousCoverId=cardCoverFileId||entry.coverAttachmentId||null;
       let file=null;
       if(cardPhoto){
@@ -677,7 +678,7 @@
     const cells=Array.from({length:first},()=>'<div class="mini-pad"></div>');
     for(let d=1;d<=last;d++){
       const date=prefix+String(d).padStart(2,'0'),entry=byDay.get(date);
-      const note=entry?(entry.title||''):'';
+      const note=entry?(entry.calendarShowTitle!==false?(entry.title||''):(entry.shortNote||'')):'';
       const weather=entry?(WEATHER_EMOJI[entry.weather]||''):'';
       cells.push(`<button class="mini-day ${entry?'filled':''} ${date===dayString()?'today':''} ${date===highlightedCalendarDate?'jump-selected':''}" data-mini-date="${date}" aria-pressed="${date===highlightedCalendarDate}"><span class="mini-day-head"><span class="mini-date">${d}</span>${weather?`<span class="mini-weather" aria-label="날씨">${weather}</span>`:''}</span><span class="mini-photo" data-mini-photo="${date}">+</span><span class="mini-caption"><span class="mini-line ${note?'has-note':''}">${escapeHtml(note)}</span></span></button>`);
     }
