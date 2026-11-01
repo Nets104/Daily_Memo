@@ -920,12 +920,15 @@
   function visiblePhotos(){
     return attachments.filter(f=>f.type.startsWith('image/')&&!isCalendarCover(f)&&!isDiaryCropPreview(f));
   }
+  const clamp=(n,min,max)=>Math.max(min,Math.min(max,n));
   function photoLayout(file){
     const a=current?.photoLayout?.[file.id]||{};
-    const width=Math.max(24,Math.min(65,Number(a.width)||36));
+    const number=(value,fallback)=>value===null||value===undefined?fallback:Number.isFinite(Number(value))?Number(value):fallback;
+    const width=clamp(number(a.width,36),18,76);
     return {mode:a.mode==='sticker'?'sticker':'photo',width,
-      x:Math.max(0,Math.min(100-width,Number.isFinite(Number(a.x))?Number(a.x):8)),
-      y:Math.max(0,Math.min(78,Number.isFinite(Number(a.y))?Number(a.y):8))};
+      x:clamp(number(a.x,8),0,100-width),
+      y:clamp(number(a.y,9),0,85),
+      rotation:clamp(number(a.rotation,0),-720,720)};
   }
   function updatePhotoLayout(file,changes){
     if(!current||isSavingDraft)return;
@@ -933,64 +936,108 @@
       [file.id]:{...photoLayout(file),...changes}};
     renderAttachments();queueSave();
   }
+  function openPhoto(file,url){
+    $('photoPreviewImage').src=url;
+    $('photoPreviewImage').alt=file.name;
+    $('photoPreviewDialog').showModal();
+  }
   function renderEntryPhotos(){
     const section=$('entryPhotoSection'),inline=$('entryInlinePhotos'),board=$('entryStickerBoard');
     inline.replaceChildren();board.replaceChildren();
     const photos=visiblePhotos();
-    section.hidden=!photos.length;
-    if(!photos.length)return;
-    let count=0;
-    for(const file of photos){
-      const state=photoLayout(file),url=URL.createObjectURL(file.blob);
-      mediaUrls.push(url);
-      const card=document.createElement('div');
-      card.className=state.mode==='sticker'?'entry-photo-sticker':'entry-photo-inline';
+    const regular=photos.filter(f=>photoLayout(f).mode!=='sticker');
+    const stickers=photos.filter(f=>photoLayout(f).mode==='sticker');
+    section.hidden=!regular.length;
+    board.hidden=!stickers.length;
+    for(const file of regular){
+      const url=URL.createObjectURL(file.blob);mediaUrls.push(url);
+      const card=document.createElement('div');card.className='entry-photo-inline';
       const photo=document.createElement('button');photo.type='button';photo.className='entry-photo-image';
       const img=document.createElement('img');img.src=url;img.alt=file.name;img.loading='lazy';
-      photo.append(img);
-      photo.addEventListener('click',()=>{
-        $('photoPreviewImage').src=url;
-        $('photoPreviewImage').alt=file.name;
-        $('photoPreviewDialog').showModal();
-      });
+      photo.append(img);photo.addEventListener('click',()=>openPhoto(file,url));
+      const caption=document.createElement('small');caption.textContent=file.name;
       const controls=document.createElement('div');controls.className='entry-photo-controls';
-      const mode=document.createElement('button');mode.type='button';
-      mode.textContent=state.mode==='sticker'?'사진으로':'스티커로';
-      mode.addEventListener('click',()=>updatePhotoLayout(file,{mode:state.mode==='sticker'?'photo':'sticker'}));
-      controls.append(mode);
-      if(state.mode==='sticker'){
-        count++;
-        card.style.left=state.x+'%';card.style.top=state.y+'%';card.style.width=state.width+'%';
-        const handle=document.createElement('button');handle.type='button';handle.className='entry-photo-drag';
-        handle.textContent='⠿ 이동';
-        handle.addEventListener('pointerdown',e=>{
-          if(e.button!==0||isSavingDraft)return;
-          e.preventDefault();handle.setPointerCapture(e.pointerId);
-          const box=board.getBoundingClientRect(),startX=e.clientX,startY=e.clientY,origin=photoLayout(file);
-          const move=ev=>{
-            const x=Math.max(0,Math.min(100-origin.width,origin.x+(ev.clientX-startX)/box.width*100));
-            const y=Math.max(0,Math.min(78,origin.y+(ev.clientY-startY)/box.height*100));
-            card.style.left=x+'%';card.style.top=y+'%';
-            current.photoLayout={...(current.photoLayout||{}),[file.id]:{...origin,x,y}};
-          };
-          const end=()=>{handle.removeEventListener('pointermove',move);handle.removeEventListener('pointerup',end);handle.removeEventListener('pointercancel',end);queueSave();};
-          handle.addEventListener('pointermove',move);
-          handle.addEventListener('pointerup',end);
-          handle.addEventListener('pointercancel',end);
-        });
-        for(const [label,delta] of [['－',-7],['＋',7]]){
-          const size=document.createElement('button');size.type='button';size.textContent=label;
-          size.title=delta<0?'작게':'크게';
-          size.addEventListener('click',()=>updatePhotoLayout(file,{width:Math.max(24,Math.min(65,state.width+delta))}));
-          controls.append(size);
-        }
-        controls.prepend(handle);card.append(photo,controls);board.append(card);
-      }else{
-        const caption=document.createElement('small');caption.textContent=file.name;
-        card.append(photo,caption,controls);inline.append(card);
-      }
+      const mode=document.createElement('button');mode.type='button';mode.textContent='본문에 스티커로 붙이기';
+      mode.addEventListener('click',()=>updatePhotoLayout(file,{mode:'sticker'}));
+      controls.append(mode);card.append(photo,caption,controls);inline.append(card);
     }
-    board.hidden=!count;
+    for(const file of stickers){
+      const url=URL.createObjectURL(file.blob);mediaUrls.push(url);
+      const state=photoLayout(file);
+      const card=document.createElement('div');card.className='entry-photo-sticker';
+      card.setAttribute('aria-label',file.name+' 스티커 - 드래그로 이동, 모서리로 크기와 회전 조절');
+      card.style.width=state.width+'%';
+      card.style.left=state.x+'%';card.style.top=state.y+'%';
+      card.style.transform='rotate('+state.rotation+'deg)';
+      const image=document.createElement('img');image.src=url;image.alt=file.name;
+      image.draggable=false;card.append(image);
+      const rotate=document.createElement('button');rotate.type='button';
+      rotate.className='sticker-control sticker-rotate';
+      rotate.title='끌어서 회전 · 누르면 15도 회전';
+      rotate.setAttribute('aria-label','스티커 회전');rotate.textContent='↻';
+      const size=document.createElement('button');size.type='button';
+      size.className='sticker-control sticker-resize';
+      size.title='끌어서 크기 조절';
+      size.setAttribute('aria-label','스티커 크기 조절');size.textContent='⤢';
+      const menu=document.createElement('div');menu.className='sticker-menu';
+      const view=document.createElement('button');view.type='button';view.textContent='보기';
+      view.addEventListener('click',()=>openPhoto(file,url));
+      const normal=document.createElement('button');normal.type='button';normal.textContent='일반 사진';
+      normal.addEventListener('click',()=>updatePhotoLayout(file,{mode:'photo'}));
+      menu.append(view,normal);
+      card.append(rotate,size,menu);
+      const pointer=(control,kind)=>(event)=>{
+        if(isSavingDraft || (event.button!==0&&event.pointerType!=='touch'))return;
+        event.preventDefault();event.stopPropagation();
+        const rect=board.getBoundingClientRect();
+        if(!rect.width||!rect.height)return;
+        const origin=photoLayout(file),sx=event.clientX,sy=event.clientY;
+        const bounds=card.getBoundingClientRect();
+        const center={x:bounds.left+bounds.width/2,y:bounds.top+bounds.height/2};
+        const originAngle=Math.atan2(sy-center.y,sx-center.x);
+        let moved=false;
+        control.setPointerCapture(event.pointerId);
+        const move=e=>{
+          moved=true;
+          const dx=e.clientX-sx,dy=e.clientY-sy;
+          let next={...origin};
+          if(kind==='move'){
+            next.x=clamp(origin.x+dx/rect.width*100,0,100-origin.width);
+            next.y=clamp(origin.y+dy/rect.height*100,0,85);
+          }else if(kind==='resize'){
+            next.width=clamp(origin.width+dx/rect.width*100,18,76);
+            next.x=clamp(origin.x,0,100-next.width);
+          }else{
+            const angle=Math.atan2(e.clientY-center.y,e.clientX-center.x);
+            next.rotation=origin.rotation+(angle-originAngle)*180/Math.PI;
+          }
+          current.photoLayout={...(current.photoLayout||{}),[file.id]:next};
+          card.style.left=next.x+'%';card.style.top=next.y+'%';
+          card.style.width=next.width+'%';card.style.transform='rotate('+next.rotation+'deg)';
+        };
+        const done=()=>{
+          control.removeEventListener('pointermove',move);
+          control.removeEventListener('pointerup',done);
+          control.removeEventListener('pointercancel',done);
+          if(kind==='rotate'&&!moved){
+            const now=photoLayout(file);
+            current.photoLayout={...(current.photoLayout||{}),[file.id]:{...now,rotation:now.rotation+15}};
+            card.style.transform='rotate('+(now.rotation+15)+'deg)';
+          }
+          queueSave();
+        };
+        control.addEventListener('pointermove',move);
+        control.addEventListener('pointerup',done);
+        control.addEventListener('pointercancel',done);
+      };
+      card.addEventListener('pointerdown',e=>{
+        if(e.target.closest('button'))return;
+        pointer(card,'move')(e);
+      });
+      rotate.addEventListener('pointerdown',pointer(rotate,'rotate'));
+      size.addEventListener('pointerdown',pointer(size,'resize'));
+      board.append(card);
+    }
   }
   function renderAttachments(){
     if($('photoPreviewDialog').open)$('photoPreviewDialog').close();
