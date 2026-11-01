@@ -1101,34 +1101,50 @@
     if(file.size>50*1024*1024)throw Error('사진 원본은 50MB 이하로 선택해 주세요.');
     if(file.type==='image/gif'){
       if(file.size<=maxBytes)return file;
-      throw Error('2MB 초과 움직이는 GIF는 자동 압축할 수 없어요.');
+      throw Error('움직이는 GIF는 2MB 이하만 추가할 수 있어요.');
     }
-    if(!/^image\/(jpeg|png|webp|avif|heic|heif|bmp)$/.test(file.type))
+    if(!/^image\/(jpeg|jpg|png|x-png|webp|avif|heic|heif|bmp)$/i.test(file.type))
       throw Error('지원하지 않는 이미지 형식이에요.');
     const url=URL.createObjectURL(file);
+    let bitmap=null;
     try{
-      const img=new Image();
-      await new Promise((ok,fail)=>{img.onload=ok;img.onerror=()=>fail(Error('이 기기에서 사진을 열 수 없어요.'));img.src=url;});
-      if(!img.naturalWidth||!img.naturalHeight)throw Error('사진 해상도를 읽지 못했어요.');
-      const ratio=Math.min(1,1920/Math.max(img.naturalWidth,img.naturalHeight));
-      if(file.size<=maxBytes&&ratio===1)return file;
+      const image=new Image();
+      let decoded=image,bitmapFallback=false;
+      try{
+        await new Promise((resolve,reject)=>{
+          image.onload=resolve;
+          image.onerror=()=>reject(Error('기본 이미지 해독 실패'));
+          image.src=url;
+        });
+      }catch{
+        if(typeof createImageBitmap!=='function')throw Error('이 사진을 열 수 없어요. JPG 또는 PNG로 다시 선택해 주세요.');
+        try{bitmap=await createImageBitmap(file);decoded=bitmap;bitmapFallback=true;}
+        catch{throw Error('이 사진 형식을 열 수 없어요. JPG 또는 PNG로 바꿔 주세요.');}
+      }
+      const sourceWidth=decoded.naturalWidth||decoded.width;
+      const sourceHeight=decoded.naturalHeight||decoded.height;
+      if(!sourceWidth||!sourceHeight)throw Error('사진 해상도를 읽지 못했어요.');
+      const ratio=Math.min(1,1920/Math.max(sourceWidth,sourceHeight));
+      if(file.size<=maxBytes&&ratio===1&&!bitmapFallback)return file;
       const canvas=document.createElement('canvas'),ctx=canvas.getContext('2d',{alpha:true});
       if(!ctx)throw Error('사진 압축을 지원하지 않아요.');
       for(const factor of [1,.85,.7,.55,.4,.3]){
-        canvas.width=Math.max(1,Math.round(img.naturalWidth*ratio*factor));
-        canvas.height=Math.max(1,Math.round(img.naturalHeight*ratio*factor));
+        canvas.width=Math.max(1,Math.round(sourceWidth*ratio*factor));
+        canvas.height=Math.max(1,Math.round(sourceHeight*ratio*factor));
         ctx.clearRect(0,0,canvas.width,canvas.height);
-        ctx.drawImage(img,0,0,canvas.width,canvas.height);
+        ctx.drawImage(decoded,0,0,canvas.width,canvas.height);
         for(const quality of [.85,.78,.7,.6]){
           const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/webp',quality));
-          if(!blob||blob.type!=='image/webp')throw Error('WebP 압축을 지원하지 않는 브라우저예요.');
-          if(blob.size<=maxBytes){
+          if(!blob||blob.type!=='image/webp')throw Error('이 브라우저에서는 WebP 압축을 지원하지 않아요.');
+          if(blob.size<=maxBytes)
             return new File([blob],file.name.replace(/\.[^.]+$/,'')+'.webp',{type:'image/webp'});
-          }
         }
       }
       throw Error('사진을 2MB 이하로 압축하지 못했어요.');
-    }finally{URL.revokeObjectURL(url);}
+    }finally{
+      if(bitmap)bitmap.close();
+      URL.revokeObjectURL(url);
+    }
   }
   async function addFiles(fileList, entryId=current?.id, photoMode='photo'){
     if(isSavingDraft){toast('저장 중에는 첨부를 변경할 수 없어요.');return;}
@@ -1153,6 +1169,7 @@
       const isPhoto=type.startsWith('image/');
       if(isPhoto&&diaryPhotoCount>=MAX_DIARY_PHOTOS){failures.push('사진 최대 6장 초과');toast('스티커와 사진은 합쳐서 최대 6장이에요.');continue;}
       if(isPhoto){
+        uploadStatus.textContent='사진 압축 중: '+selected.name;
         try{file=await compressPhoto(selected.type?selected:new File([selected],selected.name,{type}));type=file.type;}
         catch(error){failures.push(selected.name+': '+error.message);toast(selected.name+': '+error.message);continue;}
       }
