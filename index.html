@@ -154,7 +154,7 @@
     <main class="main-panel">
       <header class="topbar">
         <div class="topbar-left">
-          <button class="icon-button mobile-menu" id="openSidebar" title="달력 및 기록 목록" aria-label="달력 및 기록 목록">☰</button>
+          <button class="icon-button mobile-menu" id="openSidebar" title="달력 및 기록 목록" aria-label="달력 및 기록 목록"><svg aria-hidden="true" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round"><path d="M4.3 6.3c5.2-.2 10.3.1 15.5-.05M4.1 12.2c5.35-.2 10.6 0 15.6-.1M4.25 18c5.25-.1 10.55.05 15.35-.05"/></svg></button>
           <span class="topbar-breadcrumb">MY JOURNAL <span>/</span> <strong>오늘의 기록</strong></span>
         </div>
         <div class="topbar-right">
@@ -179,8 +179,8 @@
     <div><span>나의 기록</span><strong id="homeEntryCount">0개</strong></div>
   </div>
   <div class="home-actions">
-    <button type="button" class="primary-button" id="homeWrite"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="m17 3 4 4-11.5 11.5L5 20l1.5-4.5L18 4a2.1 2.1 0 0 1 3 3"/></svg><span>일기 작성</span></button>
-    <button type="button" class="outlined-button" id="homeCalendar"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4M17 3v4M3 10h18M8 14h2M14 14h2M8 18h2"/></svg><span>캘린더 보기</span></button>
+    <button type="button" class="primary-button" id="homeWrite"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5.4 19.2 6.7 15.2 17.4 4.3c1.15-1.14 2.15-1.2 3.25-.1 1.1 1.1 1.05 2.2-.1 3.3L9.8 18.4l-4.4 1.5Z"/><path d="m6.8 15.1 3 3.1M15.4 6.5l3.3 3.1"/><path d="M4 21c4.9-.5 10.4-.45 16-.65" opacity=".52" stroke-width=".9"/></svg><span>일기 작성</span></button>
+    <button type="button" class="outlined-button" id="homeCalendar"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5.1 5.5c4.7-.15 9.5-.2 13.6.04 1.2.05 1.9.8 1.85 1.9l.1 11.1c.03 1.25-.75 2.1-1.93 2.1-4.5.2-9.2-.08-13.5.08-1.2.05-1.95-.85-1.92-2.05V7.4c0-1.1.66-1.85 1.8-1.9Z"/><path d="M8.1 3.1c-.13 1.8.12 3.2.05 4.8m7.9-4.8c.05 1.7-.06 3.25.08 4.8M3.45 10.3c5.7.24 11.7-.06 17.05.06"/><path d="M7.7 13.9h1.7m3.2 0h1.7m3.2 0h.45M7.8 17.3h1.7m3.15 0h1.7m3.1 0h.6" opacity=".78"/></svg><span>캘린더 보기</span></button>
   </div>
   <section class="home-recent">
     <h2>최근 기록</h2>
@@ -272,19 +272,19 @@
             <div class="upload-actions">
               <div class="attachment-quick-actions" role="group" aria-label="첨부 파일 추가">
                 <button type="button" class="attach-button attach-quick-btn" id="photoUploadBtn" title="사진·GIF 추가" aria-label="사진·GIF 추가">
-                  <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9" r="1.5"/><path d="m3 17 6-6 4 4 3-3 5 5"/></svg>
+                  <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5.1 4.2c4.7.05 9.5-.2 14 .12 1.06.06 1.9.9 1.9 1.85v11.3c.02 1.35-.84 2.05-2.1 2.12-4.55.16-9.1-.12-13.95.08-1.14.04-1.84-.73-1.83-1.91L3.3 6.2c0-1.3.67-1.99 1.8-2Z"/><path d="M3.9 16.7c2-1.83 3.95-4.16 5.9-5.75l3.35 3.5 2.8-2.45 4.25 4.85"/><path d="M9.3 8.15c.05 1.9-2.54 2.3-2.69.38-.18-1.71 2.68-2.06 2.69-.38Z"/></svg>
                 </button>
                 <input type="file" id="diaryPhotoInput" accept="image/*" multiple hidden />
                 <button type="button" class="attach-button attach-quick-btn" id="stickerUploadBtn" title="본문 스티커 추가" aria-label="본문 스티커 추가">
-                  <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3h14a2 2 0 0 1 2 2v10l-6 6H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z"/><path d="M15 21v-4a2 2 0 0 1 2-2h4"/><path d="m8 8 .8 2.2L11 11l-2.2.8L8 14l-.8-2.2L5 11l2.2-.8L8 8Z"/></svg>
+                  <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5.05 3.9c4.5-.12 9.4-.05 13.8.08 1.3.03 1.95.8 1.96 2.03l-.04 9.1-5.6 5.65c-3.32.2-6.9.05-10.22.1-1.12-.02-1.8-.8-1.83-1.84l.08-13.28c0-1.2.75-1.84 1.85-1.84Z"/><path d="M15.1 20.65c.02-1.3-.05-2.95.15-4.18.05-1.02.8-1.43 1.81-1.48l3.7.1"/><path d="m10.1 7.9.85 2.46 2.56.8-2.51.94-.9 2.48-.9-2.48-2.37-.94 2.5-.8.77-2.46Z"/></svg>
                 </button>
                 <input type="file" id="stickerPhotoInput" accept="image/*" multiple hidden />
                 <button type="button" class="attach-button attach-quick-btn secondary" id="uploadBtn" title="파일 추가 (음성·PDF)" aria-label="파일 추가 (음성·PDF)">
-                  <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m20.8 11.6-8.6 8.6a6 6 0 0 1-8.5-8.5l9.3-9.3a4 4 0 0 1 5.7 5.7l-9.3 9.3a2 2 0 0 1-2.8-2.8l8.5-8.5"/></svg>
+                  <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="m19.2 11.6-8.1 8.14c-2.3 2.34-5.72 2.28-7.87.13-2.1-2.16-2.12-5.58.1-7.84l9.14-9.28c1.8-1.86 4.88-1.94 6.71-.09 1.8 1.82 1.78 4.76.03 6.55l-9.05 9.18c-.99 1.01-2.6 1.06-3.67.08-1.11-.98-1.01-2.66-.04-3.66L14.6 6.6"/></svg>
                 </button>
                 <input type="file" id="fileInput" accept="audio/*,.pdf,application/pdf" multiple hidden />
                 <button type="button" class="attach-button attach-quick-btn secondary" id="recordBtn" title="음성 녹음">
-                  <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="13" rx="3"/><path d="M5 10v2a7 7 0 0 0 14 0v-2M12 19v3M8 22h8"/></svg>
+                  <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12.05 2.65c-1.85-.1-3.05 1.32-3.05 3.08l-.05 6.38c0 2.03 1.32 3.4 3.08 3.37 1.85-.05 3.13-1.34 3.1-3.25l.04-6.43c0-1.92-1.35-3.16-3.12-3.15Z"/><path d="M5.35 10.4c-.2 5.55 2.18 8.17 6.62 8.17 4.55 0 6.9-2.7 6.75-8.12M12 18.65l.03 3.13M8.45 21.8c2.42-.13 4.8.05 7.12-.05"/></svg>
                   <span class="sr-only" id="recordBtnText">음성 녹음</span>
                 </button>
               </div>
@@ -303,10 +303,10 @@
       </div>
     </main>
     <nav class="bottom-tabs" id="bottomTabs" aria-label="화면 이동">
-  <button type="button" data-tab="home" aria-current="page" aria-label="홈 화면"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 10 9-7 9 7"/><path d="M5 9v11h14V9M9 20v-7h6v7"/></svg><span>홈</span></button>
-  <button type="button" data-tab="calendar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4M17 3v4M3 10h18M8 14h2M14 14h2M8 18h2"/></svg><span>캘린더</span></button>
-  <button type="button" data-tab="diary"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h14v18H6a3 3 0 0 1-3-3V6a3 3 0 0 1 3-3zM6 3v18M10 8h6M10 12h6"/></svg><span>일기</span></button>
-  <button type="button" data-tab="mypage"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4.5 21c0-4 3.1-7 7.5-7s7.5 3 7.5 7"/></svg><span>마이페이지</span></button>
+  <button type="button" data-tab="home" aria-current="page" aria-label="홈 화면"><svg width="22" height="22" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3.4 10.8c2.9-2.4 5.63-4.73 8.47-7.05 3.06 2.21 6 4.71 8.8 6.9"/><path d="M5.4 9.85c-.1 3.37-.02 6.85.05 10.27 4.35.1 9.12-.12 13.08.07.05-3.45.05-6.88-.04-10.32M9.5 20.15v-6.4c1.85-.12 3.1-.03 4.95-.03v6.35"/><path d="M4.2 11.85c-.1 2.2-.05 4.5.03 6.85" opacity=".35" stroke-width=".6"/></svg><span>홈</span></button>
+  <button type="button" data-tab="calendar"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5.1 5.5c4.7-.15 9.5-.2 13.6.04 1.2.05 1.9.8 1.85 1.9l.1 11.1c.03 1.25-.75 2.1-1.93 2.1-4.5.2-9.2-.08-13.5.08-1.2.05-1.95-.85-1.92-2.05V7.4c0-1.1.66-1.85 1.8-1.9Z"/><path d="M8.1 3.1c-.13 1.8.12 3.2.05 4.8m7.9-4.8c.05 1.7-.06 3.25.08 4.8M3.45 10.3c5.7.24 11.7-.06 17.05.06"/><path d="M7.7 13.9h1.7m3.2 0h1.7m3.2 0h.45M7.8 17.3h1.7m3.15 0h1.7m3.1 0h.6" opacity=".78"/></svg><span>캘린더</span></button>
+  <button type="button" data-tab="diary"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6.4 3.4c3.94-.18 8.57-.11 12.9.02v17.3c-4.5-.1-8.8-.05-12.8.04-1.82.04-3.28-1.26-3.28-3.1V6.6c0-1.87 1.28-3.18 3.18-3.2Z"/><path d="M6.6 3.5c-1.1 1.05-1.42 2.01-1.35 3.32v10.57c.06 1.67.67 2.8 1.57 3.24M9 8.8c2.14-.1 4.66-.06 6.88-.02M9.05 12.55c2.1.1 4.5.04 6.82-.08" /></svg><span>일기</span></button>
+  <button type="button" data-tab="mypage"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12.05 3.3c-2.38-.06-3.99 1.68-3.95 4.13.03 2.45 1.67 4.19 3.97 4.17 2.3 0 3.97-1.75 3.97-4.14-.02-2.38-1.64-4.12-3.99-4.16Z"/><path d="M4.55 20.5c-.02-3.85 3.07-6.22 7.42-6.32 4.5-.07 7.55 2.52 7.48 6.35"/></svg><span>마이페이지</span></button>
 </nav>
   </div>
   <dialog id="exportDialog" class="export-dialog">
