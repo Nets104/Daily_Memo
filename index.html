@@ -15,8 +15,8 @@
 
     /* Backup actions keep their compact sizing even with a cached older stylesheet. */
     #backupBtn > svg, #restoreBtn > svg, #openMonthDelete > svg {
-      display:block!important;width:15px!important;height:15px!important;
-      min-width:15px!important;max-width:15px!important;flex:0 0 15px!important;
+      display:block!important;width:20px!important;height:20px!important;
+      min-width:20px!important;max-width:20px!important;flex:0 0 20px!important;
       margin:0 auto!important;
     }
     .backup-menu-actions .sidebar-option{
@@ -32,7 +32,7 @@
     #startupIntro.is-finished{opacity:0;visibility:hidden;pointer-events:none}
     #startupIntro[hidden]{display:none!important}
   </style>
-  <link rel="stylesheet" href="./vintage.css?v=73" />
+  <link rel="stylesheet" href="./vintage.css?v=74" />
   <title>일상 기록</title>
 </head>
 <body>
@@ -135,9 +135,9 @@
   </div>
 
           <div class="backup-menu-actions">
-            <button type="button" id="backupBtn" class="sidebar-option backup-menu-primary"><svg width="15" height="15" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5"/></svg><span>백업</span></button>
-            <button type="button" id="restoreBtn" class="sidebar-option backup-menu-secondary"><svg width="15" height="15" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4m-5 5 5-5 5 5M4 17v4h16v-4"/></svg><span>복원</span></button>
-            <button type="button" id="openMonthDelete" class="sidebar-option backup-menu-delete"><svg width="15" height="15" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7M14 10v7"/></svg><span>삭제</span></button>
+            <button type="button" id="backupBtn" class="sidebar-option backup-menu-primary"><svg width="20" height="20" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5"/></svg><span>백업</span></button>
+            <button type="button" id="restoreBtn" class="sidebar-option backup-menu-secondary"><svg width="20" height="20" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4m-5 5 5-5 5 5M4 17v4h16v-4"/></svg><span>복원</span></button>
+            <button type="button" id="openMonthDelete" class="sidebar-option backup-menu-delete"><svg width="20" height="20" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7M14 10v7"/></svg><span>삭제</span></button>
           </div>
           <input id="restoreInput" type="file" accept=".zip,application/zip" hidden />
         </section>
