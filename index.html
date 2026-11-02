@@ -19,7 +19,7 @@
     #startupIntro.is-finished{opacity:0;visibility:hidden;pointer-events:none}
     #startupIntro[hidden]{display:none!important}
   </style>
-  <link rel="stylesheet" href="./vintage.css?v=68" />
+  <link rel="stylesheet" href="./vintage.css?v=69" />
   <title>일상 기록</title>
 </head>
 <body>
@@ -257,12 +257,20 @@
           <div class="attachments-section">
             <div class="section-label"><div><span class="section-glyph">✿</span> 첨부 파일 <span class="attachment-count" id="attachmentCount" aria-live="polite">0MB · 하루 합계 10MB</span></div><span>사진 · GIF · 음성 · PDF</span></div>
             <div class="upload-actions">
-              <label class="photo-mode-label" for="photoInsertMode">사진 배치 <select id="photoInsertMode"><option value="photo">일반 사진</option><option value="sticker">본문 스티커</option></select></label>
-              <button type="button" class="attach-button" id="photoUploadBtn">＋ 사진·GIF 여러 장</button>
-              <input type="file" id="diaryPhotoInput" accept="image/*" multiple hidden />
-              <button type="button" class="attach-button secondary" id="uploadBtn">＋ 음성·PDF</button>
-              <input type="file" id="fileInput" accept="audio/*,.pdf,application/pdf" multiple hidden />
-              <button type="button" class="attach-button secondary" id="recordBtn"><span aria-hidden="true">●</span> <span id="recordBtnText">음성 녹음</span></button>
+              <div class="attachment-quick-actions">
+                <button type="button" class="attach-button attach-quick-btn" id="photoUploadBtn" title="사진·GIF 추가" aria-label="사진·GIF 추가">
+                  <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9" r="1.5"/><path d="m3 17 6-6 4 4 3-3 5 5"/></svg><span>사진</span>
+                </button>
+                <input type="file" id="diaryPhotoInput" accept="image/*" multiple hidden />
+                <button type="button" class="attach-button attach-quick-btn secondary" id="uploadBtn" title="음성·PDF 파일 추가" aria-label="음성·PDF 파일 추가">
+                  <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3h7l5 5v13H8a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M15 3v6h5M10 14h6M10 18h6"/></svg><span>파일</span>
+                </button>
+                <input type="file" id="fileInput" accept="audio/*,.pdf,application/pdf" multiple hidden />
+              </div>
+              <div class="attachment-quick-options">
+                <label class="photo-mode-label" for="photoInsertMode">사진 배치 <select id="photoInsertMode"><option value="photo">일반 사진</option><option value="sticker">본문 스티커</option></select></label>
+                <button type="button" class="attach-record-link" id="recordBtn"><span class="record-dot" aria-hidden="true">●</span><span id="recordBtnText">음성 녹음</span></button>
+              </div>
             </div>
             <p class="upload-status" id="uploadStatus" role="status" aria-live="polite"></p>
             <div id="attachmentList" class="scrapbook-attachments"></div>
@@ -466,6 +474,6 @@
   <script src="./supabase-config.js?v=2" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0" defer></script>
   <script src="./cloud.js?v=20" defer></script>
-  <script src="./app.js?v=68" defer></script>
+  <script src="./app.js?v=69" defer></script>
 </body>
 </html>
