@@ -2765,3 +2765,50 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .attach-record-link:hover{background:#efdec8}
 .attach-record-link .record-dot{color:#bd6b6c;font-size:10px;line-height:1}
 .attach-record-link.recording{background:#f8e9dc;color:#a14d4e}
+
+/* v71: compact utility icons and precisely centered bottom navigation. */
+.backup-menu-actions{gap:7px}
+.backup-menu-actions .sidebar-option{
+  box-sizing:border-box;
+  height:60px;
+  min-height:60px;
+  max-height:60px;
+  gap:5px;
+  padding:7px 4px;
+  align-items:center;
+  justify-content:center;
+}
+.backup-menu-actions .sidebar-option > svg{
+  display:block;
+  width:15px;
+  min-width:15px;
+  max-width:15px;
+  height:15px;
+  flex:0 0 15px;
+  margin:0 auto;
+}
+.backup-menu-actions .sidebar-option > span{font-size:11px;line-height:1.15}
+.bottom-tabs{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  justify-content:stretch;
+}
+.bottom-tabs > button{
+  width:100%;
+  min-width:0;
+  justify-self:stretch;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+}
+.bottom-tabs > button > svg{
+  display:block;
+  margin:0 auto;
+  align-self:center;
+}
+.bottom-tabs > button > span{
+  display:block;
+  width:100%;
+  text-align:center;
+  line-height:1.2;
+}
