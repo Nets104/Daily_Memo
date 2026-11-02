@@ -2660,3 +2660,57 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .sidebar-account #cloudUserEmail{margin:5px 0 10px}
 .sidebar-account .sidebar-option{font-size:12px}
 .backup-options-dialog .backup-month-hint{margin:8px 0;font-size:12px;line-height:1.7;color:#8a7059}
+
+/* v67: compact sidebar utilities, unobtrusive sticker selection, diary text size */
+.backup-menu-actions .sidebar-option{
+  min-height:74px;
+  gap:7px;
+  padding:11px 5px;
+}
+.backup-menu-actions .sidebar-option svg{width:24px;height:24px}
+.backup-menu-actions .sidebar-option span{font-size:12px}
+.writing-area .entry-photo-sticker{
+  border-color:transparent;
+  box-shadow:none;
+}
+.writing-area .entry-photo-sticker.is-selected{
+  border-color:#967250;
+  outline:1px dashed #967250;
+  box-shadow:0 3px 8px rgba(65,43,27,.14);
+  z-index:3;
+}
+.writing-area .entry-photo-sticker:not(.is-selected):active,
+.writing-area .entry-photo-sticker:not(.is-selected):focus-within{
+  border-color:transparent;
+  outline:0;
+}
+.writing-area .sticker-control,.writing-area .sticker-menu{display:none}
+.writing-area.view-edit .entry-photo-sticker.is-selected .sticker-control{display:grid}
+.writing-area.view-edit .entry-photo-sticker.is-selected .sticker-menu{display:flex}
+.writing-area:not(.view-edit) .entry-photo-sticker{pointer-events:none}
+#writingArea.custom-body-size .editing-pane textarea,
+#writingArea.custom-body-size .md-preview,
+#writingArea.custom-body-size .md-preview p,
+#writingArea.custom-body-size .md-preview li,
+#writingArea.custom-body-size .md-preview blockquote{
+  font-size:var(--diary-body-size);
+}
+.body-font-select-label{
+  display:inline-flex;
+  gap:5px;
+  align-items:center;
+  white-space:nowrap;
+  flex:0 0 auto;
+  font:700 12px Pretendard,sans-serif;
+  color:#73553e;
+}
+.body-font-select-label select{
+  max-width:77px;
+  min-height:32px;
+  padding:4px 5px;
+  color:#69503b;
+  background:#fff9ed;
+  border:1px solid #d8c3a8;
+  border-radius:6px;
+  font:600 11px Pretendard,sans-serif;
+}
