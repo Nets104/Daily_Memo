@@ -2812,3 +2812,32 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
   text-align:center;
   line-height:1.2;
 }
+
+/* v72: sidebar record-management actions are icons and labels only. */
+.backup-menu-actions{margin-top:6px}
+#cloudStorageUsage:not([hidden]) + .backup-menu-actions{margin-top:26px}
+.backup-menu-actions .sidebar-option{
+  border:0;
+  background:transparent;
+  box-shadow:none;
+}
+.backup-menu .backup-menu-primary,
+.backup-menu .backup-menu-secondary{
+  border:0;
+  background:transparent;
+  color:#73543b;
+}
+.backup-menu .backup-menu-delete{
+  border:0;
+  background:transparent;
+  color:#a15d4d;
+}
+.backup-menu-actions .sidebar-option:hover,
+.backup-menu-actions .sidebar-option:active,
+.backup-menu-actions .sidebar-option:focus-visible,
+.backup-menu .backup-menu-primary:hover{
+  background:transparent;
+  box-shadow:none;
+}
+.backup-menu-actions .sidebar-option:hover{opacity:.76}
+.backup-menu-actions .sidebar-option:focus-visible{outline:2px solid #967250;outline-offset:-2px}
