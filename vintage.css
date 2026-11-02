@@ -2667,7 +2667,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
   gap:7px;
   padding:11px 5px;
 }
-.backup-menu-actions .sidebar-option svg{width:24px;height:24px}
+.backup-menu-actions .sidebar-option svg{width:16px;height:16px}
 .backup-menu-actions .sidebar-option span{font-size:12px}
 .writing-area .entry-photo-sticker{
   border-color:transparent;
