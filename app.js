@@ -1919,7 +1919,9 @@
     $('diaryPrevious').addEventListener('click',()=>navigateDiary(-1));
     $('diaryNext').addEventListener('click',()=>navigateDiary(1));
     let swipe=null;
-    const ignoreSwipe=target=>target.closest('input,textarea,select,button,a,audio,video,[contenteditable],.entry-photo-sticker,.entry-sticker-board,.format-toolbar');
+    // Allow horizontal page gestures even when they start on the diary body textarea.
+    // Keep buttons, inputs and sticker editing surfaces protected from navigation.
+    const ignoreSwipe=target=>target.closest('input,select,button,a,audio,video,[contenteditable],.entry-photo-sticker,.entry-sticker-board,.format-toolbar');
     $('editorPage').addEventListener('pointerdown',e=>{
       if(e.pointerType!=='touch'||!e.isPrimary||ignoreSwipe(e.target)){swipe=null;return;}
       swipe={x:e.clientX,y:e.clientY,time:performance.now(),id:current?.id,pointer:e.pointerId};
@@ -1929,7 +1931,7 @@
       const start=swipe;swipe=null;
       if(!start||start.pointer!==e.pointerId||start.id!==current?.id||ignoreSwipe(e.target))return;
       const dx=e.clientX-start.x,dy=e.clientY-start.y;
-      if(performance.now()-start.time<700&&Math.abs(dx)>=70&&Math.abs(dx)>Math.abs(dy)*1.5)
+      if(performance.now()-start.time<1100&&Math.abs(dx)>=70&&Math.abs(dx)>Math.abs(dy)*1.5)
         navigateDiary(dx<0?1:-1);
     },{passive:true});
     document.addEventListener('keydown',e=>{
