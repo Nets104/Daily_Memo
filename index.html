@@ -32,7 +32,7 @@
     #startupIntro.is-finished{opacity:0;visibility:hidden;pointer-events:none}
     #startupIntro[hidden]{display:none!important}
   </style>
-  <link rel="stylesheet" href="./vintage.css?v=75" />
+  <link rel="stylesheet" href="./vintage.css?v=77" />
   <title>일상 기록</title>
 </head>
 <body>
@@ -313,6 +313,11 @@
     <div class="dialog-heading"><div><p class="eyebrow">SAVE THIS MOMENT</p><h2>기록 내보내기</h2></div><button class="icon-button" id="closeExportBtn" aria-label="닫기">✕</button></div>
     <label class="dialog-label" for="exportFilename">파일 이름 <small>(기록 제목은 변경되지 않아요)</small></label><input class="dialog-input" type="text" id="exportFilename" maxlength="30" placeholder="파일 이름" />
     <p class="export-help">PDF·PNG는 빈티지 다이어리 디자인으로 내보내요. Markdown은 텍스트, ZIP은 원본 첨부파일 보관용이에요.</p>
+    <button type="button" id="exportPreviewBtn" class="outlined-button export-preview-button">PDF·PNG 출력 미리보기</button>
+    <section id="exportPreviewPane" class="export-preview-pane" aria-label="출력 미리보기" hidden>
+      <p id="exportPreviewStatus" role="status" aria-live="polite"></p>
+      <div id="exportPreviewPages" class="export-preview-pages"></div>
+    </section>
     <div class="export-options">
       <button data-export="md"><span class="export-icon md-icon">MD</span><span><strong>Markdown</strong><small>.md 텍스트 파일</small></span><span class="option-arrow">↗</span></button>
       <button data-export="png"><span class="export-icon png-icon">▧</span><span><strong>빈티지 이미지</strong><small>.png · 다이어리 페이지</small></span><span class="option-arrow">↗</span></button>
@@ -491,6 +496,6 @@
   <script src="./supabase-config.js?v=2" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0" defer></script>
   <script src="./cloud.js?v=20" defer></script>
-  <script src="./app.js?v=75" defer></script>
+  <script src="./app.js?v=77" defer></script>
 </body>
 </html>
