@@ -1731,7 +1731,7 @@
     // Use one scale for all Markdown text and line spacing, for PNG and PDF alike.
     const editorFont=diaryBodyFontSize(entry)||
       (current?.id===entry.id?Number.parseFloat(getComputedStyle(el.body).fontSize):18)||18;
-    const printBodySize=clamp(Math.round(editorFont*2.35),32,56);
+    const printBodySize=clamp(Math.round(editorFont*3.4),44,84);
     const bodyFontFactor=printBodySize/34;
     const bodyPx=n=>Math.round(n*bodyFontFactor);
     const dt=new Date(entry.date+'T12:00:00');
@@ -1809,10 +1809,18 @@
       const sourceH=element?.offsetHeight||
         Math.min(sourceWidth*img.naturalHeight/img.naturalWidth,
           window.matchMedia('(max-width:740px)').matches?230:260);
-      const drawW=(element?.offsetWidth||sourceWidth)*screenToPaper;
-      const drawH=sourceH*screenToPaper;
-      const x=L+clamp(Number(layout.x)||0,0,100-widthPercent)/100*(R-L);
-      let top=bodyStartY+clamp(Number(layout.y)||0,0,85)/100*boardHeight*screenToPaper;
+      // Enlarge photos with the text, keeping their visual center anchored.
+      // Limit dimensions to the printable paper so no portion is cut off.
+      const originalW=(element?.offsetWidth||sourceWidth)*screenToPaper;
+      const originalH=sourceH*screenToPaper;
+      const enlargement=Math.min(1.4,(R-L-12)/originalW,(BOTTOM-183-12)/originalH);
+      const drawW=originalW*enlargement;
+      const drawH=originalH*enlargement;
+      const originalX=L+clamp(Number(layout.x)||0,0,100-widthPercent)/100*(R-L);
+      const x=clamp(originalX-(drawW-originalW)/2,L,R-drawW);
+      let top=bodyStartY+clamp(Number(layout.y)||0,0,85)/100*boardHeight*screenToPaper
+        -(drawH-originalH)/2;
+      top=Math.max(183,top);
       let pageIndex=bodyStartPage;
       while(top>=BOTTOM){
         top=183+(top-BOTTOM);pageIndex++;
