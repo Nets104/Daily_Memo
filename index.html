@@ -12,6 +12,19 @@
   <link rel="stylesheet" href="./style.css?v=13" />
   <!-- Critical intro layout: keep the splash out of document flow even if cached CSS is stale. -->
   <style>
+
+    /* Backup actions keep their compact sizing even with a cached older stylesheet. */
+    #backupBtn > svg, #restoreBtn > svg, #openMonthDelete > svg {
+      display:block!important;width:15px!important;height:15px!important;
+      min-width:15px!important;max-width:15px!important;flex:0 0 15px!important;
+      margin:0 auto!important;
+    }
+    .backup-menu-actions .sidebar-option{
+      height:60px!important;min-height:60px!important;max-height:60px!important;
+      gap:5px!important;padding:7px 4px!important;
+      align-items:center!important;justify-content:center!important;
+    }
+    .backup-menu-actions .sidebar-option > span{font-size:11px!important;line-height:1.15!important;}
     #startupIntro{position:fixed;inset:0;z-index:120;display:grid;place-items:center;box-sizing:border-box;padding:22px;background:#f3e5d0;text-align:center;color:#4b3528;font-family:Pretendard,sans-serif}
     #startupIntro .intro-card{width:min(100%,410px);margin:auto;text-align:center}
     #startupIntro .intro-card h1{font-size:clamp(32px,7vw,48px);line-height:1.3;margin:12px 0}
@@ -19,7 +32,7 @@
     #startupIntro.is-finished{opacity:0;visibility:hidden;pointer-events:none}
     #startupIntro[hidden]{display:none!important}
   </style>
-  <link rel="stylesheet" href="./vintage.css?v=70" />
+  <link rel="stylesheet" href="./vintage.css?v=71" />
   <title>일상 기록</title>
 </head>
 <body>
@@ -122,9 +135,9 @@
   </div>
 
           <div class="backup-menu-actions">
-            <button type="button" id="backupBtn" class="sidebar-option backup-menu-primary"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5"/></svg><span>백업</span></button>
-            <button type="button" id="restoreBtn" class="sidebar-option backup-menu-secondary"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4m-5 5 5-5 5 5M4 17v4h16v-4"/></svg><span>복원</span></button>
-            <button type="button" id="openMonthDelete" class="sidebar-option backup-menu-delete"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7M14 10v7"/></svg><span>삭제</span></button>
+            <button type="button" id="backupBtn" class="sidebar-option backup-menu-primary"><svg width="15" height="15" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5"/></svg><span>백업</span></button>
+            <button type="button" id="restoreBtn" class="sidebar-option backup-menu-secondary"><svg width="15" height="15" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4m-5 5 5-5 5 5M4 17v4h16v-4"/></svg><span>복원</span></button>
+            <button type="button" id="openMonthDelete" class="sidebar-option backup-menu-delete"><svg width="15" height="15" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7M14 10v7"/></svg><span>삭제</span></button>
           </div>
           <input id="restoreInput" type="file" accept=".zip,application/zip" hidden />
         </section>
@@ -286,7 +299,7 @@
       </div>
     </main>
     <nav class="bottom-tabs" id="bottomTabs" aria-label="화면 이동">
-  <button type="button" data-tab="home" aria-current="page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5V21h-6v-7H9v7H3z"/></svg><span>홈</span></button>
+  <button type="button" data-tab="home" aria-current="page" aria-label="홈 화면"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 10 9-7 9 7"/><path d="M5 9v11h14V9M9 20v-7h6v7"/></svg><span>홈</span></button>
   <button type="button" data-tab="calendar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4M17 3v4M3 10h18M8 14h2M14 14h2M8 18h2"/></svg><span>캘린더</span></button>
   <button type="button" data-tab="diary"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h14v18H6a3 3 0 0 1-3-3V6a3 3 0 0 1 3-3zM6 3v18M10 8h6M10 12h6"/></svg><span>일기</span></button>
   <button type="button" data-tab="mypage"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4.5 21c0-4 3.1-7 7.5-7s7.5 3 7.5 7"/></svg><span>마이페이지</span></button>
