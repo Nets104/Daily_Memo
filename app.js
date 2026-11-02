@@ -1696,11 +1696,12 @@
       ctx.restore();
       ctx.fillStyle='#ebdfca';ctx.fillRect(x+12,top+12,innerW,innerH);
       if(image){
-        const ratio=Math.max(innerW/image.naturalWidth,innerH/image.naturalHeight);
-        const sw=innerW/ratio,sh=innerH/ratio;
-        const sx=(image.naturalWidth-sw)/2,sy=(image.naturalHeight-sh)/2;
+        // Match the editor's object-fit:contain instead of cropping portrait photos.
+        const ratio=Math.min(innerW/image.naturalWidth,innerH/image.naturalHeight);
+        const dw=image.naturalWidth*ratio,dh=image.naturalHeight*ratio;
         ctx.save();ctx.beginPath();ctx.rect(x+12,top+12,innerW,innerH);ctx.clip();
-        ctx.drawImage(image,sx,sy,sw,sh,x+12,top+12,innerW,innerH);
+        ctx.fillStyle='#181818';ctx.fillRect(x+12,top+12,innerW,innerH);
+        ctx.drawImage(image,x+12+(innerW-dw)/2,top+12+(innerH-dh)/2,dw,dh);
         ctx.restore();
       }else{
         font(23,false,sans);ctx.fillStyle=colors.muted;
@@ -1726,7 +1727,12 @@
       finally{URL.revokeObjectURL(src);}
     }
     page();
-    const bodyFontFactor=(diaryBodyFontSize(entry)||18)/18;
+    // The editor uses a real CSS font size; scale that size into a readable A4 page.
+    // Use one scale for all Markdown text and line spacing, for PNG and PDF alike.
+    const editorFont=diaryBodyFontSize(entry)||
+      (current?.id===entry.id?Number.parseFloat(getComputedStyle(el.body).fontSize):18)||18;
+    const printBodySize=clamp(Math.round(editorFont*2.35),32,56);
+    const bodyFontFactor=printBodySize/34;
     const bodyPx=n=>Math.round(n*bodyFontFactor);
     const dt=new Date(entry.date+'T12:00:00');
     const week=WEEK_KR[dt.getDay()]+'요일';
@@ -1780,34 +1786,48 @@
         }
       }
     }
-    // Canvas PDF/PNG exports are independent of the DOM editor, so render stickers here.
-    // Anchor percentages to the body region and draw only the photo (never editing controls).
+    // Use the same sticker coordinate frame and rendered image size as the diary editor.
+    // The editor stores percent-based x/y/width; arbitrary export heights made stickers drift.
     const stickerFiles=attached.filter(file=>file.type.startsWith('image/')&&
       file.id!==entry.coverAttachmentId&&!/^달력_썸네일_|^일기_미리보기_/.test(file.name||'')&&
       entry.photoLayout?.[file.id]?.mode==='sticker');
-    const bodyFlowHeight=(pages.length-1-bodyStartPage)*(BOTTOM-183)+(y-bodyStartY);
-    const stickerAreaHeight=Math.max(500,Math.min(bodyFlowHeight,1000));
+    const stickerBoard=current?.id===entry.id?$('entryStickerBoard'):null;
+    const boardRect=stickerBoard?.getBoundingClientRect();
+    const boardWidth=boardRect?.width||el.body.getBoundingClientRect().width||600;
+    const boardHeight=boardRect?.height||el.body.getBoundingClientRect().height||380;
+    const screenToPaper=(R-L)/boardWidth;
+    let lastStickerPage=bodyStartPage,lastStickerBottom=bodyStartY;
     for(const file of stickerFiles){
       const img=await loadImage(file);
       if(!img||!img.naturalWidth||!img.naturalHeight)continue;
       const layout=entry.photoLayout[file.id];
       const widthPercent=clamp(Number(layout.width)||36,18,76);
-      const slotW=(R-L)*widthPercent/100;
-      const scale=Math.min(slotW/img.naturalWidth,430/img.naturalHeight);
-      const drawW=img.naturalWidth*scale,drawH=img.naturalHeight*scale;
-      const x=L+clamp(Number(layout.x)||0,0,100-widthPercent)/100*(R-L)+(slotW-drawW)/2;
-      let top=bodyStartY+clamp(Number(layout.y)||0,0,85)/100*stickerAreaHeight;
+      const sourceWidth=boardWidth*widthPercent/100;
+      const card=stickerBoard?.querySelectorAll('.entry-photo-sticker');
+      const element=card?Array.from(card).find(node=>node.dataset.stickerId===file.id)?.querySelector('img'):null;
+      // The on-screen sticker image can be height-limited by CSS; preserve that ratio.
+      const sourceH=element?.offsetHeight||
+        Math.min(sourceWidth*img.naturalHeight/img.naturalWidth,
+          window.matchMedia('(max-width:740px)').matches?230:260);
+      const drawW=(element?.offsetWidth||sourceWidth)*screenToPaper;
+      const drawH=sourceH*screenToPaper;
+      const x=L+clamp(Number(layout.x)||0,0,100-widthPercent)/100*(R-L);
+      let top=bodyStartY+clamp(Number(layout.y)||0,0,85)/100*boardHeight*screenToPaper;
       let pageIndex=bodyStartPage;
-      while(top+drawH>BOTTOM&&pageIndex<pages.length-1){
-        top=183+Math.max(0,top-BOTTOM);pageIndex++;
+      while(top>=BOTTOM){
+        top=183+(top-BOTTOM);pageIndex++;
       }
-      top=clamp(top,183,BOTTOM-drawH);
+      // Keep a sticker whole if it would cross an A4 page boundary.
+      if(top+drawH>BOTTOM){pageIndex++;top=183;}
+      while(pages.length<=pageIndex)page();
       const pen=pages[pageIndex].getContext('2d');
       pen.save();
       pen.translate(x+drawW/2,top+drawH/2);
       pen.rotate(clamp(Number(layout.rotation)||0,-720,720)*Math.PI/180);
       pen.drawImage(img,-drawW/2,-drawH/2,drawW,drawH);
       pen.restore();
+      if(pageIndex>lastStickerPage){lastStickerPage=pageIndex;lastStickerBottom=top+drawH;}
+      else if(pageIndex===lastStickerPage)lastStickerBottom=Math.max(lastStickerBottom,top+drawH);
     }
     const visible=attached.filter(file=>file.id!==entry.coverAttachmentId&&
       !/^달력_썸네일_|^일기_미리보기_/.test(file.name||''));
@@ -1816,6 +1836,11 @@
     const crops=new Map(attached.filter(file=>/^일기_미리보기_/.test(file.name||''))
       .map(file=>[file.name,file]));
     if(photos.length){
+      // Photos follow the writing surface; do not print on top of placed stickers.
+      if(stickerFiles.length){
+        if(lastStickerPage===pages.length-1)y=Math.max(y,lastStickerBottom+22);
+        if(y+460>BOTTOM)page();
+      }
       section('PHOTO MEMORIES   /   사진 기록');
       const firstX=L+12,secondX=L+508;
       for(let i=0;i<photos.length;i+=2){
@@ -1895,6 +1920,30 @@
       toast(`${name} 파일을 내보냈어요.`);
     }catch(e){console.error(e);el.exportProgress.textContent=`오류: ${e.message}`;toast(`내보내기 실패: ${e.message}`);}
     finally{isExporting=false;}
+  }
+  async function showExportPreview(){
+    if(isExporting)return;
+    isExporting=true;
+    const panel=$('exportPreviewPane'),items=$('exportPreviewPages'),status=$('exportPreviewStatus');
+    panel.hidden=false;items.replaceChildren();
+    status.textContent='출력 페이지를 준비하고 있어요…';
+    try{
+      await flushSave();
+      const pages=await canvasPages({...current},[...attachments]);
+      const limit=6;
+      status.textContent='PDF·PNG 공통 출력 · '+pages.length+'페이지'+
+        (pages.length>limit?' (처음 '+limit+'페이지만 표시)':'');
+      for(let i=0;i<Math.min(pages.length,limit);i++){
+        const source=pages[i],thumb=document.createElement('canvas');
+        const w=360;thumb.width=w;thumb.height=Math.round(source.height*w/source.width);
+        thumb.getContext('2d').drawImage(source,0,0,thumb.width,thumb.height);
+        thumb.setAttribute('aria-label',(i+1)+'번째 출력 페이지');
+        items.append(thumb);
+      }
+    }catch(error){
+      console.error('출력 미리보기 실패',error);
+      status.textContent='미리보기 오류: '+(error.message||'알 수 없는 오류');
+    }finally{isExporting=false;}
   }
   async function importLocal(){
     if(!cloudMode)return;
@@ -2150,7 +2199,8 @@
       }
       await deleteSavedRecord(current.id);
     });
-    $('openExportBtn').addEventListener('click',async()=>{if(isDraft){toast('새 기록을 먼저 저장한 뒤 내보내 주세요.');return;}await flushSave();el.exportFilename.value=(current?.title.trim()||`${current?.date}_기록`).slice(0,MAX_EXPORT_NAME_CHARS);el.exportProgress.textContent='';el.dialog.showModal();});
+    $('openExportBtn').addEventListener('click',async()=>{if(isDraft){toast('새 기록을 먼저 저장한 뒤 내보내 주세요.');return;}await flushSave();el.exportFilename.value=(current?.title.trim()||`${current?.date}_기록`).slice(0,MAX_EXPORT_NAME_CHARS);el.exportProgress.textContent='';$('exportPreviewPane').hidden=true;$('exportPreviewPages').replaceChildren();el.dialog.showModal();});
+    $('exportPreviewBtn').addEventListener('click',showExportPreview);
     $('closeExportBtn').addEventListener('click',()=>el.dialog.close());el.dialog.addEventListener('click',e=>{if(e.target===el.dialog)el.dialog.close();});
     document.querySelectorAll('[data-export]').forEach(b=>b.addEventListener('click',()=>exportRecord(b.dataset.export)));
     for(const id of ['backupStartDate','deleteStartDate'])$(id).value=dayString().slice(0,7)+'-01';
