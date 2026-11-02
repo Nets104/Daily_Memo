@@ -1,4 +1,4 @@
-const CACHE='harugyeol-v75';
+const CACHE='harugyeol-v76';
 const RESOURCES=['./index.html','./style.css?v=13','./vintage.css?v=75','./app.js?v=75','./assets/vintage-flowers.svg','./assets/ridibatang-Regular.woff2','./icons/menu-notebook-clean.png','./manifest.webmanifest?v=39','./supabase-config.js?v=2','./cloud.js?v=20','./icons/icon-192.png?v=39','./icons/icon-512.png?v=39'];
 self.addEventListener('install',event=>{
   // Keep the previous app running until the user chooses "업데이트".
