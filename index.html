@@ -19,7 +19,7 @@
     #startupIntro.is-finished{opacity:0;visibility:hidden;pointer-events:none}
     #startupIntro[hidden]{display:none!important}
   </style>
-  <link rel="stylesheet" href="./vintage.css?v=66" />
+  <link rel="stylesheet" href="./vintage.css?v=67" />
   <title>일상 기록</title>
 </head>
 <body>
@@ -239,6 +239,7 @@
             <span class="editor-hint">Markdown 지원 <span class="kbd-hint">Ctrl + S</span></span>
           </div>
           <div class="format-toolbar" role="toolbar" aria-label="마크다운 서식">
+            <label class="body-font-select-label" for="bodyFontSize">Aa <select id="bodyFontSize" aria-label="본문 글자 크기"><option value="default">기본</option><option value="14">14px</option><option value="16">16px</option><option value="18">18px</option><option value="20">20px</option><option value="22">22px</option><option value="24">24px</option></select></label><span class="toolbar-divider"></span>
             <button data-format="h1" title="큰 제목">H1</button><button data-format="h2" title="작은 제목">H2</button><span class="toolbar-divider"></span>
             <button data-format="bold" class="bold-format" title="굵게 (Ctrl+B)">B</button><button data-format="italic" class="italic-format" title="기울임 (Ctrl+I)">I</button><button data-format="underline" class="underline-format" title="밑줄">U</button><button data-format="strike" class="strike-format" title="취소선">S</button><span class="toolbar-divider"></span>
             <button data-format="bullet" title="글머리 목록">≡</button><button data-format="number" title="번호 목록">1.</button><button data-format="check" title="체크 목록">☑</button><button data-format="quote" title="인용">❝</button><button data-format="rule" title="구분선">―</button><button data-format="link" title="링크">↗</button><button data-format="code" title="인라인 코드">&lt;/&gt;</button>
@@ -465,6 +466,6 @@
   <script src="./supabase-config.js?v=2" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0" defer></script>
   <script src="./cloud.js?v=20" defer></script>
-  <script src="./app.js?v=66" defer></script>
+  <script src="./app.js?v=67" defer></script>
 </body>
 </html>
