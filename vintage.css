@@ -2915,3 +2915,11 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
   .home-actions button{gap:5px;font-size:13px;padding:10px 6px}
   .home-actions button svg{width:20px;height:20px;flex-basis:20px}
 }
+
+/* v77: preview the actual PNG/PDF Canvas pages without changing the diary layout. */
+.export-preview-button{width:100%;min-height:40px;margin:0 0 14px;color:#74543b;border-color:#cbb294}
+.export-preview-pane{max-height:48vh;overflow-y:auto;margin:0 0 16px;padding:10px;border:1px solid #dac5a7;border-radius:7px;background:#f4eadb}
+.export-preview-pane[hidden]{display:none!important}
+.export-preview-pane p{margin:0 0 8px;font:600 11px/1.5 Pretendard,sans-serif;color:#70553f}
+.export-preview-pages{display:flex;flex-direction:column;gap:10px;align-items:center}
+.export-preview-pages canvas{display:block;width:100%;max-width:360px;height:auto;border:1px solid #d5bfa1;box-shadow:0 2px 8px #4330191f}
