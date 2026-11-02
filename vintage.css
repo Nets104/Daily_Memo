@@ -2714,3 +2714,6 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
   border-radius:6px;
   font:600 11px Pretendard,sans-serif;
 }
+
+/* v68: let horizontal diary-page swipes begin inside the writing textarea. */
+#editorPage .editing-pane textarea{touch-action:pan-y pinch-zoom}
