@@ -2780,11 +2780,11 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 }
 .backup-menu-actions .sidebar-option > svg{
   display:block;
-  width:15px;
-  min-width:15px;
-  max-width:15px;
-  height:15px;
-  flex:0 0 15px;
+  width:20px;
+  min-width:20px;
+  max-width:20px;
+  height:20px;
+  flex:0 0 20px;
   margin:0 auto;
 }
 .backup-menu-actions .sidebar-option > span{font-size:11px;line-height:1.15}
@@ -2844,3 +2844,12 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .backup-menu .backup-menu-delete:focus-visible{color:#a15d4d}
 .backup-menu-actions .sidebar-option:hover{opacity:.76}
 .backup-menu-actions .sidebar-option:focus-visible{outline:2px solid #967250;outline-offset:-2px}
+
+/* v74: clearer management icons without restoring button boxes. */
+.backup-menu .backup-menu-primary,
+.backup-menu .backup-menu-secondary{color:#60422f}
+.backup-menu .backup-menu-delete{color:#914938}
+.backup-menu .backup-menu-primary:hover,
+.backup-menu .backup-menu-secondary:hover{color:#60422f}
+.backup-menu .backup-menu-delete:hover,
+.backup-menu .backup-menu-delete:focus-visible{color:#914938}
