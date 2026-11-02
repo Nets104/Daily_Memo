@@ -976,10 +976,16 @@
       }
     }).join('') || '<p class="preview-placeholder">여기에 기록한 내용이 보여요 ✨</p>';
   }
+  function placeStickerBoard(){
+    const board=$('entryStickerBoard');
+    const pane=el.writing.querySelector(view==='edit'?'.editing-pane':'.preview-pane');
+    if(board&&pane&&board.parentElement!==pane)pane.append(board);
+  }
   function setView(next) {
     view=next;
     setStickerSelection(null);
     el.writing.className=`writing-area view-${next}${diaryBodyFontSize(current)!==null?' custom-body-size':''}`;
+    placeStickerBoard();
     document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view===next));
     if(next!=='edit')renderPreview();
   }
@@ -1062,6 +1068,7 @@
   }
   function renderEntryPhotos(){
     const section=$('entryPhotoSection'),inline=$('entryInlinePhotos'),board=$('entryStickerBoard');
+    placeStickerBoard();
     selectedStickerId=null;
     inline.replaceChildren();board.replaceChildren();
     const photos=visiblePhotos();
