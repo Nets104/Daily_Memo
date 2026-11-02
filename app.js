@@ -31,6 +31,7 @@
   let saveTimer = null, savePromise = Promise.resolve(), toastTimer = null, view = 'edit';
   let recorder = null, recordStream = null, recordChunks = [], recordingEntryId = null;
   let isExporting = false;
+  let selectedStickerId = null;
   let appUpdateReloading=false;
   let isDraft = false, isSavingDraft = false;
   let attachmentQueue=Promise.resolve(),pendingFileJobs=0;
@@ -43,6 +44,28 @@
     calendarShowTitle:!!e?.calendarShowTitle,
     photoLayout:JSON.parse(JSON.stringify(e?.photoLayout||{}))
   });
+  const diaryBodyFontSize=entry=>{
+    const size=Number(entry?.photoLayout?.__bodyFontSize);
+    return [14,16,18,20,22,24].includes(size)?size:null;
+  };
+  function applyBodyFontSize(){
+    const size=diaryBodyFontSize(current);
+    const control=$('bodyFontSize');
+    if(control)control.value=size?String(size):'default';
+    el.writing.classList.toggle('custom-body-size',size!==null);
+    if(size!==null)el.writing.style.setProperty('--diary-body-size',size+'px');
+    else el.writing.style.removeProperty('--diary-body-size');
+  }
+  function setStickerSelection(id){
+    selectedStickerId=id;
+    const board=$('entryStickerBoard');
+    if(!board)return;
+    board.querySelectorAll('.entry-photo-sticker').forEach(card=>{
+      const active=id!==null&&card.dataset.stickerId===id&&view==='edit';
+      card.classList.toggle('is-selected',active);
+      card.setAttribute('aria-selected',String(active));
+    });
+  }
   function setSavedBaseline(){
     savedState=entryFields(current);savedFileIds=new Set(attachments.map(f=>f.id));
   }
@@ -456,6 +479,7 @@
     el.title.maxLength=Math.max(MAX_TITLE_CHARS,el.title.value.length);
     el.body.maxLength=Math.max(MAX_BODY_CHARS,el.body.value.length);
     renderEntryMeta();setCalendarMonth(current?.date||dayString());
+    applyBodyFontSize();
     el.edited.textContent=current?.updatedAt ? `${new Date(current.updatedAt).toLocaleDateString('ko-KR')} 수정` : '';
     updateInputCounts();renderPreview();
     updateDiaryNavigation();
@@ -954,7 +978,8 @@
   }
   function setView(next) {
     view=next;
-    el.writing.className=`writing-area view-${next}`;
+    setStickerSelection(null);
+    el.writing.className=`writing-area view-${next}${diaryBodyFontSize(current)!==null?' custom-body-size':''}`;
     document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view===next));
     if(next!=='edit')renderPreview();
   }
@@ -1037,6 +1062,7 @@
   }
   function renderEntryPhotos(){
     const section=$('entryPhotoSection'),inline=$('entryInlinePhotos'),board=$('entryStickerBoard');
+    selectedStickerId=null;
     inline.replaceChildren();board.replaceChildren();
     const photos=visiblePhotos();
     const regular=photos.filter(f=>photoLayout(f).mode!=='sticker');
@@ -1059,6 +1085,8 @@
       const url=URL.createObjectURL(file.blob);mediaUrls.push(url);
       const state=photoLayout(file);
       const card=document.createElement('div');card.className='entry-photo-sticker';
+      card.dataset.stickerId=file.id;card.tabIndex=0;
+      card.setAttribute('role','group');card.setAttribute('aria-selected','false');
       card.setAttribute('aria-label',file.name+' 스티커 - 드래그로 이동, 모서리로 크기와 회전 조절');
       card.style.width=state.width+'%';
       card.style.left=state.x+'%';card.style.top=state.y+'%';
@@ -1083,6 +1111,7 @@
       const pointer=(control,kind)=>(event)=>{
         if(isSavingDraft || (event.button!==0&&event.pointerType!=='touch'))return;
         event.preventDefault();event.stopPropagation();
+        setStickerSelection(file.id);
         const rect=board.getBoundingClientRect();
         if(!rect.width||!rect.height)return;
         const origin=photoLayout(file),sx=event.clientX,sy=event.clientY;
@@ -1124,6 +1153,7 @@
         control.addEventListener('pointerup',done);
         control.addEventListener('pointercancel',done);
       };
+      card.addEventListener('focus',()=>setStickerSelection(file.id));
       card.addEventListener('pointerdown',e=>{
         if(e.target.closest('button'))return;
         pointer(card,'move')(e);
@@ -1689,6 +1719,8 @@
       finally{URL.revokeObjectURL(src);}
     }
     page();
+    const bodyFontFactor=(diaryBodyFontSize(entry)||18)/18;
+    const bodyPx=n=>Math.round(n*bodyFontFactor);
     const dt=new Date(entry.date+'T12:00:00');
     const week=WEEK_KR[dt.getDay()]+'요일';
     const dated=entry.date.replace(/-/g,'.')+'  ·  '+week;
@@ -1713,36 +1745,66 @@
       ctx.fillStyle='#5d4634';ctx.fillText(note,L+15,y+45);y+=81;
     }
     y+=6;rule();y+=22;
+    const bodyStartPage=pages.length-1,bodyStartY=y;
     if(entry.body?.trim()){
       const blocks=parseBlocks(entry.body);
       for(const block of blocks){
         if(block.kind==='heading'){
           y+=block.level===1?15:6;
-          text(stripMd(block.text),{size:block.level===1?46:block.level===2?40:36,
-            leading:block.level===1?65:57,bold:true,color:'#64452f'});y+=19;
+          text(stripMd(block.text),{size:bodyPx(block.level===1?46:block.level===2?40:36),
+            leading:bodyPx(block.level===1?65:57),bold:true,color:'#64452f'});y+=19;
         }else if(block.kind==='paragraph'){
-          text(stripMd(block.text),{size:34,leading:55});y+=21;
+          text(stripMd(block.text),{size:bodyPx(34),leading:bodyPx(55)});y+=21;
         }else if(block.kind==='quote'){
           ensure(18);ctx.fillStyle='#bba78c';ctx.fillRect(L,y,5,29);
-          text(stripMd(block.text),{size:32,leading:50,indent:26,color:'#816954'});y+=19;
+          text(stripMd(block.text),{size:bodyPx(32),leading:bodyPx(50),indent:26,color:'#816954'});y+=19;
         }else if(block.kind==='rule'){
           y+=14;rule();y+=14;
         }else if(block.kind==='code'){
-          for(const line of block.text.split('\n'))text(line,{size:24,leading:42,family:sans});
+          for(const line of block.text.split('\n'))text(line,{size:bodyPx(24),leading:bodyPx(42),family:sans});
           y+=20;
         }else if(block.kind==='list'){
           for(let i=0;i<block.items.length;i++){
             const item=block.items[i];
             const marker=block.ordered?String(i+1)+'.':item.check===null?'•':item.check?'☑':'☐';
-            text(marker+'  '+stripMd(item.text),{size:33,leading:53,indent:12});
+            text(marker+'  '+stripMd(item.text),{size:bodyPx(33),leading:bodyPx(53),indent:12});
           }
           y+=20;
         }
       }
     }
+    // Canvas PDF/PNG exports are independent of the DOM editor, so render stickers here.
+    // Anchor percentages to the body region and draw only the photo (never editing controls).
+    const stickerFiles=attached.filter(file=>file.type.startsWith('image/')&&
+      file.id!==entry.coverAttachmentId&&!/^달력_썸네일_|^일기_미리보기_/.test(file.name||'')&&
+      entry.photoLayout?.[file.id]?.mode==='sticker');
+    const bodyFlowHeight=(pages.length-1-bodyStartPage)*(BOTTOM-183)+(y-bodyStartY);
+    const stickerAreaHeight=Math.max(500,Math.min(bodyFlowHeight,1000));
+    for(const file of stickerFiles){
+      const img=await loadImage(file);
+      if(!img||!img.naturalWidth||!img.naturalHeight)continue;
+      const layout=entry.photoLayout[file.id];
+      const widthPercent=clamp(Number(layout.width)||36,18,76);
+      const slotW=(R-L)*widthPercent/100;
+      const scale=Math.min(slotW/img.naturalWidth,430/img.naturalHeight);
+      const drawW=img.naturalWidth*scale,drawH=img.naturalHeight*scale;
+      const x=L+clamp(Number(layout.x)||0,0,100-widthPercent)/100*(R-L)+(slotW-drawW)/2;
+      let top=bodyStartY+clamp(Number(layout.y)||0,0,85)/100*stickerAreaHeight;
+      let pageIndex=bodyStartPage;
+      while(top+drawH>BOTTOM&&pageIndex<pages.length-1){
+        top=183+Math.max(0,top-BOTTOM);pageIndex++;
+      }
+      top=clamp(top,183,BOTTOM-drawH);
+      const pen=pages[pageIndex].getContext('2d');
+      pen.save();
+      pen.translate(x+drawW/2,top+drawH/2);
+      pen.rotate(clamp(Number(layout.rotation)||0,-720,720)*Math.PI/180);
+      pen.drawImage(img,-drawW/2,-drawH/2,drawW,drawH);
+      pen.restore();
+    }
     const visible=attached.filter(file=>file.id!==entry.coverAttachmentId&&
       !/^달력_썸네일_|^일기_미리보기_/.test(file.name||''));
-    const photos=visible.filter(file=>file.type.startsWith('image/'));
+    const photos=visible.filter(file=>file.type.startsWith('image/')&&entry.photoLayout?.[file.id]?.mode!=='sticker');
     const other=visible.filter(file=>!file.type.startsWith('image/'));
     const crops=new Map(attached.filter(file=>/^일기_미리보기_/.test(file.name||''))
       .map(file=>[file.name,file]));
@@ -2034,6 +2096,18 @@
     $('entryShortNote').addEventListener('input',()=>{$('entryMetaCount').textContent=$('entryShortNote').value.length+'/'+MAX_NOTE_CHARS;});
     el.title.addEventListener('input',queueSave);
     el.body.addEventListener('input',()=>{queueSave();renderPreview();});
+    $('bodyFontSize').addEventListener('change',event=>{
+      if(!current)return;
+      const size=Number(event.target.value);
+      const layout={...(current.photoLayout||{})};
+      if([14,16,18,20,22,24].includes(size))layout.__bodyFontSize=size;
+      else delete layout.__bodyFontSize;
+      current.photoLayout=layout;
+      applyBodyFontSize();queueSave();
+    });
+    document.addEventListener('pointerdown',event=>{
+      if(!event.target.closest?.('.entry-photo-sticker'))setStickerSelection(null);
+    });
     document.querySelectorAll('[data-view]').forEach(b=>b.addEventListener('click',()=>setView(b.dataset.view)));
     document.querySelectorAll('[data-format]').forEach(b=>b.addEventListener('click',()=>formatText(b.dataset.format)));
     document.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='s'){e.preventDefault();saveCurrent(true);}if((e.ctrlKey||e.metaKey)&&['b','i'].includes(e.key.toLowerCase())&&document.activeElement===el.body){e.preventDefault();formatText(e.key.toLowerCase()==='b'?'bold':'italic');}});
