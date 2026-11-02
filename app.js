@@ -2125,8 +2125,9 @@
     $('photoPreviewDialog').addEventListener('close',()=>{$('photoPreviewImage').removeAttribute('src');});
     $('uploadBtn').addEventListener('click',()=>el.file.click());
     $('photoUploadBtn').addEventListener('click',()=>$('diaryPhotoInput').click());
-    for(const input of [el.file,$('diaryPhotoInput')])input.addEventListener('change',()=>{
-      const selected=[...input.files],entryId=current?.id,mode=$('photoInsertMode').value;
+    $('stickerUploadBtn').addEventListener('click',()=>$('stickerPhotoInput').click());
+    for(const input of [el.file,$('diaryPhotoInput'),$('stickerPhotoInput')])input.addEventListener('change',()=>{
+      const selected=[...input.files],entryId=current?.id,mode=input.id==='stickerPhotoInput'?'sticker':'photo';
       input.value='';
       if(!selected.length)return;
       addFiles(selected,entryId,mode).catch(error=>{
