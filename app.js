@@ -10,13 +10,14 @@
     dialog:$('exportDialog'),exportFilename:$('exportFilename'),exportProgress:$('exportProgress'),restoreInput:$('restoreInput'),toast:$('toast')
   };
   const MAX_TITLE_CHARS=30, MAX_BODY_CHARS=1500, MAX_NOTE_CHARS=20, MAX_EXPORT_NAME_CHARS=30;
-  const FILE_LIMITS={image:2*1024*1024,video:30*1024*1024,audio:10*1024*1024,pdf:10*1024*1024};
-  const MAX_ATTACHMENT_BYTES=50*1024*1024;
-  const formatAttachmentUsage=bytes=>bytes<1024*1024?(bytes/1024).toFixed(0)+'KB':(bytes/1048576).toFixed(1)+'MB';
+  const FILE_LIMITS={image:1_000_000,gif:2_000_000,audio:10_000_000,pdf:10_000_000};
+  const MAX_ATTACHMENT_BYTES=10_000_000,USER_ATTACHMENT_BYTES=250_000_000;
+  const formatAttachmentUsage=bytes=>bytes<1_000_000?(bytes/1000).toFixed(0)+'KB':(bytes/1_000_000).toFixed(1)+'MB';
   const attachmentBytes=()=>attachments.reduce((total,file)=>total+(Number(file.size)||file.blob?.size||0),0);
   const fileLimit=(type,name='')=>{
+    if(type==='image/gif'||/\.gif$/i.test(name))return FILE_LIMITS.gif;
     if(type.startsWith('image/')||/\.(jpe?g|png|gif|webp|heic|heif|avif)$/i.test(name))return FILE_LIMITS.image;
-    if(type.startsWith('video/')||/\.(mp4|mov|webm|m4v)$/i.test(name))return FILE_LIMITS.video;
+    if(type.startsWith('video/'))return 0;
     if(type.startsWith('audio/')||/\.(mp3|wav|m4a|ogg|flac|aac)$/i.test(name))return FILE_LIMITS.audio;
     return FILE_LIMITS.pdf;
   };
@@ -32,6 +33,7 @@
   let isExporting = false;
   let appUpdateReloading=false;
   let isDraft = false, isSavingDraft = false;
+  let attachmentQueue=Promise.resolve(),pendingFileJobs=0;
   let savedState=null,savedFileIds=new Set(),pendingTimer=null,pendingWrites=Promise.resolve();
   const pendingScope=()=>cloudMode&&cloud()?.user?.id?'user:'+cloud().user.id:'local';
   const pendingKey=id=>pendingScope()+':'+id;
@@ -132,10 +134,10 @@
     return confirm('저장하지 않은 변경사항이 있어요. 이동해도 기기에 임시 보관되지만 서버에는 저장되지 않습니다. 계속할까요?');
   }
   let calendarYear = new Date().getFullYear(), calendarMonth = new Date().getMonth();
-  let archivedMonth=null,pendingMonthDeletion=null;
+  let pendingMonthDeletion=null,pendingBackup=null,backupPreparing=false;
   let cardDate=null,cardPhoto=null,cardCoverFileId=null,cardObjectUrl=null,cardImage=null,cardZoom=1,cardOffsetX=0,cardOffsetY=0,cardDragging=false,cardPointer=null;
   let calendarPageOpen=false,miniPhotoToken=0,highlightedCalendarDate=null;const miniPhotoUrls=[];
-  const MAX_DIARY_PHOTOS=6;
+  const MAX_DIARY_PHOTOS=10;
   const isCalendarCover=f=>f.id===current?.coverAttachmentId||/^달력_썸네일_/.test(f.name||'');
   const isDiaryCropPreview=f=>/^일기_미리보기_/.test(f.name||'');
   const cropPreviewName=id=>'일기_미리보기_'+id+'.jpg';
@@ -165,8 +167,11 @@
       req.onsuccess=()=>resolve(req.result); req.onerror=()=>reject(req.error);
     });
   }
-  function writeRecords(storeName, values) {
-    if(cloudMode) return storeName==='entries' ? Promise.all(values.map(v=>cloud().saveEntry(v))) : cloud().saveAttachments(values);
+  async function writeRecords(storeName, values) {
+    if(cloudMode){      try{return await (storeName==='entries' ? Promise.all(values.map(v=>cloud().saveEntry(v))) : cloud().saveAttachments(values));}
+      finally{refreshStorageUsage();}
+    }
+    await checkLocalStorageQuota(storeName,values);
     return new Promise((resolve,reject) => {
       const tx=db.transaction(storeName,'readwrite');
       const store=tx.objectStore(storeName);
@@ -181,6 +186,27 @@
       const request=indexName ? tx.objectStore(storeName).index(indexName).getAll(value) : tx.objectStore(storeName).getAll();
       request.onsuccess=()=>resolve(request.result || []);request.onerror=()=>reject(request.error);
     });
+  }
+  async function checkLocalStorageQuota(storeName,values){
+    const storedEntries=new Map((await getAll('entries')).map(e=>[e.id,e]));
+    const storedFiles=new Map((await getAll('attachments')).map(f=>[f.id,f]));
+    const changedDays=new Set();
+    if(storeName==='entries')for(const e of values){
+      if(storedEntries.get(e.id)?.date!==e.date)changedDays.add(e.date);
+      storedEntries.set(e.id,e);
+    }
+    if(storeName==='attachments')for(const f of values){
+      if(f.type.startsWith('video/'))throw Error('영상 업로드는 지원하지 않아요.');
+      if((f.blob?.size||f.size)>fileLimit(f.type,f.name))throw Error(f.name+': 파일 용량 한도를 넘어요.');
+      storedFiles.set(f.id,f);changedDays.add(storedEntries.get(f.entryId)?.date);
+    }
+    let total=0;const byDay=new Map();
+    for(const f of storedFiles.values()){
+      const size=f.blob?.size||f.size||0,day=storedEntries.get(f.entryId)?.date;
+      total+=size;byDay.set(day,(byDay.get(day)||0)+size);
+    }
+    if(storeName==='attachments'&&total>USER_ATTACHMENT_BYTES)throw Error('첨부파일 한도 250MB에 도달했어요. 백업 후 불필요한 기록을 정리해 주세요.');
+    for(const day of changedDays)if((byDay.get(day)||0)>MAX_ATTACHMENT_BYTES)throw Error('같은 날짜의 모든 기록과 썸네일을 합쳐 하루 10MB까지 저장할 수 있어요.');
   }
   function deleteOne(storeName, key) {
     if(cloudMode)return storeName==='attachments' ? cloud().removeAttachment(key) : cloud().removeEntry(key);
@@ -364,6 +390,7 @@
     schedulePending();
   }
   async function saveCurrent(explicit=false){
+    if(pendingFileJobs){toast('사진·파일 처리가 끝난 뒤 저장해 주세요.');return false;}
     // Persist to the account/server only following an explicit save action.
     if(!explicit||!current||!db||isSavingDraft)return false;
     refreshCurrentFromForm();updateInputCounts();
@@ -431,6 +458,7 @@
     renderEntryMeta();setCalendarMonth(current?.date||dayString());
     el.edited.textContent=current?.updatedAt ? `${new Date(current.updatedAt).toLocaleDateString('ko-KR')} 수정` : '';
     updateInputCounts();renderPreview();
+    updateDiaryNavigation();
   }
   function canLeaveDraft(){return canLeaveUnsaved();}
   async function selectEntry(id, navigate = true) {
@@ -497,6 +525,60 @@
   function showMiniCalendar(){showPage('calendar');}
   function showHome(){showPage('home');}
   function showMyPage(){showPage('mypage');}
+  function diaryOrder(){return [...entries].sort((a,b)=>a.date.localeCompare(b.date)||a.createdAt.localeCompare(b.createdAt)||a.id.localeCompare(b.id));}
+  function diaryNeighbors(){
+    const ordered=diaryOrder(),index=ordered.findIndex(e=>e.id===current?.id);
+    if(index<0){const split=ordered.findIndex(e=>e.date>(current?.date||dayString()));return {previous:split<0?ordered.at(-1):ordered[split-1],next:split<0?null:ordered[split]};}
+    return {previous:ordered[index-1],next:ordered[index+1]};
+  }
+  function updateDiaryNavigation(){
+    if(!$('diaryPrevious'))return;
+    const {previous,next}=diaryNeighbors();
+    for(const [id,entry] of [['diaryPrevious',previous],['diaryNext',next]]){
+      $(id).disabled=!entry;
+      $(id).title=entry?entry.date+' · '+(entry.title||'제목 없는 기록'):'더 이상 기록이 없어요.';
+    }
+    $('diaryNavigationStatus').textContent=current?.date?dateText(current.date,'kr'):'저장한 일기 넘겨보기';
+  }
+  let diaryNavigating=false;
+  async function navigateDiary(direction){
+    if(recorder?.state==='recording'){toast('녹음을 종료한 뒤 일기를 넘겨 주세요.');return;}
+    if(diaryNavigating||isSavingDraft||isExporting||pendingFileJobs)return;
+    const target=diaryNeighbors()[direction<0?'previous':'next'];
+    if(!target)return;
+    diaryNavigating=true;
+    try{await selectEntry(target.id);updateDiaryNavigation();}
+    finally{diaryNavigating=false;}
+  }
+  let usageTimer=null,usageRequest=0;
+  function refreshStorageUsage(){
+    clearTimeout(usageTimer);const request=++usageRequest;
+    if(!$('cloudStorageUsage'))return;
+    if(!cloudMode){$('cloudStorageUsage').hidden=true;if($('storageBackupBanner'))$('storageBackupBanner').hidden=true;return;}
+    const user=cloud()?.user?.id;
+    usageTimer=setTimeout(async()=>{
+      try{
+        const data=await cloud().storageUsage(dayString());
+        if(request!==usageRequest||!cloudMode||cloud()?.user?.id!==user)return;
+        $('cloudStorageUsage').hidden=false;
+        $('storageUsageText').textContent='오늘 '+formatAttachmentUsage(data.daily_used_bytes)+' / '+formatAttachmentUsage(data.daily_limit_bytes)+' · 전체 '+formatAttachmentUsage(data.used_bytes)+' / '+formatAttachmentUsage(data.limit_bytes);
+        $('storageUsageMeter').value=Math.min(100,100*data.used_bytes/data.limit_bytes);
+        const warning=!!(data.near_limit||data.project_near_limit);
+        $('storageBackupNotice').hidden=!warning;
+        const message=data.project_near_limit?'서버 파일 공간이 백업 안내 기준에 도달했어요. 지난달 기록을 백업해 주세요.':'개인 저장 공간을 80% 이상 사용했어요. 지난달 기록을 백업해 주세요.';
+        $('storageBackupNoticeText').textContent=message+' 백업 파일을 확인한 뒤 불필요한 기록을 정리하면 공간이 확보돼요.';
+        if($('storageBackupBanner')){
+          $('storageBackupBanner').hidden=!warning;
+          $('storageBackupBannerText').textContent=message;
+        }
+      }catch(e){
+        if(request!==usageRequest)return;
+        $('cloudStorageUsage').hidden=false;
+        $('storageUsageText').textContent='저장 공간 사용량을 불러오지 못했어요. 잠시 후 다시 확인해 주세요.';
+        $('storageBackupNotice').hidden=true;
+      }
+    },250);
+  }
   function renderHome(){
     $('homeTodayLabel').textContent=dateText(dayString(),'kr');
     $('homeEntryCount').textContent=entries.length+'개';
@@ -632,7 +714,7 @@
       if(cardPhoto){
         const canvas=$('dayCropCanvas');
         const blob=await new Promise((resolve,reject)=>canvas.toBlob(b=>b?resolve(b):reject(Error('이미지를 자르지 못했어요.')),'image/jpeg',.86));
-        if(blob.size>FILE_LIMITS.image)throw Error('썸네일은 2MB 이하여야 해요.');
+        if(blob.size>FILE_LIMITS.image)throw Error('썸네일은 1MB 이하여야 해요.');
         file={id:makeId(),entryId:entry.id,name:'달력_썸네일_'+date+'.jpg',type:'image/jpeg',size:blob.size,blob,createdAt:now};
       }
       await writeRecords('entries',[entry]);
@@ -756,6 +838,14 @@
     calendarMonth = target.getMonth();
     renderCalendar();
   }
+  function openCalendarJump(focusMonth=false){
+    $('calendarJumpYear').value=calendarYear;
+    $('calendarJumpMonth').value=calendarMonth;
+    $('calendarJumpDialog').showModal();
+    const field=$(focusMonth?'calendarJumpMonth':'calendarJumpYear');
+    field.focus();
+    if(!focusMonth)field.select();
+  }
   function renderList() {
     const q=el.search.value.trim().toLocaleLowerCase();
     const all=[...entries].sort((a,b)=>b.date.localeCompare(a.date) || b.updatedAt.localeCompare(a.updatedAt));
@@ -768,6 +858,10 @@
       return `<div class="list-entry-row"><button type="button" class="list-entry ${e.id===current?.id?'active':''}" data-entry-id="${id}"><div class="entry-list-date">${escapeHtml(dateText(e.date))}</div><div class="entry-list-title">${escapeHtml(e.title.trim()||'제목 없는 기록')}</div><div class="entry-list-excerpt">${escapeHtml(e.body.replace(/[#*_>\[\]\n-]/g,' ').trim().slice(0,90)||'여기에 하루의 이야기를 담아보세요.')}</div></button><button type="button" class="list-entry-delete" data-delete-entry-id="${id}" aria-label="${label} 기록 삭제" title="이 기록 삭제">삭제</button></div>`;
     }).join('') : '<div class="list-empty">검색된 기록이 없어요.<br>새로운 하루를 남겨볼까요?</div>';
     renderHome();
+    updateBackupPeriod();
+    $('sidebarGuestAccount').hidden=cloudMode;
+    updateDiaryNavigation();
+    refreshStorageUsage();
     if(!$('myPage').hidden)renderMyPage();
   }
   async function deleteSavedRecord(id) {
@@ -916,7 +1010,7 @@
         type:'image/jpeg',size:blob.size,blob,createdAt:new Date().toISOString()};
     }finally{URL.revokeObjectURL(url);}
   }
-  
+
   function visiblePhotos(){
     return attachments.filter(f=>f.type.startsWith('image/')&&!isCalendarCover(f)&&!isDiaryCropPreview(f));
   }
@@ -1045,8 +1139,8 @@
     const shown=attachments.filter(f=>!isCalendarCover(f)&&!isDiaryCropPreview(f));
     const cropMap=new Map(attachments.filter(isDiaryCropPreview).map(f=>[f.name,f]));
     const bytes=attachmentBytes();
-    el.attachCount.textContent=(bytes?formatAttachmentUsage(bytes):'0MB')+' / 50MB';
-    el.attachCount.title='현재 기록의 전체 첨부 용량 · 최대 50MB';
+    el.attachCount.textContent=(bytes?formatAttachmentUsage(bytes):'0MB')+' · 하루 합계 10MB';
+    el.attachCount.title='같은 날짜의 모든 일기·GIF·음성·PDF·썸네일을 합쳐 10MB까지 저장할 수 있어요.';
     el.attachList.replaceChildren();
     const wall=document.createElement('div');wall.className='photo-wall';
     const files=document.createElement('div');files.className='attachment-files';
@@ -1100,7 +1194,7 @@
     const maxBytes=FILE_LIMITS.image;
     if(file.size>50*1024*1024)throw Error('사진 원본은 50MB 이하로 선택해 주세요.');
     if(file.type==='image/gif'){
-      if(file.size<=maxBytes)return file;
+      if(file.size<=FILE_LIMITS.gif)return file;
       throw Error('움직이는 GIF는 2MB 이하만 추가할 수 있어요.');
     }
     if(!/^image\/(jpeg|jpg|png|x-png|webp|avif|heic|heif|bmp)$/i.test(file.type))
@@ -1125,7 +1219,7 @@
       const sourceHeight=decoded.naturalHeight||decoded.height;
       if(!sourceWidth||!sourceHeight)throw Error('사진 해상도를 읽지 못했어요.');
       const ratio=Math.min(1,1920/Math.max(sourceWidth,sourceHeight));
-      if(file.size<=maxBytes&&ratio===1&&!bitmapFallback)return file;
+      if(file.size<=maxBytes&&ratio===1&&!bitmapFallback&&/^image\/(jpeg|jpg|png|webp)$/i.test(file.type))return file;
       const canvas=document.createElement('canvas'),ctx=canvas.getContext('2d',{alpha:true});
       if(!ctx)throw Error('사진 압축을 지원하지 않아요.');
       for(const factor of [1,.85,.7,.55,.4,.3]){
@@ -1140,13 +1234,18 @@
             return new File([blob],file.name.replace(/\.[^.]+$/,'')+'.webp',{type:'image/webp'});
         }
       }
-      throw Error('사진을 2MB 이하로 압축하지 못했어요.');
+      throw Error('사진을 1MB 이하로 압축하지 못했어요.');
     }finally{
       if(bitmap)bitmap.close();
       URL.revokeObjectURL(url);
     }
   }
-  async function addFiles(fileList, entryId=current?.id, photoMode='photo'){
+  function addFiles(fileList,entryId=current?.id,photoMode='photo'){
+    const files=[...fileList];pendingFileJobs++;
+    attachmentQueue=attachmentQueue.catch(()=>{}).then(()=>processFiles(files,entryId,photoMode)).finally(()=>{pendingFileJobs--;});
+    return attachmentQueue;
+  }
+  async function processFiles(fileList, entryId=current?.id, photoMode='photo'){
     if(isSavingDraft){toast('저장 중에는 첨부를 변경할 수 없어요.');return;}
     if(!db){toast('저장소에 접근할 수 없어요.');return;}
     const targetDraft=isDraft && current?.id===entryId;
@@ -1154,11 +1253,25 @@
     let added=0;
     let diaryPhotoCount=visiblePhotos().length;
     let usedBytes=attachmentBytes();
+    const pendingBytes=attachments.filter(f=>!savedFileIds.has(f.id)).reduce((n,f)=>n+(f.blob?.size||f.size||0),0);
+    let remainingDay,remainingTotal;
+    if(cloudMode){
+      const usage=await cloud().storageUsage(current.date);
+      remainingDay=MAX_ATTACHMENT_BYTES-usage.daily_used_bytes-pendingBytes;
+      remainingTotal=USER_ATTACHMENT_BYTES-usage.used_bytes-pendingBytes;
+    }else{
+      const stored=await getAll('attachments'),dates=new Map((await getAll('entries')).map(e=>[e.id,e.date]));
+      remainingDay=MAX_ATTACHMENT_BYTES-stored.filter(f=>dates.get(f.entryId)===current.date).reduce((n,f)=>n+(f.blob?.size||f.size||0),0)-pendingBytes;
+      remainingTotal=USER_ATTACHMENT_BYTES-stored.reduce((n,f)=>n+(f.blob?.size||f.size||0),0)-pendingBytes;
+    }
     const failures=[],uploadStatus=$('uploadStatus');
     uploadStatus.textContent=fileList.length+'개 파일 확인 중…';
     for(const selected of [...fileList]){
       if(current?.id!==entryId){toast('기록이 변경되어 첨부를 중단했어요.');break;}
-      if(!/^(image\/|video\/|audio\/|application\/pdf$)/.test(selected.type)&&
+      if(selected.type.startsWith('video/')||/\.(mp4|mov|m4v|mkv|avi|3gp)$/i.test(selected.name)&&!selected.type.startsWith('audio/')||/\.webm$/i.test(selected.name)&&!selected.type.startsWith('audio/')){
+        failures.push(selected.name+': 영상 업로드 미지원');toast('영상은 업로드할 수 없어요. 사진·GIF·음성·PDF를 선택해 주세요.');continue;
+      }
+      if(!/^(image\/|audio\/|application\/pdf$)/.test(selected.type)&&
         !/\.(jpe?g|png|gif|webp|heic|heif|avif|mp4|mov|webm|m4v|mp3|wav|m4a|ogg|flac|aac|pdf)$/i.test(selected.name)){
         failures.push(selected.name+': 지원하지 않는 파일 형식');
         toast(selected.name+': 지원하지 않는 파일 형식이에요.');continue;
@@ -1167,15 +1280,17 @@
       const types={jpg:'image/jpeg',jpeg:'image/jpeg',png:'image/png',gif:'image/gif',webp:'image/webp',heic:'image/heic',heif:'image/heif',avif:'image/avif',mp4:'video/mp4',mov:'video/quicktime',m4v:'video/mp4',webm:'video/webm',mp3:'audio/mpeg',wav:'audio/wav',m4a:'audio/mp4',ogg:'audio/ogg',flac:'audio/flac',aac:'audio/aac',pdf:'application/pdf'};
       let file=selected,type=selected.type||types[ext]||'application/octet-stream';
       const isPhoto=type.startsWith('image/');
-      if(isPhoto&&diaryPhotoCount>=MAX_DIARY_PHOTOS){failures.push('사진 최대 6장 초과');toast('스티커와 사진은 합쳐서 최대 6장이에요.');continue;}
+      if(isPhoto&&diaryPhotoCount>=MAX_DIARY_PHOTOS){failures.push('사진 최대 10장 초과');toast('스티커와 사진·GIF는 합쳐서 일기 하나에 최대 10장이에요.');continue;}
       if(isPhoto){
         uploadStatus.textContent='사진 압축 중: '+selected.name;
         try{file=await compressPhoto(selected.type?selected:new File([selected],selected.name,{type}));type=file.type;}
         catch(error){failures.push(selected.name+': '+error.message);toast(selected.name+': '+error.message);continue;}
       }
       const maxBytes=fileLimit(type,file.name);
-      if(file.size>maxBytes){failures.push(file.name+': 용량 초과');toast(file.name+': 최대 '+Math.round(maxBytes/1048576)+'MB예요.');continue;}
-      if(usedBytes+file.size>MAX_ATTACHMENT_BYTES){failures.push('기록 전체 50MB 용량 초과');toast('기록당 첨부 용량은 최대 50MB예요. 남은 공간: '+(formatAttachmentUsage(Math.max(0,MAX_ATTACHMENT_BYTES-usedBytes))));continue;}
+      if(file.size>maxBytes){failures.push(file.name+': 용량 초과');toast(file.name+': 최대 '+Math.round(maxBytes/1_000_000)+'MB예요.');continue;}
+      if(usedBytes+file.size>MAX_ATTACHMENT_BYTES){failures.push('하루 10MB 용량 초과');toast('같은 날짜에 저장한 첨부파일은 모두 합쳐 최대 10MB예요.');continue;}
+      if(file.size>remainingDay){failures.push(file.name+': 하루 10MB 한도 초과');toast('같은 날짜의 다른 기록과 썸네일까지 합쳐 하루 10MB예요.');continue;}
+      if(file.size>remainingTotal){failures.push(file.name+': 개인 250MB 한도 초과');toast('개인 첨부파일 한도 250MB에 도달했어요.');continue;}
       if(current?.id!==entryId){toast('기록이 변경되어 첨부를 중단했어요.');break;}
       const record={id:makeId(),entryId,name:file.name,type,size:file.size,blob:file,createdAt:new Date().toISOString()};
       attachments.push(record);
@@ -1185,7 +1300,7 @@
           [record.id]:{mode:photoMode==='sticker'?'sticker':'photo',
             width:36,x:8+((diaryPhotoCount-1)%3)*14,y:8+Math.floor((diaryPhotoCount-1)/3)*24}};
       }
-      usedBytes+=file.size;added++;
+      usedBytes+=file.size;remainingDay-=file.size;remainingTotal-=file.size;added++;
     }
     if(current?.id===entryId){
       renderAttachments();
@@ -1210,7 +1325,8 @@
         const blob=new Blob(recordChunks,{type:recorder.mimeType||'audio/webm'});
         recordStream?.getTracks().forEach(t=>t.stop());recordStream=null;recorder=null;
         el.record.classList.remove('recording');el.recordText.textContent='음성 녹음';
-        if(blob.size)await addFiles([new File([blob],`음성기록_${dayString()}_${Date.now()}.${ext}`,{type:blob.type})],recordingEntryId);
+        if(blob.size)try{await addFiles([new File([blob],`음성기록_${dayString()}_${Date.now()}.${ext}`,{type:blob.type})],recordingEntryId);}
+        catch(error){toast('녹음 파일 추가 실패: '+error.message);}
       };
       recorder.start();el.record.classList.add('recording');el.recordText.textContent='녹음 종료';toast('녹음을 시작했어요. 다시 누르면 저장돼요.');
     }catch(e){recordStream?.getTracks().forEach(t=>t.stop());toast('마이크 권한이 필요해요. HTTPS 사이트에서 사용해 주세요.');}
@@ -1254,9 +1370,9 @@
       const data=bytes.slice(begin,begin+size);if(crc32(data)!==crc)throw Error(`파일 무결성 확인 실패: ${name}`);files.set(name,data);
     }return files;
   }
-  async function buildBackup(selectedEntries,filename){
+  async function buildBackup(selectedEntries,filename,download=true){
     if(!selectedEntries.length)throw Error('백업할 기록이 없어요.');
-    const selectedIds=new Set(selectedEntries.map(e=>e.id));const allAttachments=await getAll('attachments');
+    const selectedIds=new Set(selectedEntries.map(e=>e.id));const allAttachments=cloudMode?await cloud().getBackupAttachments([...selectedIds]):await getAll('attachments');
     const chosen=allAttachments.filter(a=>selectedIds.has(a.entryId));
     const manifest={app:'harugyeol',version:1,exportedAt:new Date().toISOString(),entries:selectedEntries,attachments:chosen.map(({blob,...info})=>({...info,path:`files/${info.id}`}))};
     const items=[{name:'manifest.json',data:encode(JSON.stringify(manifest,null,2))}];
@@ -1270,43 +1386,124 @@
     const check=JSON.parse(new TextDecoder().decode(inspected.get('manifest.json')));
     if(check.entries.length!==selectedEntries.length||check.attachments.length!==chosen.length)throw Error('백업 검증 실패');
     for(const file of chosen){const bytes=inspected.get('files/'+file.id);if(!bytes||bytes.length!==file.blob.size)throw Error('파일 검증 실패: '+file.name);}
-    downloadBlob(result,`${filename}.zip`);
-    return {ids:selectedEntries.map(e=>e.id),files:chosen.length};
+    if(download)downloadBlob(result,`${filename}.zip`);
+    return {ids:selectedEntries.map(e=>e.id),files:chosen.length,blob:result,filename:`${filename}.zip`};
 
   }
-  function monthEntries(){
-    const month=$('archiveMonth').value;
-    if(!/^\d{4}-\d{2}$/.test(month))throw Error('백업 또는 삭제할 달을 선택하세요.');
-    return {month,items:entries.filter(e=>e.date.startsWith(month+'-'))};
+  function deletionSelection(){
+    const {start,end}=dateRange($('deletePeriod').value,'deleteStartDate','deleteEndDate');
+    const label=$('deletePeriod').value==='all'?'전체 기록':start+' ~ '+end;
+    return {start,end,label,items:entries.filter(e=>e.date>=start&&e.date<=end),verification:$('deletePeriod').value==='all'?'전체삭제':'삭제합니다'};
+  }
+  function updateDeletePeriod(){
+    $('deleteCustomRange').hidden=$('deletePeriod').value!=='custom';
+    try{const selection=deletionSelection();$('deleteRangeSummary').textContent=selection.label+' · 일기 '+selection.items.length+'개';}
+    catch(e){$('deleteRangeSummary').textContent=e.message;}
   }
   async function monthlyBackup(){
-    archivedMonth=null;
     try{
+      if($('backupPeriod').value==='all')return await prepareBackup([...entries],`일상기록_전체백업_${dayString()}`,'모든 기록');
+      const {start,end}=backupRange();
+      const items=entries.filter(e=>e.date>=start&&e.date<=end);
+      const period=start===end?start:start+'_'+end;
+      await prepareBackup(items,'일상기록_'+period+'_백업',start===end?start:start+' ~ '+end);
+    }catch(e){$('archiveStatus').textContent='백업 실패: '+e.message;toast('백업 실패: '+e.message);}
+  }
+  function monthOffset(value,offset){
+    const [year,month]=value.split('-').map(Number),date=new Date(year,month-1+offset,1);
+    return date.getFullYear()+'-'+String(date.getMonth()+1).padStart(2,'0');
+  }
+  function backupRange(){
+    return dateRange($('backupPeriod').value,'backupStartDate','backupEndDate');
+  }
+  function openBackupOptions(mode=$('backupPeriod').value){
+    $('backupPeriod').value=mode;
+    $('archiveStatus').textContent='백업해도 기존 기록은 그대로 남아요.';
+    updateBackupPeriod();
+    if(!$('backupOptionsDialog').open)$('backupOptionsDialog').showModal();
+  }
+  function dateRange(mode,startId,endId){
+    if(mode==='all')return {start:'0001-01-01',end:'9999-12-31'};
+    const month=mode==='previous'?monthOffset(dayString().slice(0,7),-1):dayString().slice(0,7);
+    const [year,m]=month.split('-').map(Number);
+    const start=mode==='custom'?$(startId).value:month+'-01';
+    const end=mode==='custom'?$(endId).value:dayString(new Date(year,m,0));
+    const valid=value=>/^\d{4}-\d{2}-\d{2}$/.test(value)&&dayString(new Date(value+'T00:00:00'))===value;
+    if(!valid(start)||!valid(end)||start>end)throw Error('시작일과 종료일을 올바른 순서로 선택해 주세요.');
+    return {start,end};
+  }
+  function updateBackupPeriod(){
+    const mode=$('backupPeriod').value;
+    $('backupCustomRange').hidden=mode!=='custom';
+    $('archiveMonthBtn').textContent=mode==='all'?'전체 백업':mode==='1'?'이번 달 백업':mode==='previous'?'지난달 백업':'선택한 기간 백업';
+    try{
+      const {start,end}=backupRange();
+      const count=entries.filter(e=>e.date>=start&&e.date<=end).length;
+      $('backupPeriodSummary').textContent=(mode==='all'?'모든 기간':start===end?start:start+' ~ '+end)+' · 저장된 일기 '+count+'개';
+    }catch(e){$('backupPeriodSummary').textContent=e.message;}
+  }
+  async function prepareBackup(items,filename,period){
+    if(backupPreparing)return;
+    backupPreparing=true;
+    $('archiveMonthBtn').disabled=true;$('backupBtn').disabled=true;
+    try{
+      if(isDraft&&(el.title.value.trim()||el.body.value.trim()||attachments.length))toast('저장하지 않은 새 기록은 백업에 포함되지 않아요.');
       await flushSave();
-      const {month,items}=monthEntries();
-      $('archiveStatus').textContent='ZIP 검사 중…';
-      const result=await buildBackup(items,'일상기록_'+month+'_월별백업');
-      archivedMonth={month,ids:result.ids,stamp:items.map(e=>[e.id,e.date,e.title,e.body,e.updatedAt])};
-      $('archiveStatus').textContent=items.length+'개 기록 및 '+result.files+'개 첨부의 ZIP 검사가 완료됐어요. 백업 여부와 관계없이 월별 삭제를 선택할 수 있어요.';
-    }catch(e){$('archiveStatus').textContent='오류: '+e.message;}
+      $('archiveStatus').textContent='백업 파일을 만들고 확인하고 있어요…';
+      const result=await buildBackup(items,filename,false);
+      pendingBackup={...result,file:new File([result.blob],result.filename,{type:'application/zip'})};
+      $('backupDestinationSummary').textContent=period+' · 일기 '+items.length+'개 · 첨부파일 '+result.files+'개 · '+formatAttachmentUsage(result.blob.size);
+      const shareable=!!navigator.share&&!!navigator.canShare?.({files:[pendingBackup.file]});
+      pendingBackup.shareable=shareable;
+      $('backupShareExternal').disabled=false;
+      $('backupManualShareHelp').hidden=shareable;
+      $('backupShareHelp').textContent=shareable?'공유창에 표시되는 앱으로 보낼 수 있어요. 카카오톡·드라이브 지원 여부는 기기에 따라 달라요.':'이 브라우저는 ZIP 파일 공유를 지원하지 않아요. 내 기기에 저장한 뒤 원하는 앱에서 파일을 보내세요.';
+      $('backupDestinationStatus').textContent='백업해도 기존 기록은 삭제되지 않아요.';
+      $('archiveStatus').textContent='백업 준비 완료. 저장 또는 외부 공유를 선택하세요.';
+      $('backupOptionsDialog').close();
+      $('backupDestinationDialog').showModal();
+    }finally{
+      backupPreparing=false;$('archiveMonthBtn').disabled=false;$('backupBtn').disabled=false;
+    }
+  }
+  async function shareBackup(){
+    if(!pendingBackup)return;
+    if(!pendingBackup.shareable){
+      $('backupDestinationStatus').textContent='이 브라우저는 백업 ZIP 파일을 공유창으로 보낼 수 없어요. 아래 안내대로 기기에 저장한 뒤 카카오톡·드라이브에서 파일을 첨부해 주세요.';
+      $('backupManualShareHelp').hidden=false;
+      $('backupSaveLocal').focus();
+      return;
+    }
+    $('backupShareExternal').disabled=true;
+    try{
+      await navigator.share({files:[pendingBackup.file]});
+      $('backupDestinationStatus').textContent='공유 앱으로 파일을 전달했어요. 해당 앱에서 전송·저장 완료 여부를 확인해 주세요.';
+    }catch(e){
+      const reason=e.name==='NotAllowedError'?'브라우저에서 파일 공유가 허용되지 않았어요.':e.name==='DataError'?'선택한 앱으로 ZIP 파일을 전달하지 못했어요.':'이 환경에서 ZIP 파일 공유를 시작하지 못했어요.';
+      $('backupDestinationStatus').textContent=e.name==='AbortError'?'공유를 취소했어요. 다시 공유하거나 내 기기에 저장할 수 있어요.':reason+' 내 기기에 저장한 뒤 파일을 첨부해 주세요.';
+      if(e.name!=='AbortError')$('backupManualShareHelp').hidden=false;
+    }finally{if(pendingBackup)$('backupShareExternal').disabled=false;}
   }
   async function monthlyDelete(){
     try{
       await flushSave();
-      const {month,items}=monthEntries();
-      if(!items.length){toast(month+'에 저장된 기록이 없어요.');return;}
-      pendingMonthDeletion={month,ids:items.map(e=>e.id)};
-      $('monthDeleteDescription').textContent=month+'의 기록 '+items.length+'개와 관련 첨부파일이 영구 삭제됩니다.';
+      const selection=deletionSelection(),{items,label,verification}=selection;
+      if(!items.length){toast('선택한 범위에 저장된 기록이 없어요.');return;}
+      pendingMonthDeletion={...selection,ids:items.map(e=>e.id)};
+      $('monthDeleteDescription').textContent=label+'의 기록 '+items.length+'개와 관련 첨부파일이 영구 삭제됩니다.';
       $('monthDeleteVerification').value='';
+      $('monthDeleteVerification').placeholder=verification;
+      $('monthDeleteDialog').querySelector('label').textContent='확인 문구: '+verification;
       $('monthDeleteConfirm').disabled=true;
+      $('backupDeleteDialog').close();
       $('monthDeleteDialog').showModal();
     }catch(e){toast('삭제 안내를 열지 못했어요: '+e.message);}
   }
   async function confirmMonthlyDelete(){
     const target=pendingMonthDeletion;
-    if(!target||$('monthDeleteVerification').value.trim()!==target.month)return;
-    const {month,items}=monthEntries();
-    if(month!==target.month||items.length!==target.ids.length||items.some(e=>!target.ids.includes(e.id))){
+    if(!target||$('monthDeleteVerification').value.trim()!==target.verification)return;
+    const items=entries.filter(e=>e.date>=target.start&&e.date<=target.end);
+    if(items.length!==target.ids.length||items.some(e=>!target.ids.includes(e.id))){
       $('archiveStatus').textContent='기록 목록이 변경되었어요. 삭제를 다시 확인해 주세요.';
       $('monthDeleteDialog').close();return;
     }
@@ -1326,11 +1523,11 @@
         const next=[...entries].sort((a,b)=>b.updatedAt.localeCompare(a.updatedAt))[0];
         if(next)await selectEntry(next.id);else await newEntry(dayString(),false,false);
       }
-      archivedMonth=null;renderList();
+      renderList();
       $('archiveStatus').textContent=deleted===items.length
-        ?month+' 기록 '+deleted+'개 삭제 완료'
-        :month+' 기록 '+deleted+'개 삭제 · '+(items.length-deleted)+'개 실패. 기록 목록을 확인해 주세요.';
-      toast(deleted===items.length?'월별 기록을 삭제했어요.':'일부 기록 삭제에 실패했어요.');
+        ?target.label+' 기록 '+deleted+'개 삭제 완료'
+        :target.label+' 기록 '+deleted+'개 삭제 · '+(items.length-deleted)+'개 실패. 기록 목록을 확인해 주세요.';
+      toast(deleted===items.length?'선택한 기록을 삭제했어요.':'일부 기록 삭제에 실패했어요.');
     }finally{
       $('monthDeleteDialog').close();
       pendingMonthDeletion=null;button.disabled=false;
@@ -1345,8 +1542,31 @@
       const data=JSON.parse(new TextDecoder().decode(raw));
       if(data.app!=='harugyeol'||data.version!==1||!Array.isArray(data.entries)||!Array.isArray(data.attachments))throw Error('지원하지 않는 백업 파일이에요.');
       if(data.entries.some(x=>!x.id||!x.date||typeof x.body!=='string'||typeof x.title!=='string'))throw Error('기록 정보가 잘못되었어요.');
+      if(!data.entries.length)throw Error('백업 파일에 일기가 없어요.');
+      const restoredFiles=[];
+      for(const a of data.attachments){
+        if(typeof a.type!=='string'||a.type.startsWith('video/'))throw Error('영상이 포함된 백업은 현재 복원할 수 없어요. 원본 ZIP을 보관하고 사진·GIF·음성·PDF 백업을 선택해 주세요.');
+        const bytes=zip.get(a.path);if(!bytes)throw Error(`${a.name}: 미디어 파일을 찾지 못했어요.`);
+        let file=new File([bytes],a.name,{type:a.type});
+        if(a.type.startsWith('image/'))file=await compressPhoto(file);
+        if(file.size>fileLimit(file.type,file.name))throw Error(a.name+': 파일 용량 한도를 넘어요.');
+        const {path,...meta}=a;restoredFiles.push({...meta,type:file.type,name:file.name,size:file.size,blob:file});
+      }
+      // Preflight the entire restore before writing any diary rows or attachments.
+      const plannedEntries=new Map([...entries,...data.entries].map(e=>[e.id,e]));
+      const previousFiles=cloudMode?await cloud().attachmentMetadata():await getAll('attachments');
+      const plannedFiles=new Map([...previousFiles,...restoredFiles].map(f=>[f.id,f]));
+      const restoredIds=new Set(restoredFiles.map(f=>f.id));let total=0;const dayBytes=new Map(),affectedDays=new Set();
+      for(const f of plannedFiles.values()){
+        const day=plannedEntries.get(f.entryId)?.date;if(!day)throw Error('첨부파일이 연결된 일기를 찾지 못했어요.');
+        const size=f.blob?.size||f.size||0;total+=size;dayBytes.set(day,(dayBytes.get(day)||0)+size);
+        if(restoredIds.has(f.id))affectedDays.add(day);
+      }
+      for(const e of data.entries)if(entries.find(x=>x.id===e.id)?.date!==e.date)affectedDays.add(e.date);
+      if(total>USER_ATTACHMENT_BYTES)throw Error('복원하면 개인 첨부파일 한도 250MB를 넘어요.');
+      for(const day of affectedDays)if(dayBytes.get(day)>MAX_ATTACHMENT_BYTES)throw Error(day+': 복원하면 하루 첨부파일 한도 10MB를 넘어요.');
       await writeRecords('entries',data.entries);
-      for(const a of data.attachments){const bytes=zip.get(a.path);if(!bytes)throw Error(`${a.name}: 미디어 파일을 찾지 못했어요.`);const {path,...meta}=a;await writeRecords('attachments',[{...meta,blob:new Blob([bytes],{type:a.type})}]);}
+      for(const file of restoredFiles)await writeRecords('attachments',[file]);
       entries=await getAll('entries');const last=[...entries].sort((a,b)=>b.updatedAt.localeCompare(a.updatedAt))[0];current=null;isDraft=false;await selectEntry(last.id);
       setSave('','저장됨');toast(`${data.entries.length}개 기록의 백업을 불러왔어요.`);
     }catch(e){console.error(e);setSave('error','복원 실패');toast(`복원 실패: ${e.message}`);}
@@ -1514,7 +1734,7 @@
           for(let i=0;i<block.items.length;i++){
             const item=block.items[i];
             const marker=block.ordered?String(i+1)+'.':item.check===null?'•':item.check?'☑':'☐';
-            text(marker+'  '+stripMd(item.text),{size:33,leading:53,indent:12}); 
+            text(marker+'  '+stripMd(item.text),{size:33,leading:53,indent:12});
           }
           y+=20;
         }
@@ -1634,6 +1854,28 @@
     }catch(e){console.error(e);toast('가져오기 실패: '+e.message);}
   }
   function bindEvents(){
+    $('diaryPrevious').addEventListener('click',()=>navigateDiary(-1));
+    $('diaryNext').addEventListener('click',()=>navigateDiary(1));
+    let swipe=null;
+    const ignoreSwipe=target=>target.closest('input,textarea,select,button,a,audio,video,[contenteditable],.entry-photo-sticker,.entry-sticker-board,.format-toolbar');
+    $('editorPage').addEventListener('pointerdown',e=>{
+      if(e.pointerType!=='touch'||!e.isPrimary||ignoreSwipe(e.target)){swipe=null;return;}
+      swipe={x:e.clientX,y:e.clientY,time:performance.now(),id:current?.id,pointer:e.pointerId};
+    },{passive:true});
+    $('editorPage').addEventListener('pointercancel',()=>{swipe=null;},{passive:true});
+    $('editorPage').addEventListener('pointerup',e=>{
+      const start=swipe;swipe=null;
+      if(!start||start.pointer!==e.pointerId||start.id!==current?.id||ignoreSwipe(e.target))return;
+      const dx=e.clientX-start.x,dy=e.clientY-start.y;
+      if(performance.now()-start.time<700&&Math.abs(dx)>=70&&Math.abs(dx)>Math.abs(dy)*1.5)
+        navigateDiary(dx<0?1:-1);
+    },{passive:true});
+    document.addEventListener('keydown',e=>{
+      if($('editorPage').hidden||document.querySelector('dialog[open]')||e.target.closest('input,textarea,select,[contenteditable]'))return;
+      if(e.altKey&&!e.ctrlKey&&!e.metaKey&&!e.shiftKey&&(e.key==='ArrowLeft'||e.key==='ArrowRight')){
+        e.preventDefault();navigateDiary(e.key==='ArrowLeft'?-1:1);
+      }
+    });
     $('newEntrySidebar').addEventListener('click',()=>newEntry());$('newEntryTop').addEventListener('click',()=>newEntry());
     $('openSidebar').addEventListener('click',()=>el.sidebar.classList.contains('open')?closeSidebar():openSidebar());$('closeSidebar').addEventListener('click',closeSidebar);el.scrim.addEventListener('click',closeSidebar);
     $('saveEntryBtn').addEventListener('click',()=>saveCurrent(true));
@@ -1652,8 +1894,8 @@
     $('homeWrite').addEventListener('click',showEditor);
     $('homeCalendar').addEventListener('click',showMiniCalendar);
     $('homeRecent').addEventListener('click',()=>{const id=$('homeRecent').dataset.entryId;if(id)selectEntry(id);});
-    $('myPageBackup').addEventListener('click',()=>$('backupBtn').click());
-    $('myPageArchive').addEventListener('click',()=>{openSidebar();$('archiveMonth').scrollIntoView({block:'center'});});
+    $('myPageBackup').addEventListener('click',()=>openBackupOptions('all'));
+    $('myPageArchive').addEventListener('click',()=>openBackupOptions('1'));
     $('myPageLogout').addEventListener('click',()=>$('cloudLogout').click());
     $('myPageSignIn').addEventListener('click',()=>{
       if(hasUnsavedChanges()&&!canLeaveUnsaved())return;
@@ -1719,6 +1961,21 @@
     });
     $('returnEditor').addEventListener('click',showEditor);
     $('miniPrev').addEventListener('click',()=>shiftCalendar(-1));
+    $('calendarMonthLabel').addEventListener('click',()=>openCalendarJump());
+    $('miniYear').addEventListener('click',()=>openCalendarJump());
+    $('miniMonth').addEventListener('click',()=>openCalendarJump(true));
+    $('calendarJumpCancel').addEventListener('click',()=>$('calendarJumpDialog').close());
+    $('calendarYearPrev').addEventListener('click',()=>$('calendarJumpYear').stepDown());
+    $('calendarYearNext').addEventListener('click',()=>$('calendarJumpYear').stepUp());
+    $('calendarJumpForm').addEventListener('submit',e=>{
+      e.preventDefault();
+      if(!$('calendarJumpForm').reportValidity())return;
+      calendarYear=Number($('calendarJumpYear').value);
+      calendarMonth=Number($('calendarJumpMonth').value);
+      highlightedCalendarDate=null;
+      renderCalendar();
+      $('calendarJumpDialog').close();
+    });
     $('miniNext').addEventListener('click',()=>shiftCalendar(1));
     $('miniToday').addEventListener('click',()=>jumpToToday('large'));
     $('miniGrid').addEventListener('click',e=>{const b=e.target.closest('[data-mini-date]');if(b)openDayCard(b.dataset.miniDate);});
@@ -1735,7 +1992,7 @@
     $('dayPhotoInput').addEventListener('change',async()=>{
       const file=$('dayPhotoInput').files[0];$('dayPhotoInput').value='';if(!file)return;
       if(!file.type.startsWith('image/')){toast('이미지 파일을 선택해 주세요.');return;}
-      if(file.size>FILE_LIMITS.image){toast('사진은 2MB 이하만 선택할 수 있어요.');return;}
+      if(file.type==='image/gif'||/\.gif$/i.test(file.name)){toast('GIF는 일기 첨부에서 추가해 주세요. 캘린더 썸네일은 일반 사진을 선택해 주세요.');return;}
       const url=URL.createObjectURL(file),image=new Image();
       try{
         await new Promise((res,rej)=>{image.onload=res;image.onerror=()=>rej(Error('이미지를 열 수 없어요.'));image.src=url;});
@@ -1784,9 +2041,10 @@
     $('photoPreviewDialog').addEventListener('click',e=>{if(e.target===$('photoPreviewDialog'))$('photoPreviewDialog').close();});
     $('photoPreviewDialog').addEventListener('close',()=>{$('photoPreviewImage').removeAttribute('src');});
     $('uploadBtn').addEventListener('click',()=>el.file.click());
-    el.file.addEventListener('change',()=>{
-      const selected=[...el.file.files],entryId=current?.id,mode=$('photoInsertMode').value;
-      el.file.value='';
+    $('photoUploadBtn').addEventListener('click',()=>$('diaryPhotoInput').click());
+    for(const input of [el.file,$('diaryPhotoInput')])input.addEventListener('change',()=>{
+      const selected=[...input.files],entryId=current?.id,mode=$('photoInsertMode').value;
+      input.value='';
       if(!selected.length)return;
       addFiles(selected,entryId,mode).catch(error=>{
         console.error('첨부파일 처리 실패',error);
@@ -1811,17 +2069,34 @@
     $('openExportBtn').addEventListener('click',async()=>{if(isDraft){toast('새 기록을 먼저 저장한 뒤 내보내 주세요.');return;}await flushSave();el.exportFilename.value=(current?.title.trim()||`${current?.date}_기록`).slice(0,MAX_EXPORT_NAME_CHARS);el.exportProgress.textContent='';el.dialog.showModal();});
     $('closeExportBtn').addEventListener('click',()=>el.dialog.close());el.dialog.addEventListener('click',e=>{if(e.target===el.dialog)el.dialog.close();});
     document.querySelectorAll('[data-export]').forEach(b=>b.addEventListener('click',()=>exportRecord(b.dataset.export)));
-    $('archiveMonth').value=dayString().slice(0,7);
-    $('archiveMonth').addEventListener('change',()=>{archivedMonth=null;});
+    for(const id of ['backupStartDate','deleteStartDate'])$(id).value=dayString().slice(0,7)+'-01';
+    for(const id of ['backupEndDate','deleteEndDate'])$(id).value=dayString();
+    for(const id of ['backupPeriod','backupStartDate','backupEndDate'])$(id).addEventListener('change',updateBackupPeriod);
+    for(const id of ['deletePeriod','deleteStartDate','deleteEndDate'])$(id).addEventListener('change',updateDeletePeriod);
+    updateBackupPeriod();
     $('archiveMonthBtn').addEventListener('click',monthlyBackup);
+    $('backupPreviousMonth').addEventListener('click',()=>{$('backupPeriod').value='previous';updateBackupPeriod();monthlyBackup();});
+    $('bannerBackupPrevious').addEventListener('click',()=>{$('backupPeriod').value='previous';updateBackupPeriod();monthlyBackup();});
+    $('backupSaveLocal').addEventListener('click',()=>{
+      if(!pendingBackup)return;
+      downloadBlob(pendingBackup.blob,pendingBackup.filename);
+      $('backupDestinationStatus').textContent='저장을 요청했어요. 브라우저 다운로드 목록에서 백업 ZIP 파일을 확인해 주세요.';
+      $('archiveStatus').textContent='기기에 저장을 요청했어요. 다운로드 목록에서 ZIP 파일을 확인해 주세요.';
+    });
+    $('backupShareExternal').addEventListener('click',shareBackup);
+    $('backupDestinationClose').addEventListener('click',()=>$('backupDestinationDialog').close());
+    $('backupDestinationDialog').addEventListener('close',()=>{pendingBackup=null;});
     $('monthDeleteVerification').addEventListener('input',e=>{
-      $('monthDeleteConfirm').disabled=!pendingMonthDeletion||e.target.value.trim()!==pendingMonthDeletion.month;
+      $('monthDeleteConfirm').disabled=!pendingMonthDeletion||e.target.value.trim()!==pendingMonthDeletion.verification;
     });
     $('monthDeleteCancel').addEventListener('click',()=>$('monthDeleteDialog').close());
     $('monthDeleteConfirm').addEventListener('click',confirmMonthlyDelete);
     $('monthDeleteDialog').addEventListener('close',()=>{pendingMonthDeletion=null;});
     $('deleteMonthBtn').addEventListener('click',monthlyDelete);
-    $('backupBtn').addEventListener('click',async()=>{try{if(isDraft && (el.title.value.trim() || el.body.value.trim() || attachments.length))toast('저장하지 않은 새 기록은 백업에 포함되지 않아요.');await flushSave();await buildBackup([...entries],`일상기록_전체백업_${dayString()}`);toast('전체 기록과 첨부 파일 백업을 저장했어요.');}catch(e){toast(`백업 실패: ${e.message}`);}});
+    $('backupBtn').addEventListener('click',()=>openBackupOptions());
+    $('openMonthDelete').addEventListener('click',()=>{updateDeletePeriod();$('backupDeleteDialog').showModal();});
+    $('backupOptionsClose').addEventListener('click',()=>$('backupOptionsDialog').close());
+    $('backupDeleteClose').addEventListener('click',()=>$('backupDeleteDialog').close());
     $('restoreBtn').addEventListener('click',()=>el.restoreInput.click());el.restoreInput.addEventListener('change',async()=>{const file=el.restoreInput.files[0];if(file)await restoreBackup(file);el.restoreInput.value='';});
     window.addEventListener('beforeunload',e=>{
       if(appUpdateReloading||!hasUnsavedChanges())return;

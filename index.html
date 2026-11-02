@@ -19,7 +19,7 @@
     #startupIntro.is-finished{opacity:0;visibility:hidden;pointer-events:none}
     #startupIntro[hidden]{display:none!important}
   </style>
-  <link rel="stylesheet" href="./vintage.css?v=52" />
+  <link rel="stylesheet" href="./vintage.css?v=66" />
   <title>일상 기록</title>
 </head>
 <body>
@@ -91,7 +91,7 @@
   <div class="app-shell" id="diaryApp" hidden>
     <aside class="sidebar" id="sidebar" aria-label="기록 목록">
       <div class="sidebar-top">
-        <div class="brand"><span class="brand-mark" aria-hidden="true">✦</span><span>일상 기록<span class="brand-dot">.</span></span></div>
+        <div class="brand"><img class="brand-mark" src="./icons/menu-notebook-clean.png" width="35" height="35" alt="" /><span>일상 기록<span class="brand-dot">.</span></span></div>
         <button class="icon-button mobile-close" id="closeSidebar" title="메뉴 닫기" aria-label="메뉴 닫기">☰</button>
       </div>
       <p class="brand-subtitle">평범한 날의 작은 조각들</p>
@@ -100,7 +100,7 @@
       <section class="calendar-card" aria-label="월별 기록 달력">
         <div class="calendar-header">
           <button type="button" class="calendar-arrow" id="calendarPrev" aria-label="이전 달">‹</button>
-          <strong id="calendarMonthLabel" aria-live="polite"></strong>
+          <button type="button" id="calendarMonthLabel" class="calendar-date-trigger" aria-live="polite" aria-haspopup="dialog" title="년·월 선택"></button>
           <button type="button" class="calendar-arrow" id="calendarNext" aria-label="다음 달">›</button>
           <button type="button" class="calendar-today" id="calendarToday">오늘</button>
         </div>
@@ -111,23 +111,30 @@
       <div class="list-heading"><span>나의 기록</span><span class="list-count" id="entryCount">0</span></div>
       <div class="entry-list" id="entryList" aria-label="저장된 기록"></div>
       <div class="sidebar-bottom">
-        <div id="cloudAccount" hidden style="padding:8px 8px 12px;font-size:11px;color:#6b6195">
+        <section class="backup-menu" aria-label="기록 관리">
+          <h2>기록 관리</h2>
+            <div id="cloudStorageUsage" class="storage-usage" hidden>
+    <strong>내 첨부파일 저장 공간</strong><p id="storageUsageText" role="status"></p>
+    <progress id="storageUsageMeter" max="100" value="0" aria-label="개인 저장 공간 사용률"></progress>
+    <div id="storageBackupNotice" hidden><p id="storageBackupNoticeText"></p>
+      <button type="button" id="backupPreviousMonth" class="outlined-button">지난달 백업하기</button>
+    </div>
+  </div>
+
+          <div class="backup-menu-actions">
+            <button type="button" id="backupBtn" class="sidebar-option backup-menu-primary"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5"/></svg><span>백업</span></button>
+            <button type="button" id="restoreBtn" class="sidebar-option backup-menu-secondary"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4m-5 5 5-5 5 5M4 17v4h16v-4"/></svg><span>복원</span></button>
+            <button type="button" id="openMonthDelete" class="sidebar-option backup-menu-delete"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7M14 10v7"/></svg><span>삭제</span></button>
+          </div>
+          <input id="restoreInput" type="file" accept=".zip,application/zip" hidden />
+        </section>
+        <div class="sidebar-account-heading">내 계정</div>
+        <p id="sidebarGuestAccount">이 기기에 기록을 저장하고 있어요.</p>
+        <div id="cloudAccount" class="sidebar-account" hidden>
           <div id="cloudUserEmail" style="overflow-wrap:anywhere"></div>
           <button id="cloudImport" class="sidebar-option" type="button">이 기기의 기존 기록 가져오기</button>
           <button id="cloudLogout" class="sidebar-option" type="button">로그아웃</button>
         </div>
-        <section class="month-manage" aria-label="월별 기록 관리">
-  <strong>월별 백업 · 정리</strong>
-  <p class="archive-month-description">백업하거나 삭제할 달을 선택하세요.</p>
-  <input type="month" id="archiveMonth" aria-label="월별 백업 및 삭제할 달 선택" />
-  <button type="button" id="archiveMonthBtn" class="sidebar-option">월별 ZIP 백업</button>
-  <button type="button" id="deleteMonthBtn" class="sidebar-option archive-delete-button">선택한 월 기록 삭제</button>
-  <p id="archiveStatus" role="status">백업은 선택 사항이에요. 삭제한 기록은 복구할 수 없어요.</p>
-</section>
-        <button class="sidebar-option" id="backupBtn"><span>⇩</span> 전체 백업 ZIP</button>
-        <button class="sidebar-option" id="restoreBtn"><span>↥</span> 백업 불러오기</button>
-        <input id="restoreInput" type="file" accept=".zip,application/zip" hidden />
-        <p>로그인한 계정의 기록은 서버에 저장됩니다. 월별 ZIP 백업을 정기적으로 보관하세요.</p>
       </div>
     </aside>
     <div class="sidebar-scrim" id="sidebarScrim"></div>
@@ -144,6 +151,7 @@
           <button class="primary-button export-main" id="openExportBtn">내보내기 <span>↗</span></button>
         </div>
       </header>
+      <aside id="storageBackupBanner" class="storage-backup-banner" hidden><p id="storageBackupBannerText"></p><button type="button" id="bannerBackupPrevious" class="outlined-button">지난달 백업하기</button></aside>
       <div class="page-wrap"><section id="homePage" class="home-dashboard" aria-label="홈">
   <div class="home-hero">
     <div class="home-hero-flower" aria-hidden="true"></div>
@@ -177,9 +185,17 @@
     <span>저장된 일기</span><strong id="myPageCount">0개</strong>
   </section>
   <div class="my-actions">
-    <button type="button" class="outlined-button" id="myPageBackup">⇩ 전체 기록 ZIP 백업</button>
-    <button type="button" class="outlined-button" id="myPageArchive">▦ 월별 백업 · 정리</button>
-    <button type="button" class="outlined-button" id="myPageLogout" hidden>로그아웃</button>
+    <button type="button" class="outlined-button my-action-button" id="myPageBackup">
+      <span class="my-action-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5"/></svg></span>
+      <span class="my-action-copy"><strong>전체 기록 백업</strong><small>모든 일기와 첨부파일을 한 번에 보관</small></span><span aria-hidden="true" class="my-action-arrow">›</span>
+    </button>
+    <button type="button" class="outlined-button my-action-button" id="myPageArchive">
+      <span class="my-action-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4M17 3v4M3 10h18M8 14h2M14 14h2"/></svg></span>
+      <span class="my-action-copy"><strong>월별·기간별 백업</strong><small>이번 달 또는 원하는 날짜 범위 선택</small></span><span aria-hidden="true" class="my-action-arrow">›</span>
+    </button>
+    <button type="button" class="outlined-button my-action-button my-logout-button" id="myPageLogout" hidden>
+      <span class="my-action-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H4v16h5M9 12h12m-4-4 4 4-4 4"/></svg></span><span>로그아웃</span>
+    </button>
     <button type="button" class="outlined-button" id="myPageSignIn" hidden>로그인 · 회원가입</button>
   </div>
   <p id="myPageGuestNotice" class="my-hint" hidden>비회원 기록은 이 기기에만 저장돼요. 서버 저장·동기화를 이용하려면 회원가입 후 로그인해야 해요. 기존 회원은 로그인하면 돼요.</p>
@@ -189,12 +205,18 @@
     <button type="button" class="account-delete-button" id="myPageDelete">회원 탈퇴</button>
   </section>
   <p class="my-hint">기존 기록과 첨부 파일은 계정 또는 기기 저장소에 그대로 보관돼요.</p>
-</section><section id="calendarPage" class="mini-calendar-page" hidden><header class="mini-calendar-header"><h2>캘린더</h2><button type="button" id="returnEditor" class="outlined-button">일기 작성</button></header><nav class="mini-calendar-toolbar"><button type="button" id="miniPrev">‹</button><strong id="miniYear"></strong><strong id="miniMonth"></strong><button type="button" id="miniNext">›</button><button type="button" id="miniToday">오늘</button></nav><div class="mini-calendar-weekdays"><span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span></div><div class="mini-calendar-grid" id="miniGrid"></div>
+</section><section id="calendarPage" class="mini-calendar-page" hidden><header class="mini-calendar-header"><h2>캘린더</h2><button type="button" id="returnEditor" class="outlined-button">일기 작성</button></header><nav class="mini-calendar-toolbar"><button type="button" id="miniPrev">‹</button><button type="button" id="miniYear" class="calendar-date-trigger" aria-haspopup="dialog" title="년도 선택"></button><button type="button" id="miniMonth" class="calendar-date-trigger" aria-haspopup="dialog" title="월 선택"></button><button type="button" id="miniNext">›</button><button type="button" id="miniToday">오늘</button></nav><div class="mini-calendar-weekdays"><span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span></div><div class="mini-calendar-grid" id="miniGrid"></div>
           <p class="mini-hint">날짜를 누르면 사진과 한마디를 추가할 수 있어요.</p></section><div id="editorPage" hidden>
         <section class="page-intro">
           <div><p class="eyebrow">A LITTLE MOMENT, EVERY DAY</p><h1>오늘을 <em>기록</em>하다<span class="sparkle">✳</span></h1><p class="intro-desc">매일의 장면과 마음을 나만의 방식으로 남겨요.</p></div>
           <div class="date-sticker" aria-hidden="true"><span id="stickerMonth">OCT</span><strong id="stickerDay">31</strong><small id="stickerWeek">SATURDAY</small></div>
         </section>
+        <nav class="diary-navigation" aria-label="저장한 일기 넘겨보기">
+          <button type="button" class="outlined-button" id="diaryPrevious">‹ 이전 일기</button>
+          <span id="diaryNavigationStatus" aria-live="polite"></span>
+          <button type="button" class="outlined-button" id="diaryNext">다음 일기 ›</button>
+          <p>빈 공간을 좌우로 밀어 저장한 일기를 넘겨보세요.</p>
+        </nav>
         <section class="editor-card" aria-label="일기 편집기">
           <div class="entry-meta-area">
             <button type="button" class="entry-meta-card" id="openMetaDialog" aria-label="날짜, 날씨, 오늘의 한마디 함께 수정">
@@ -232,16 +254,22 @@
           </section>
           <div class="word-info"><span id="charCount">0 / 1,500자</span><span>글과 사진이 모두 오늘의 기록이 돼요.</span></div>
           <div class="attachments-section">
-            <div class="section-label"><div><span class="section-glyph">✿</span> 첨부 파일 <span class="attachment-count" id="attachmentCount" aria-live="polite">0MB / 50MB</span></div><span>사진 · 영상 · 오디오 · PDF</span></div>
+            <div class="section-label"><div><span class="section-glyph">✿</span> 첨부 파일 <span class="attachment-count" id="attachmentCount" aria-live="polite">0MB · 하루 합계 10MB</span></div><span>사진 · GIF · 음성 · PDF</span></div>
             <div class="upload-actions">
               <label class="photo-mode-label" for="photoInsertMode">사진 배치 <select id="photoInsertMode"><option value="photo">일반 사진</option><option value="sticker">본문 스티커</option></select></label>
-              <button type="button" class="attach-button" id="uploadBtn">＋ 사진·파일 추가</button>
-              <input type="file" id="fileInput" accept="image/*,video/*,audio/*,.pdf,application/pdf" multiple hidden />
+              <button type="button" class="attach-button" id="photoUploadBtn">＋ 사진·GIF 여러 장</button>
+              <input type="file" id="diaryPhotoInput" accept="image/*" multiple hidden />
+              <button type="button" class="attach-button secondary" id="uploadBtn">＋ 음성·PDF</button>
+              <input type="file" id="fileInput" accept="audio/*,.pdf,application/pdf" multiple hidden />
               <button type="button" class="attach-button secondary" id="recordBtn"><span aria-hidden="true">●</span> <span id="recordBtnText">음성 녹음</span></button>
             </div>
             <p class="upload-status" id="uploadStatus" role="status" aria-live="polite"></p>
             <div id="attachmentList" class="scrapbook-attachments"></div>
-            <p class="upload-tip">스티커는 본문 위에서 끌어서 이동하고 ↻로 회전, ⤢로 크기를 조절할 수 있어요. 로그인 시 파일은 계정별 비공개 서버에 저장됩니다. 스티커와 일반 사진 합산 최대 6장(자동 압축, 각 2MB) · 기록당 첨부파일 합산 최대 50MB · 영상은 개당 30MB · 음성/PDF는 개당 10MB까지 추가할 수 있어요. 캘린더 썸네일은 사진 개수에서 제외돼요.</p>
+            <div class="upload-tip upload-guide">
+              <p><strong>사진</strong> 자동 압축 · 장당 1MB　 <strong>GIF</strong> 원본 2MB</p>
+              <p><strong>하루 합계 10MB</strong> · 같은 날짜의 모든 기록과 썸네일 포함</p>
+              <details><summary>첨부 안내 자세히</summary><p>사진·GIF는 일기 하나에 최대 10장, 개인 첨부파일 전체는 250MB까지 저장할 수 있어요. 음성·PDF도 하루 10MB에 포함돼요. 새 영상 업로드는 지원하지 않으며 기존 영상은 조회·백업할 수 있어요.</p><p>스티커는 본문에서 이동·회전·크기 조절할 수 있어요.</p></details>
+            </div>
           </div>
           <div class="record-delete-area"><span>이 기록과 첨부파일 전체를 삭제합니다.</span><button type="button" class="delete-button record-delete-button" id="deleteEntryBtn" title="현재 기록 전체 삭제" aria-label="현재 기록 전체 삭제">이 일기 전체 삭제</button></div>
         </section>
@@ -342,18 +370,81 @@
     </form>
   </dialog>
   <dialog id="monthDeleteDialog" class="month-delete-dialog" aria-labelledby="monthDeleteTitle">
-    <h2 id="monthDeleteTitle">월별 기록 영구 삭제</h2>
+    <h2 id="monthDeleteTitle">선택한 기록 영구 삭제</h2>
     <p class="month-delete-warning" role="alert">
       <strong>주의! 삭제된 기록과 첨부파일은 복구할 수 없습니다.</strong>
       <span id="monthDeleteDescription"></span>
     </p>
-    <p class="month-delete-hint">백업 여부와 관계없이 삭제할 수 있습니다. 확인을 위해 아래에 삭제할 연월을 직접 입력하세요.</p>
-    <label for="monthDeleteVerification">삭제할 연월 입력 (예: 2026-10)</label>
-    <input id="monthDeleteVerification" type="text" autocomplete="off" inputmode="numeric" placeholder="YYYY-MM" maxlength="7" />
+    <p class="month-delete-hint">선택한 범위를 다시 확인하고 아래 확인 문구를 직접 입력하세요.</p>
+    <label for="monthDeleteVerification">확인 문구 입력</label>
+    <input id="monthDeleteVerification" type="text" autocomplete="off" placeholder="삭제합니다" maxlength="8" />
     <div class="month-delete-actions">
       <button type="button" class="outlined-button" id="monthDeleteCancel">취소</button>
       <button type="button" class="month-delete-confirm" id="monthDeleteConfirm" disabled>영구 삭제</button>
     </div>
+  </dialog>
+  <dialog id="backupOptionsDialog" class="backup-options-dialog" aria-labelledby="backupOptionsTitle">
+    <h2 id="backupOptionsTitle">일기 백업</h2>
+    <section class="month-manage">
+        <label class="backup-month-label" for="backupPeriod">월별로 백업하기</label>
+  <p class="backup-month-hint">기간을 고른 뒤 내 기기에 저장하거나 외부로 공유하세요.</p>
+  <select id="backupPeriod" aria-label="백업할 기간">
+    <option value="1">이번 달</option><option value="all">전체</option><option value="custom">날짜 범위 선택</option><option value="previous" hidden>지난달</option>
+  </select>
+  <div id="backupCustomRange" class="backup-custom-range" hidden>
+    <label for="backupStartDate">시작일</label><input type="date" id="backupStartDate" />
+    <label for="backupEndDate">종료일</label><input type="date" id="backupEndDate" />
+  </div>
+  <p id="backupPeriodSummary" class="backup-month-hint" aria-live="polite"></p>
+  <button type="button" id="archiveMonthBtn" class="sidebar-option backup-action">현재 달 백업</button>
+
+      <p id="archiveStatus" role="status">백업해도 기존 기록은 그대로 남아요.</p>
+    </section>
+    <button type="button" class="backup-dialog-close" id="backupOptionsClose">닫기</button>
+  </dialog>
+  <dialog id="backupDeleteDialog" class="backup-options-dialog" aria-labelledby="backupDeleteTitle">
+    <h2 id="backupDeleteTitle">기록 삭제</h2>
+    <p class="backup-dialog-help">백업 파일을 확인한 뒤 필요한 날짜 범위만 선택하세요. 삭제한 기록은 복구할 수 없어요.</p>
+    <section class="month-manage"><label for="deletePeriod">삭제 범위</label><select id="deletePeriod"><option value="1">이번 달</option><option value="all">전체</option><option value="custom">날짜 범위 선택</option></select><div id="deleteCustomRange" class="backup-custom-range" hidden><label for="deleteStartDate">시작일</label><input type="date" id="deleteStartDate" /><label for="deleteEndDate">종료일</label><input type="date" id="deleteEndDate" /></div><p id="deleteRangeSummary" class="backup-dialog-help" aria-live="polite"></p>
+    <button type="button" id="deleteMonthBtn" class="sidebar-option archive-delete-button">삭제 범위 확인</button>
+</section>
+    <button type="button" class="backup-dialog-close" id="backupDeleteClose">취소</button>
+  </dialog>
+  <dialog id="backupDestinationDialog" class="backup-destination-dialog" aria-labelledby="backupDestinationTitle">
+    <h2 id="backupDestinationTitle">백업 파일 준비 완료</h2>
+    <p id="backupDestinationSummary"></p>
+    <div class="backup-destination-actions">
+      <button type="button" class="primary-button" id="backupSaveLocal">내 기기에 저장</button>
+      <button type="button" class="outlined-button" id="backupShareExternal">외부 공유</button>
+    </div>
+    <p id="backupShareHelp" class="backup-dialog-help"></p>
+    <div id="backupManualShareHelp" class="backup-manual-share" hidden>
+      <strong>직접 파일로 보내기</strong>
+      <ol><li>‘내 기기에 저장’을 눌러 ZIP 파일을 내려받으세요.</li><li>카카오톡에서는 대화방의 파일 첨부, 구글 드라이브에서는 파일 업로드로 저장한 ZIP을 선택하세요.</li></ol>
+
+    </div>
+    <p id="backupDestinationStatus" class="backup-dialog-help" role="status" aria-live="polite"></p>
+    <button type="button" class="auth-text-button" id="backupDestinationClose">닫기</button>
+  </dialog>
+  <dialog id="calendarJumpDialog" class="calendar-jump-dialog" aria-labelledby="calendarJumpTitle">
+    <form id="calendarJumpForm">
+      <h2 id="calendarJumpTitle">원하는 달로 이동</h2>
+      <p class="calendar-jump-help">연도와 월을 선택하면 두 캘린더에 함께 적용돼요.</p>
+      <label for="calendarJumpYear">연도</label>
+      <div class="calendar-jump-year">
+        <button type="button" class="outlined-button" id="calendarYearPrev" aria-label="1년 이전">−1년</button>
+        <input type="number" id="calendarJumpYear" min="1000" max="9999" step="1" required inputmode="numeric" />
+        <button type="button" class="outlined-button" id="calendarYearNext" aria-label="1년 이후">+1년</button>
+      </div>
+      <label for="calendarJumpMonth">월</label>
+      <select id="calendarJumpMonth" required aria-label="이동할 월">
+        <option value="0">1월</option><option value="1">2월</option><option value="2">3월</option><option value="3">4월</option><option value="4">5월</option><option value="5">6월</option><option value="6">7월</option><option value="7">8월</option><option value="8">9월</option><option value="9">10월</option><option value="10">11월</option><option value="11">12월</option>
+      </select>
+      <div class="calendar-jump-actions">
+        <button type="button" class="outlined-button" id="calendarJumpCancel">취소</button>
+        <button type="submit" class="primary-button">이 달로 이동</button>
+      </div>
+    </form>
   </dialog>
   <dialog id="photoPreviewDialog" class="photo-preview-dialog" aria-label="첨부 원본 사진 크게 보기">
     <button id="photoPreviewClose" type="button" class="photo-preview-close" aria-label="사진 닫기">✕</button>
@@ -371,9 +462,9 @@
     </div>
   </section>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
-  <script src="./supabase-config.js" defer></script>
+  <script src="./supabase-config.js?v=2" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0" defer></script>
-  <script src="./cloud.js?v=17" defer></script>
-  <script src="./app.js?v=52" defer></script>
+  <script src="./cloud.js?v=20" defer></script>
+  <script src="./app.js?v=66" defer></script>
 </body>
 </html>

@@ -39,25 +39,34 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
     linear-gradient(120deg,#eadfcb,#dfceb5);
 }
 .sidebar{
+  overflow-y:auto;
   background:
     radial-gradient(circle at 13% 7%,rgba(255,255,255,.55),transparent 40%),
-    repeating-linear-gradient(0deg,rgba(101,69,42,.018) 0 1px,transparent 1px 23px),
     #f3e8d5;
   border-right:1px solid #cdb798;
   box-shadow:4px 0 17px rgba(85,55,30,.09);
 }
-.sidebar-top{padding-top:29px}
+.sidebar > *{flex-shrink:0}
+.sidebar > .entry-list{flex:1 0 100px}
+.sidebar-top{position:relative;justify-content:center;padding:29px 40px 0}
+.sidebar-top .mobile-close{position:absolute;right:6px;top:50%;margin-top:-3px}
 .brand{color:var(--vintage-dark);letter-spacing:-1.1px}
 .brand-mark{
-  background:#84634c;
-  color:#fff4dc;
-  border:1px solid #6b4a32;
-  box-shadow:inset 0 0 0 2px rgba(255,247,218,.18),2px 3px 0 #c7ad90;
-  transform:rotate(-8deg);
+  display:block;
+  flex:0 0 35px;
+  width:35px;
+  height:35px;
+  object-fit:contain;
+  image-rendering:auto;
+  filter:saturate(.92);
+  background:transparent;
+  border:0;
+  box-shadow:none;
+  transform:rotate(-12deg);
   border-radius:9px;
 }
 .brand-dot{color:var(--vintage-rose)}
-.brand-subtitle{color:#9b8770}
+.brand-subtitle{color:#9b8770;padding:0 12px;text-align:center}
 .primary-button{
   background:linear-gradient(160deg,#8d6b50,#76543e);
   border-color:#76543e;
@@ -124,7 +133,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
   border-radius:6px;
   box-shadow:2px 4px 0 rgba(120,83,47,.045);
 }
-.calendar-header strong{font-family:Georgia,"Nanum Myeongjo",serif;color:#4d3b2b}
+.calendar-header .calendar-date-trigger{flex:1;min-width:0;margin:auto;padding:7px 3px;font:750 13px Pretendard,sans-serif;color:#4d3b2b}
 .calendar-arrow{color:#85634b}
 .calendar-arrow:hover,.calendar-today:hover{background:#eadcc3}
 .calendar-today{border-color:#d6bea0;color:#7c593e;background:#fffaed}
@@ -456,7 +465,14 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 
 
 /* Font roles: Pretendard for system UI; Ongleip Ryuryu for handwritten accents;
-   RIDIBatang for long-form diary text. No font files are bundled with the app. */
+   RIDIBatang for long-form diary text; the home title uses a bundled copy. */
+@font-face{
+  font-family:"HomeTitleBatang";
+  src:url("./assets/ridibatang-Regular.woff2") format("woff2");
+  font-style:normal;
+  font-weight:400;
+  font-display:swap;
+}
 @font-face{
   font-family:"OngleipRyuryu";
   src:url("https://cdn.jsdelivr.net/gh/projectnoonnu/2405-2@1.0/Ownglyph_ryurue-Rg.woff2") format("woff2");
@@ -1181,7 +1197,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .home-stats span,.my-info-card span{color:#937d64;font-size:11px;font-weight:700}
 .home-stats strong{font-family:Pretendard,sans-serif;font-size:17px;color:#513b2b;overflow-wrap:anywhere}
 .home-actions{display:flex;gap:10px;margin:10px 0 28px}
-.home-actions button{flex:1;min-width:0;font-size:12px}
+.home-actions button{flex:1;min-width:0;min-height:48px;font-size:16px}
 .home-recent{border-top:1px dashed #d7c3a5;padding-top:18px}
 .home-recent h2{color:#674a35;font-size:16px;margin:0 0 14px}
 .home-recent-entry{
@@ -1200,8 +1216,20 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
   border:1px solid #ddc7aa;border-radius:9px;
 }
 .my-info-card strong{overflow-wrap:anywhere;color:#5c4030;font-size:13px}
-.my-actions{display:flex;flex-direction:column;gap:10px;margin:24px 0}
+.my-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:24px 0}
 .my-actions button{text-align:left}
+.my-actions .my-action-button{display:flex;align-items:center;gap:13px;min-width:0;min-height:88px;padding:19px 18px;background:#fff8ec;border-color:#d0b797;border-radius:10px}
+.my-actions .my-action-button:hover{background:#f2e3cc;border-color:#b79470}
+.my-action-icon{display:grid;place-items:center;flex:0 0 40px;height:40px;border-radius:9px;background:#eee0ca;color:#8a6548}
+.my-action-icon svg{width:22px;height:22px}
+.my-action-copy{display:flex;flex:1;min-width:0;flex-direction:column;gap:7px}
+.my-action-copy strong{font-size:16px;line-height:1.4;color:#62442f;font-weight:750}
+.my-action-copy small{font-size:12px;line-height:1.6;color:#91775f;font-weight:400;word-break:keep-all}
+.my-action-arrow{color:#aa8b6d;font-size:23px;flex:0 0 auto}
+.my-actions .my-logout-button{grid-column:1/-1;min-height:56px;margin-top:8px;padding:12px 18px;font-size:15px;color:#88715d;background:transparent}
+.my-logout-button .my-action-icon{flex-basis:30px;height:30px;background:transparent}
+.my-actions #myPageSignIn{grid-column:1/-1;min-height:48px;font-size:15px}
+@media(max-width:740px){.my-actions{grid-template-columns:minmax(0,1fr);gap:10px}.my-actions .my-action-button{padding:16px;min-height:82px}.my-actions .my-logout-button{min-height:54px}}
 .my-hint{padding:0 4px}
 /* Letterbox the entire image rather than cropping. Unused areas are black. */
 .mini-photo,.mini-photo img,.pinned-photo .photo-open,.pinned-photo .photo-open img{background:#000}
@@ -1257,8 +1285,6 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 
 
 /* v26 — reference-aligned calendar and restored beige empty cells */
-.sidebar-top .brand{margin-left:18px}
-.brand-subtitle{padding-left:45px}
 /* Correct order despite the existing toolbar markup: year, previous, month, next, today. */
 .mini-calendar-toolbar{
   display:grid;
@@ -1463,13 +1489,13 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 }
 .home-hero .eyebrow{font-family:Georgia,serif;color:#997a5d;letter-spacing:2px;font-size:10px}
 .home-hero h1{
-  font-family:"Nanum Myeongjo","Batang",serif;
+  font-family:"HomeTitleBatang",serif;
   font-size:clamp(25px,3.5vw,35px);
   line-height:1.45;
   letter-spacing:-1.3px;
   margin:16px 0 11px;
   color:#4e382b;
-  font-weight:750;
+  font-weight:400;
 }
 .home-hero h1 em{font-style:normal;color:#986a50}
 .home-hero>p:not(.eyebrow){margin:0;font-family:Pretendard,sans-serif;line-height:1.8;color:#826b59;font-size:12px}
@@ -1876,10 +1902,10 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 #miniGrid .mini-day-head{
   display:flex;
   align-items:center;
-  flex:0 0 14px;
+  flex:0 0 22px;
   width:100%;
-  height:14px;
-  min-height:14px;
+  height:22px;
+  min-height:22px;
   margin:0;
   padding:0;
 }
@@ -1951,7 +1977,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 @media(max-width:740px){
   #miniGrid{grid-auto-rows:max-content;gap:2px}
   #miniGrid .mini-day{padding:2px;gap:2px;height:auto;min-height:0}
-  #miniGrid .mini-day-head{height:12px;min-height:12px;flex-basis:12px}
+  #miniGrid .mini-day-head{height:18px;min-height:18px;flex-basis:18px}
   #miniGrid .mini-photo,
   #miniGrid .mini-photo.has-image,
   #miniGrid .mini-photo:not(.has-image){
@@ -1969,22 +1995,19 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 }
 
 
-/* v34: lift calendar picture and handwritten note slightly without stretching tiles. */
-#miniGrid .mini-day-head{height:11px;min-height:11px;flex-basis:11px}
-#miniGrid .mini-day{gap:1px}
-#miniGrid .mini-line{position:relative;top:-2px}
+#miniGrid .mini-date{font-size:13px;line-height:1}
+#miniGrid .mini-weather{flex:0 0 20px;max-width:20px;height:20px;font-size:14px;line-height:20px;text-align:center}
 @media(max-width:740px){
-  #miniGrid .mini-day-head{height:10px;min-height:10px;flex-basis:10px}
-  #miniGrid .mini-day{gap:1px}
-  #miniGrid .mini-line{top:-2px}
+  #miniGrid .mini-date{font-size:10px}
+  #miniGrid .mini-weather{flex-basis:16px;max-width:16px;height:16px;font-size:11px;line-height:16px}
 }
 
 
 /* v36: Center the calendar caption in the free space beneath its square image. */
 #miniGrid .mini-day .mini-caption{
   display:flex;
-  flex:1 1 26px;
-  min-height:26px;
+  flex:1 1 34px;
+  min-height:34px;
   width:100%;
   max-width:100%;
   align-items:center;
@@ -2004,8 +2027,8 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
   min-height:0;
   margin:0;
   padding:0 1px;
-  font-size:9px;
-  line-height:1.17;
+  font-size:16px;
+  line-height:1.3;
   text-align:center;
   white-space:nowrap;
   overflow:hidden;
@@ -2017,12 +2040,12 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
   padding:1px 2px;
 }
 @media(max-width:740px){
-  #miniGrid .mini-day .mini-caption{flex-basis:21px;min-height:21px}
-  #miniGrid .mini-day .mini-caption .mini-line{font-size:8px}
+  #miniGrid .mini-day .mini-caption{flex-basis:26px;min-height:26px}
+  #miniGrid .mini-day .mini-caption .mini-line{font-size:12px}
 }
 @media(max-width:370px){
-  #miniGrid .mini-day .mini-caption{flex-basis:18px;min-height:18px}
-  #miniGrid .mini-day .mini-caption .mini-line{font-size:7px}
+  #miniGrid .mini-day .mini-caption{flex-basis:24px;min-height:24px}
+  #miniGrid .mini-day .mini-caption .mini-line{font-size:11px}
 }
 .archive-month-description{
   margin:8px 0 8px;
@@ -2096,12 +2119,10 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .month-delete-confirm{border:1px solid #a22f2e;background:#aa3830;color:white}
 .month-delete-confirm:disabled{background:#e7d6d0;color:#8c807a;border-color:#d4bdb3}
 
-/* v37: Bring the sidebar title a little closer to the visual center. */
-.sidebar-top .brand > span:last-child{position:relative;left:10px}
 
 
 /* v39: Dedicated, two-step email-verified signup with paper-and-ink aesthetic. */
-#cloudAuth.auth-paper{max-width:430px!important;box-sizing:border-box;margin:5vh auto!important;padding:31px 27px!important;position:relative;overflow:hidden}
+#cloudAuth.auth-paper{width:calc(100% - 28px);max-width:430px;box-sizing:border-box;margin:24px auto;padding:26px 19px;position:relative;overflow-wrap:anywhere}
 #cloudAuth [hidden]{display:none!important}
 #cloudAuth .auth-decor{position:absolute;top:9px;right:21px;color:#c7a98c;opacity:.65;font-size:40px;pointer-events:none}
 #cloudAuth .auth-eyebrow{margin:0 0 16px;letter-spacing:2px;font:700 11px Georgia,serif;color:#9b7b5d}
@@ -2111,27 +2132,50 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 #cloudAuth .auth-intro{font-size:13px;line-height:1.7;margin:0 0 26px;color:#87725d}
 #cloudAuth .auth-form{display:flex;flex-direction:column;gap:9px}
 #cloudAuth .auth-form label{font-size:12px;font-weight:750;color:#604a35;margin-top:3px}
-#cloudAuth .auth-form input{min-width:0;width:100%;box-sizing:border-box;border:1px solid #d5bda0;border-radius:8px;padding:13px 12px;font:14px Pretendard,sans-serif;outline-color:#b28b66}
+#cloudAuth .auth-form input{min-width:0;width:100%;box-sizing:border-box;border:1px solid #d5bda0;border-radius:8px;padding:13px 12px;font:16px Pretendard,sans-serif;outline-color:#b28b66}
 #cloudAuth .auth-form input:focus{border-color:#ac8868!important}
 #cloudAuth .auth-form .primary-button{width:100%;margin-top:14px;min-height:47px}
-#cloudAuth .auth-switch{display:flex;align-items:center;justify-content:center;gap:12px;padding:24px 0 2px;font-size:12px;color:#88745e}
+#cloudAuth .auth-switch{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:12px;padding:24px 0 2px;font-size:12px;color:#88745e}
 #cloudAuth .auth-text-button{padding:6px 3px;border:0;background:transparent;color:#8b5e43;text-decoration:underline;text-underline-offset:3px;cursor:pointer;font:750 12px Pretendard,sans-serif}
 #cloudAuth .auth-help{font-size:11px;line-height:1.65;margin:15px 0 7px;color:#8d7966}
 #cloudAuth .auth-verified{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:12px;padding:12px;margin:13px 0;background:#ede5d3;border-radius:6px;color:#665444}
 #cloudAuth .auth-verified strong{font-size:12px;overflow-wrap:anywhere}
 #cloudAuth .auth-username-row{display:flex;gap:7px;align-items:stretch}
-#cloudAuth .auth-username-row input{flex:1 1 auto;min-width:0}
+#cloudAuth .auth-username-row input{flex:1 1 0;min-width:0}
 #cloudAuth .auth-username-row button{flex:0 0 auto;padding:0 11px;font-size:12px}
 #cloudAuth .auth-field-status{font-size:11px;min-height:15px;line-height:1.5;margin:0 0 3px}
 #cloudAuth .auth-message{font-size:12px;line-height:1.6;min-height:17px;overflow-wrap:anywhere;margin:14px 0 0;color:#806044}
 #cloudAuth button:disabled{opacity:.6;cursor:progress}
 @media(max-width:740px){
-  #cloudAuth.auth-paper{margin:24px 14px!important;padding:26px 19px!important;max-width:none!important}
   #cloudAuth h1{font-size:32px}
   #cloudAuth h2{font-size:24px}
   #cloudAuth .auth-username-row button{padding:0 8px}
 }
 
+/* Center every auth step; auto margins keep tall cards scrollable from the top. */
+@media(min-width:741px){
+  body:has(> #cloudAuth:not([hidden])){
+    display:flex;
+    flex-direction:column;
+    min-height:100vh;
+    min-height:100dvh;
+    padding:24px;
+  }
+  #cloudAuth.auth-paper{flex:0 0 auto;width:100%;max-width:520px;margin:auto;padding:32px 44px}
+  #cloudAuth .auth-decor{top:16px;right:25px;font-size:46px}
+  #cloudAuth .auth-eyebrow{font-size:12px;margin-bottom:20px}
+  #cloudAuth h1{font-size:42px;margin-bottom:14px}
+  #cloudAuth h2{font-size:30px;line-height:1.4}
+  #cloudAuth .auth-intro{font-size:15px;margin-bottom:28px}
+  #cloudAuth .auth-form{gap:10px}
+  #cloudAuth .auth-form label{font-size:14px;margin-top:6px}
+  #cloudAuth .auth-form input{min-height:50px;padding:14px}
+  #cloudAuth .auth-form .primary-button{min-height:50px;font-size:15px;margin-top:16px}
+  #cloudAuth .auth-switch,#cloudAuth .auth-text-button{font-size:14px}
+  #cloudAuth .auth-help,#cloudAuth .auth-message{font-size:13px}
+  #cloudAuth .auth-verified,#cloudAuth .auth-verified strong{font-size:13px}
+  #cloudAuth .auth-username-row button{font-size:13px;padding:0 14px}
+}
 
 
 /* v42: guest access, member withdrawal and protected account deletion */
@@ -2152,6 +2196,10 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
   margin:9px 0 0;
   color:#977f67;
   font:11px/1.6 Pretendard,-apple-system,BlinkMacSystemFont,sans-serif;
+}
+@media(min-width:741px){
+  #cloudAuth .guest-entry .outlined-button{min-height:48px;font-size:14px}
+  #cloudAuth .guest-entry p{font-size:12px}
 }
 .account-danger{
   margin-top:26px;
@@ -2473,3 +2521,142 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
   .writing-area .entry-photo-sticker > img{max-height:230px}
   .writing-area .sticker-menu button{min-height:30px}
 }
+
+/* Shared, keyboard-accessible month navigation for both calendars. */
+.calendar-date-trigger{
+  border:1px dashed #c9ae8d;
+  border-radius:6px;
+  background:#fff7e8;
+  cursor:pointer;
+  text-decoration:underline dotted;
+  text-underline-offset:5px;
+}
+.calendar-date-trigger:hover{background:#eadcc3}
+.mini-calendar-toolbar #miniYear,
+.mini-calendar-toolbar #miniMonth{
+  width:auto;
+  height:auto;
+  min-height:40px;
+  padding:6px 8px;
+  border:1px dashed #c9ae8d;
+  background:#fff7e8;
+}
+.calendar-jump-dialog{
+  width:min(400px,calc(100% - 28px));
+  max-height:calc(100dvh - 32px);
+  overflow:auto;
+  padding:24px;
+  border:1px solid #ccb08c;
+  border-radius:12px;
+  background:#fff7e8;
+  color:#4e382b;
+  box-shadow:0 18px 60px #49352840;
+}
+.calendar-jump-dialog::backdrop{background:#34251d80}
+.calendar-jump-dialog h2{margin:0 0 10px;font-size:21px}
+.calendar-jump-help{margin:0 0 20px;color:#87705a;font-size:13px;line-height:1.6}
+.calendar-jump-dialog label{display:block;margin:16px 0 8px;font-size:14px;font-weight:750}
+.calendar-jump-year{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:8px}
+.calendar-jump-dialog input,.calendar-jump-dialog select{
+  width:100%;min-width:0;min-height:46px;padding:10px;
+  font:16px Pretendard,sans-serif;color:#4e382b;
+  border:1px solid #cdb395;border-radius:7px;background:#fffcf5;
+}
+.calendar-jump-year input{text-align:center}
+.calendar-jump-year button{padding:10px;font-size:13px}
+.calendar-jump-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:24px}
+.calendar-jump-actions button{min-height:46px}
+.backup-month-label{display:block;margin:20px 0 0;color:#60432e;font-size:16px;font-weight:800}
+.sidebar-bottom .backup-month-hint{margin:7px 0 0;color:#87705a;font-size:11px;line-height:1.6}
+.sidebar-bottom .backup-action{
+  justify-content:center;min-height:44px;margin:8px 0;padding:11px 8px;
+  border:1px solid #cfb494;background:#fff7e8;color:#705037;
+  text-align:center;font-size:12px;
+}
+.sidebar-bottom .backup-action:hover{background:#eadcc3}
+.sidebar-bottom #archiveMonthBtn{min-height:48px;font-size:14px;font-weight:800;background:#826047;border-color:#76543e;color:#fff9ec;box-shadow:0 3px 0 #51372226}
+.sidebar-bottom #archiveMonthBtn:hover{background:#705038}
+.sidebar-bottom .backup-restore-help{margin:10px 0 0;font-size:11px;line-height:1.7}
+.sidebar-bottom #archiveStatus{margin:10px 0 16px;font-size:11px;line-height:1.7}
+@media(max-width:740px){
+  .home-actions button{font-size:15px;padding:12px 8px}
+  .mini-calendar-toolbar #miniYear,.mini-calendar-toolbar #miniMonth{padding:6px 4px}
+}
+
+/* Backup period and explicit file destination. */
+.month-manage #backupPeriod{
+  width:100%;min-height:46px;margin:14px 0 0;padding:10px;
+  border:1px solid #cdb395;border-radius:7px;background:#fff9ea;color:#604a37;
+  font:14px Pretendard,sans-serif;
+}
+.backup-custom-range{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:8px;margin-top:12px}
+.backup-custom-range label{font-size:12px;color:#765a40}
+@media(max-width:740px){.sidebar > .entry-list{flex:0 0 auto;overflow:visible}}
+.month-manage .backup-custom-range input[type=month]{width:100%;min-width:0;margin:0;padding:9px;font-size:14px}
+.backup-delete-section{margin-top:20px;padding-top:14px;border-top:1px dashed #d7bba0;color:#8d4e43}
+.backup-delete-section summary{cursor:pointer;font:750 12px Pretendard,sans-serif;padding:7px 0}
+.backup-delete-section label{display:block;font-size:12px;margin:8px 0}
+.sidebar-bottom .backup-delete-section p{margin:8px 0;font-size:11px;color:#946b5d}
+.backup-destination-dialog{
+  width:min(420px,calc(100% - 28px));max-height:calc(100dvh - 32px);overflow:auto;
+  padding:24px;border:1px solid #ccb08c;border-radius:12px;
+  background:#fff7e8;color:#4e382b;box-shadow:0 18px 60px #49352840;
+}
+.backup-destination-dialog::backdrop{background:#34251d80}
+.backup-destination-dialog h2{margin:0 0 14px;font-size:21px}
+#backupDestinationSummary{font-size:14px;line-height:1.7;overflow-wrap:anywhere}
+.backup-destination-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:22px 0 14px}
+.backup-destination-actions button{min-width:0;min-height:48px;padding:11px 8px;font-size:14px}
+.backup-destination-actions button:disabled{opacity:.5;cursor:not-allowed}
+.backup-dialog-help{font-size:12px;line-height:1.7;color:#876c55}
+#backupDestinationClose{padding:9px 0;border:0;background:transparent;color:#76543e;text-decoration:underline;cursor:pointer}
+.storage-usage{padding:14px 12px;margin-top:20px;border:1px solid #d3b995;border-radius:8px;background:#f9edd9}
+.storage-usage strong{font-size:13px}
+.sidebar-bottom .storage-usage p{margin:8px 0;font-size:12px;line-height:1.7;color:#80634b}
+.storage-usage progress{width:100%;height:9px;accent-color:#997453}
+#storageBackupNotice{margin-top:12px;padding-top:10px;border-top:1px dashed #ccb08c}
+#backupPreviousMonth{width:100%;min-height:44px}
+.diary-navigation{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:12px;margin:0 0 18px;text-align:center}
+.diary-navigation button{min-height:44px}
+.diary-navigation button:disabled{opacity:.4;cursor:default}
+.diary-navigation span{font-size:13px;color:#82664e;overflow-wrap:anywhere}
+.diary-navigation p{grid-column:1/-1;margin:0;font-size:11px;color:#9b8067}
+#editorPage .editor-card,#editorPage .page-intro{touch-action:pan-y pinch-zoom}
+.backup-manual-share{padding:12px;margin:12px 0;border:1px solid #d7bd9e;border-radius:7px;background:#f6e8d2;font-size:12px;line-height:1.7}
+.backup-manual-share ol{padding-left:20px;margin:8px 0}
+@media(max-width:740px){.diary-navigation{gap:7px}.diary-navigation button{padding:9px 8px;font-size:12px}.diary-navigation span{font-size:11px}}
+.backup-menu{padding:18px 0;border-top:1px solid #d8c1a0}
+.backup-menu h2{font-size:15px;margin:0 0 14px;color:#73543b}
+.backup-menu-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+.backup-menu-actions .sidebar-option{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:11px;min-width:0;min-height:90px;margin:0;padding:16px 5px;text-align:center;border:1px solid #cdb395;border-radius:9px}
+.backup-menu-actions .sidebar-option svg{display:block;width:29px;height:29px;flex:0 0 auto}
+.backup-menu-actions .sidebar-option span{font-size:13px;line-height:1.2;font-weight:750}
+.backup-menu .backup-menu-primary{color:#fff9ec;background:#826047;border-color:#76543e}
+.backup-menu .backup-menu-primary:hover{background:#705038;color:#fff9ec}
+.backup-menu .backup-menu-secondary{background:#fff7e8;color:#705037}
+.backup-menu .backup-menu-delete{background:#fff6ed;color:#a15d4d;border-color:#d3a99c}
+.sidebar-account-heading{padding-top:20px;border-top:1px solid #d8c1a0;color:#73543b;font-size:13px;font-weight:750}
+.backup-options-dialog{width:min(420px,calc(100% - 28px));max-height:calc(100dvh - 32px);overflow:auto;padding:24px;border:1px solid #ccb08c;border-radius:12px;background:#fff7e8;color:#4e382b;box-shadow:0 18px 60px #49352840}
+.backup-options-dialog::backdrop{background:#34251d80}
+.backup-options-dialog h2{font-size:21px;margin:0 0 16px}
+.backup-options-dialog .month-manage{border:0;margin:0;padding:0}
+.backup-options-dialog .backup-month-label{font-size:14px;margin-top:0}
+.backup-options-dialog #archiveMonthBtn{display:block;width:100%;min-height:48px;margin-top:18px;border:1px solid #76543e;border-radius:7px;background:#826047;color:#fff9ec;font-size:14px;font-weight:800;text-align:center;justify-content:center}
+.backup-options-dialog #archiveStatus{font-size:12px;line-height:1.7;margin:14px 0;color:#8a7059}
+.backup-dialog-close{padding:9px 0;border:0;background:transparent;color:#76543e;text-decoration:underline;cursor:pointer}
+.upload-guide>p{margin:5px 0;font-size:12px;line-height:1.7;color:#89715a}
+.upload-guide strong{color:#75543a;font-weight:750}
+.upload-guide details{margin-top:8px;font-size:11px;line-height:1.7}
+.upload-guide summary{cursor:pointer;color:#92785e;padding:5px 0}
+.upload-guide details p{margin:7px 0}
+.storage-backup-banner{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 20px;margin:16px 24px 0;border:1px solid #cda77f;border-radius:9px;background:#f8ead2}
+.storage-backup-banner p{margin:0;color:#785239;font-size:13px;line-height:1.6}
+.storage-backup-banner button{flex:0 0 auto;min-height:44px}
+@media(max-width:740px){.storage-backup-banner{margin:12px 14px 0;padding:12px;flex-direction:column;align-items:stretch}}
+.backup-options-dialog select{width:100%;min-height:46px;padding:10px;margin:10px 0;border:1px solid #cdb395;border-radius:7px;background:#fff9ea;color:#604a37;font:14px Pretendard,sans-serif}
+.backup-options-dialog input[type=date]{width:100%;min-width:0;min-height:44px;padding:8px;border:1px solid #cdb395;border-radius:7px;background:#fff9ea;color:#604a37;font:14px Pretendard,sans-serif}
+#backupDeleteDialog #deleteMonthBtn{width:100%;justify-content:center;min-height:46px;margin-top:16px}
+.sidebar-account{padding:8px 0 12px;font-size:12px;color:#92765d}
+.sidebar-account #cloudUserEmail{margin:5px 0 10px}
+.sidebar-account .sidebar-option{font-size:12px}
+.backup-options-dialog .backup-month-hint{margin:8px 0;font-size:12px;line-height:1.7;color:#8a7059}

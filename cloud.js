@@ -27,8 +27,6 @@
     }
     return arr;
   };
-  // Storage keys must be ASCII-safe. Keep the original filename in diary_attachments.file_name.
-  const pathFor=f=>own()+'/'+f.entryId+'/'+f.id;
   const api={
     configured:true,client,
     get user(){return user;},
@@ -98,16 +96,26 @@
       const rows=await pageAll('diary_attachments',entryId?['entry_id',entryId]:null);
       return Promise.all(rows.map(toFile));
     },
+    async storageUsage(day){return fail(await client.rpc('diary_storage_usage',{p_day:day}));},
+    async attachmentMetadata(){return (await pageAll('diary_attachments')).map(r=>({id:r.id,entryId:r.entry_id,type:r.content_type,name:r.file_name,size:r.file_size}));},
+    async getBackupAttachments(entryIds){
+      const ids=new Set(entryIds);
+      return Promise.all((await pageAll('diary_attachments')).filter(r=>ids.has(r.entry_id)).map(toFile));
+    },
     async saveEntry(entry){fail(await client.from('diary_entries').upsert(entryRow(entry),{onConflict:'user_id,id'}));},
     async saveAttachments(files){
       for(const f of files){
-        const path=pathFor(f);
-        const old=fail(await client.from('diary_attachments').select('storage_path').eq('user_id',own()).eq('id',f.id).maybeSingle());
-        fail(await client.storage.from('diary-media').upload(path,f.blob,{contentType:f.type||'application/octet-stream',upsert:true}));
-        try{
-          fail(await client.from('diary_attachments').upsert({user_id:own(),id:f.id,entry_id:f.entryId,file_name:f.name,content_type:f.type||'application/octet-stream',file_size:f.size,storage_path:path,created_at:f.createdAt},{onConflict:'user_id,id'}));
-        }catch(e){await client.storage.from('diary-media').remove([path]);throw e;}
-        if(old?.storage_path && old.storage_path!==path)await client.storage.from('diary-media').remove([old.storage_path]);
+        own();
+        const form=new FormData();
+        form.append('metadata',JSON.stringify({id:f.id,entryId:f.entryId,name:f.name,createdAt:f.createdAt}));
+        form.append('file',new File([f.blob],f.name,{type:f.type||'application/octet-stream'}));
+        const {data,error}=await client.functions.invoke('save-diary-attachment',{body:form});
+        if(error){
+          let message='첨부파일을 저장하지 못했어요.';
+          try{const payload=await error.context?.json?.();if(payload?.message)message=payload.message;}catch{}
+          throw Error(message);
+        }
+        if(data?.success!==true)throw Error(data?.message||'첨부파일 저장을 확인하지 못했어요.');
       }
     },
     async removeAttachment(id){
