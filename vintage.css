@@ -2838,6 +2838,9 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .backup-menu .backup-menu-primary:hover{
   background:transparent;
   box-shadow:none;
+  color:#73543b;
 }
+.backup-menu .backup-menu-delete:hover,
+.backup-menu .backup-menu-delete:focus-visible{color:#a15d4d}
 .backup-menu-actions .sidebar-option:hover{opacity:.76}
 .backup-menu-actions .sidebar-option:focus-visible{outline:2px solid #967250;outline-offset:-2px}
