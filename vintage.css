@@ -2853,3 +2853,65 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .backup-menu .backup-menu-secondary:hover{color:#60422f}
 .backup-menu .backup-menu-delete:hover,
 .backup-menu .backup-menu-delete:focus-visible{color:#914938}
+
+/* v75: icon-only attachment actions, with separate photo and sticker uploads. */
+.attachments-section .upload-actions{margin:12px 0 10px}
+.attachment-quick-actions{
+  width:100%;
+  display:flex;
+  flex-wrap:nowrap;
+  justify-content:flex-start;
+  align-items:center;
+  gap:10px;
+}
+.attachment-quick-actions .attach-quick-btn{
+  box-sizing:border-box;
+  display:inline-flex;
+  flex:0 0 44px;
+  width:44px;
+  min-width:44px;
+  max-width:44px;
+  height:44px;
+  min-height:44px;
+  padding:0;
+  justify-content:center;
+  align-items:center;
+  border:1px solid #d2b99a;
+  border-radius:8px;
+  background:#fff8ed;
+  color:#70543a;
+}
+.attachment-quick-actions .attach-quick-btn svg{
+  display:block;
+  width:23px;
+  height:23px;
+  flex:0 0 23px;
+  margin:auto;
+}
+.attachment-quick-actions .attach-quick-btn:hover{background:#f0e2ce;color:#5b402e}
+.attachment-quick-actions .attach-quick-btn:focus-visible{outline:2px solid #967250;outline-offset:2px}
+.attachment-quick-actions .attach-quick-btn.recording{
+  color:#a13e3e;
+  background:#ffe6df;
+  border-color:#bb695b;
+}
+.home-actions button{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  text-align:center;
+}
+.home-actions button svg{
+  display:block;
+  width:22px;
+  height:22px;
+  flex:0 0 22px;
+}
+.home-actions button span{white-space:nowrap;line-height:1.2}
+@media(max-width:370px){
+  .attachment-quick-actions{gap:8px}
+  .attachment-quick-actions .attach-quick-btn{flex-basis:42px;width:42px;min-width:42px;max-width:42px;height:42px;min-height:42px}
+  .home-actions button{gap:5px;font-size:13px;padding:10px 6px}
+  .home-actions button svg{width:20px;height:20px;flex-basis:20px}
+}
