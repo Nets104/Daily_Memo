@@ -1609,6 +1609,98 @@
     }catch(e){console.error(e);setSave('error','복원 실패');toast(`복원 실패: ${e.message}`);}
   }
   function stripMd(s){return s.replace(/!\[([^\]]*)\]\([^)]*\)/g,'$1').replace(/\[([^\]]+)\]\([^)]+\)/g,'$1').replace(/<\/?u>/g,'').replace(/\*\*|__|~~|[`*_]/g,'');}
+  // Capture the actual writing paper rather than reconstructing typography in Canvas.
+  // This keeps CSS line breaks, spacing, font and sticker geometry together.
+  async function captureWritingPaper(entry){
+    if(typeof window.html2canvas!=='function'){
+      throw Error('화면 그대로 내보내기 기능을 불러오지 못했어요. 인터넷 연결을 확인한 뒤 다시 시도해 주세요.');
+    }
+    const previousView=view;
+    if(view!=='edit')setView('edit');
+    const paper=el.writing,textarea=el.body,board=$('entryStickerBoard');
+    try{
+      await document.fonts.ready;
+      await Promise.all(Array.from(board.querySelectorAll('img')).map(img=>
+        img.complete?Promise.resolve():new Promise(resolve=>{
+          img.addEventListener('load',resolve,{once:true});
+          img.addEventListener('error',resolve,{once:true});
+        })
+      ));
+      const paperRect=paper.getBoundingClientRect();
+      const textareaRect=textarea.getBoundingClientRect();
+      const boardRect=board.getBoundingClientRect();
+      const targetWidth=Math.ceil(paperRect.width);
+      const expandedTextHeight=Math.max(textarea.clientHeight,textarea.scrollHeight);
+      const extraHeight=Math.max(0,expandedTextHeight-textareaRect.height);
+      const targetHeight=Math.ceil(paperRect.height+extraHeight);
+      const originalStyles=getComputedStyle(textarea);
+      const snapshotStyles={};
+      for(const property of ['color','font-family','font-size','font-weight','font-style',
+        'letter-spacing','line-height','padding','text-align','text-indent','tab-size']){
+        snapshotStyles[property]=originalStyles.getPropertyValue(property);
+      }
+      const cards=Array.from(board.querySelectorAll('.entry-photo-sticker')).map(card=>{
+        const layout=entry.photoLayout?.[card.dataset.stickerId]||{};
+        return {id:card.dataset.stickerId,
+          x:Number(layout.x)||0,y:Number(layout.y)||0,
+          width:Number(layout.width)||36};
+      });
+      return await window.html2canvas(paper,{
+        backgroundColor:'#fcf6e8',
+        scale:2,
+        useCORS:true,
+        logging:false,
+        width:targetWidth,
+        height:targetHeight,
+        onclone:cloneDoc=>{
+          const clone=cloneDoc.getElementById('writingArea');
+          if(!clone)return;
+          clone.classList.remove('view-preview','view-split');
+          clone.classList.add('view-edit');
+          clone.style.width=targetWidth+'px';
+          clone.style.height=targetHeight+'px';
+          const clonePane=clone.querySelector('.editing-pane');
+          const cloneTextarea=clone.querySelector('#entryBody');
+          if(clonePane&&cloneTextarea){
+            const copied=cloneDoc.createElement('div');
+            copied.textContent=textarea.value;
+            copied.style.boxSizing='border-box';
+            copied.style.width='100%';
+            copied.style.minHeight=expandedTextHeight+'px';
+            copied.style.height=expandedTextHeight+'px';
+            copied.style.whiteSpace='pre-wrap';
+            copied.style.overflowWrap='break-word';
+            copied.style.wordBreak='break-word';
+            copied.style.background='transparent';
+            copied.style.border='0';
+            for(const [key,value] of Object.entries(snapshotStyles))
+              copied.style.setProperty(key,value);
+            cloneTextarea.replaceWith(copied);
+          }
+          const cloneBoard=clone.querySelector('#entryStickerBoard');
+          if(cloneBoard&&clonePane){
+            clonePane.append(cloneBoard);
+            cloneBoard.hidden=board.hidden;
+            cloneBoard.style.height=boardRect.height+'px';
+            cloneBoard.querySelectorAll('.entry-photo-sticker').forEach(card=>{
+              const state=cards.find(c=>c.id===card.dataset.stickerId);
+              if(!state)return;
+              card.classList.remove('is-selected');
+              card.style.left=(state.x/100*boardRect.width)+'px';
+              card.style.top=(state.y/100*boardRect.height)+'px';
+              card.style.width=(state.width/100*boardRect.width)+'px';
+              card.style.border='0';
+              card.style.outline='0';
+              card.style.boxShadow='none';
+            });
+            cloneBoard.querySelectorAll('.sticker-control,.sticker-menu').forEach(c=>c.remove());
+          }
+        }
+      });
+    }finally{
+      if(view!==previousView)setView(previousView);
+    }
+  }
   async function canvasPages(entry,attached) {
     await document.fonts?.ready;
     const W=1240,H=1754,L=125,R=1115,BOTTOM=1558;
@@ -1759,6 +1851,28 @@
     }
     y+=6;rule();y+=22;
     const bodyStartPage=pages.length-1,bodyStartY=y;
+    const stickerFiles=attached.filter(file=>file.type.startsWith('image/')&&
+      file.id!==entry.coverAttachmentId&&!/^달력_썸네일_|^일기_미리보기_/.test(file.name||'')&&
+      entry.photoLayout?.[file.id]?.mode==='sticker');
+    let lastStickerPage=bodyStartPage,lastStickerBottom=bodyStartY;
+    const screenshot=await captureWritingPaper(entry);
+    if(screenshot){
+      const ratio=(R-L)/screenshot.width;
+      let sourceY=0;
+      while(sourceY<screenshot.height-.5){
+        if(BOTTOM-y<48)page();
+        const remaining=Math.min(screenshot.height-sourceY,(BOTTOM-y)/ratio);
+        if(remaining<=0)throw Error('출력 페이지 나누기에 실패했어요.');
+        ctx.drawImage(screenshot,0,sourceY,screenshot.width,remaining,
+          L,y,R-L,remaining*ratio);
+        sourceY+=remaining;
+        y+=remaining*ratio;
+        if(sourceY<screenshot.height-.5)page();
+      }
+      y+=22;
+      lastStickerPage=pages.length-1;lastStickerBottom=y;
+    }else{
+    const bodyStartPage=pages.length-1,bodyStartY=y;
     if(entry.body?.trim()){
       const blocks=parseBlocks(entry.body);
       for(const block of blocks){
@@ -1788,15 +1902,12 @@
     }
     // Use the same sticker coordinate frame and rendered image size as the diary editor.
     // The editor stores percent-based x/y/width; arbitrary export heights made stickers drift.
-    const stickerFiles=attached.filter(file=>file.type.startsWith('image/')&&
-      file.id!==entry.coverAttachmentId&&!/^달력_썸네일_|^일기_미리보기_/.test(file.name||'')&&
-      entry.photoLayout?.[file.id]?.mode==='sticker');
     const stickerBoard=current?.id===entry.id?$('entryStickerBoard'):null;
     const boardRect=stickerBoard?.getBoundingClientRect();
     const boardWidth=boardRect?.width||el.body.getBoundingClientRect().width||600;
     const boardHeight=boardRect?.height||el.body.getBoundingClientRect().height||380;
     const screenToPaper=(R-L)/boardWidth;
-    let lastStickerPage=bodyStartPage,lastStickerBottom=bodyStartY;
+    lastStickerPage=bodyStartPage;lastStickerBottom=bodyStartY;
     for(const file of stickerFiles){
       const img=await loadImage(file);
       if(!img||!img.naturalWidth||!img.naturalHeight)continue;
@@ -1836,6 +1947,8 @@
       pen.restore();
       if(pageIndex>lastStickerPage){lastStickerPage=pageIndex;lastStickerBottom=top+drawH;}
       else if(pageIndex===lastStickerPage)lastStickerBottom=Math.max(lastStickerBottom,top+drawH);
+    }
+
     }
     const visible=attached.filter(file=>file.id!==entry.coverAttachmentId&&
       !/^달력_썸네일_|^일기_미리보기_/.test(file.name||''));
