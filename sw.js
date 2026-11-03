@@ -1,5 +1,5 @@
-const CACHE='harugyeol-v79';
-const RESOURCES=['./index.html','./style.css?v=13','./vintage.css?v=77','./app.js?v=79','./assets/vintage-flowers.svg','./assets/ridibatang-Regular.woff2','./icons/menu-notebook-clean.png','./manifest.webmanifest?v=39','./supabase-config.js?v=2','./cloud.js?v=20','./icons/icon-192.png?v=39','./icons/icon-512.png?v=39'];
+const CACHE='harugyeol-v80';
+const RESOURCES=['./index.html','./style.css?v=13','./vintage.css?v=77','./app.js?v=80','./assets/vintage-flowers.svg','./assets/ridibatang-Regular.woff2','./icons/menu-notebook-clean.png','./manifest.webmanifest?v=39','./supabase-config.js?v=2','./cloud.js?v=20','./icons/icon-192.png?v=39','./icons/icon-512.png?v=39'];
 self.addEventListener('install',event=>{
   // Keep the previous app running until the user chooses "업데이트".
   event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(RESOURCES)));
@@ -15,7 +15,8 @@ self.addEventListener('fetch',event=>{
       const stored=await cache.match(event.request);
       if(stored)return stored;
       const response=await fetch(event.request);
-      if(response.ok)cache.put(event.request,response.clone()).catch(()=>{});
+      if(response.ok||response.type==='opaque')
+        cache.put(event.request,response.clone()).catch(()=>{});
       return response;
     }));
     return;
