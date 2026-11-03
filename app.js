@@ -1819,13 +1819,6 @@
       finally{URL.revokeObjectURL(src);}
     }
     page();
-    // The editor uses a real CSS font size; scale that size into a readable A4 page.
-    // Use one scale for all Markdown text and line spacing, for PNG and PDF alike.
-    const editorFont=diaryBodyFontSize(entry)||
-      (current?.id===entry.id?Number.parseFloat(getComputedStyle(el.body).fontSize):18)||18;
-    const printBodySize=clamp(Math.round(editorFont*3.4),44,84);
-    const bodyFontFactor=printBodySize/34;
-    const bodyPx=n=>Math.round(n*bodyFontFactor);
     const dt=new Date(entry.date+'T12:00:00');
     const week=WEEK_KR[dt.getDay()]+'요일';
     const dated=entry.date.replace(/-/g,'.')+'  ·  '+week;
@@ -1850,106 +1843,22 @@
       ctx.fillStyle='#5d4634';ctx.fillText(note,L+15,y+45);y+=81;
     }
     y+=6;rule();y+=22;
-    const bodyStartPage=pages.length-1,bodyStartY=y;
-    const stickerFiles=attached.filter(file=>file.type.startsWith('image/')&&
-      file.id!==entry.coverAttachmentId&&!/^달력_썸네일_|^일기_미리보기_/.test(file.name||'')&&
-      entry.photoLayout?.[file.id]?.mode==='sticker');
-    let lastStickerPage=bodyStartPage,lastStickerBottom=bodyStartY;
+    // A single high-resolution snapshot preserves the real editor's line wraps and
+    // stickers. Both PNG and PDF consume these same Canvas page pixels.
     const screenshot=await captureWritingPaper(entry);
-    if(screenshot){
-      const ratio=(R-L)/screenshot.width;
-      let sourceY=0;
-      while(sourceY<screenshot.height-.5){
-        if(BOTTOM-y<48)page();
-        const remaining=Math.min(screenshot.height-sourceY,(BOTTOM-y)/ratio);
-        if(remaining<=0)throw Error('출력 페이지 나누기에 실패했어요.');
-        ctx.drawImage(screenshot,0,sourceY,screenshot.width,remaining,
-          L,y,R-L,remaining*ratio);
-        sourceY+=remaining;
-        y+=remaining*ratio;
-        if(sourceY<screenshot.height-.5)page();
-      }
-      y+=22;
-      lastStickerPage=pages.length-1;lastStickerBottom=y;
-    }else{
-    const bodyStartPage=pages.length-1,bodyStartY=y;
-    if(entry.body?.trim()){
-      const blocks=parseBlocks(entry.body);
-      for(const block of blocks){
-        if(block.kind==='heading'){
-          y+=block.level===1?15:6;
-          text(stripMd(block.text),{size:bodyPx(block.level===1?46:block.level===2?40:36),
-            leading:bodyPx(block.level===1?65:57),bold:true,color:'#64452f'});y+=19;
-        }else if(block.kind==='paragraph'){
-          text(stripMd(block.text),{size:bodyPx(34),leading:bodyPx(55)});y+=21;
-        }else if(block.kind==='quote'){
-          ensure(18);ctx.fillStyle='#bba78c';ctx.fillRect(L,y,5,29);
-          text(stripMd(block.text),{size:bodyPx(32),leading:bodyPx(50),indent:26,color:'#816954'});y+=19;
-        }else if(block.kind==='rule'){
-          y+=14;rule();y+=14;
-        }else if(block.kind==='code'){
-          for(const line of block.text.split('\n'))text(line,{size:bodyPx(24),leading:bodyPx(42),family:sans});
-          y+=20;
-        }else if(block.kind==='list'){
-          for(let i=0;i<block.items.length;i++){
-            const item=block.items[i];
-            const marker=block.ordered?String(i+1)+'.':item.check===null?'•':item.check?'☑':'☐';
-            text(marker+'  '+stripMd(item.text),{size:bodyPx(33),leading:bodyPx(53),indent:12});
-          }
-          y+=20;
-        }
-      }
+    const ratio=(R-L)/screenshot.width;
+    let sourceY=0;
+    while(sourceY<screenshot.height-.5){
+      if(BOTTOM-y<48)page();
+      const remaining=Math.min(screenshot.height-sourceY,(BOTTOM-y)/ratio);
+      if(remaining<=0)throw Error('출력 페이지 나누기에 실패했어요.');
+      ctx.drawImage(screenshot,0,sourceY,screenshot.width,remaining,
+        L,y,R-L,remaining*ratio);
+      sourceY+=remaining;
+      y+=remaining*ratio;
+      if(sourceY<screenshot.height-.5)page();
     }
-    // Use the same sticker coordinate frame and rendered image size as the diary editor.
-    // The editor stores percent-based x/y/width; arbitrary export heights made stickers drift.
-    const stickerBoard=current?.id===entry.id?$('entryStickerBoard'):null;
-    const boardRect=stickerBoard?.getBoundingClientRect();
-    const boardWidth=boardRect?.width||el.body.getBoundingClientRect().width||600;
-    const boardHeight=boardRect?.height||el.body.getBoundingClientRect().height||380;
-    const screenToPaper=(R-L)/boardWidth;
-    lastStickerPage=bodyStartPage;lastStickerBottom=bodyStartY;
-    for(const file of stickerFiles){
-      const img=await loadImage(file);
-      if(!img||!img.naturalWidth||!img.naturalHeight)continue;
-      const layout=entry.photoLayout[file.id];
-      const widthPercent=clamp(Number(layout.width)||36,18,76);
-      const sourceWidth=boardWidth*widthPercent/100;
-      const card=stickerBoard?.querySelectorAll('.entry-photo-sticker');
-      const element=card?Array.from(card).find(node=>node.dataset.stickerId===file.id)?.querySelector('img'):null;
-      // The on-screen sticker image can be height-limited by CSS; preserve that ratio.
-      const sourceH=element?.offsetHeight||
-        Math.min(sourceWidth*img.naturalHeight/img.naturalWidth,
-          window.matchMedia('(max-width:740px)').matches?230:260);
-      // Enlarge photos with the text, keeping their visual center anchored.
-      // Limit dimensions to the printable paper so no portion is cut off.
-      const originalW=(element?.offsetWidth||sourceWidth)*screenToPaper;
-      const originalH=sourceH*screenToPaper;
-      const enlargement=Math.min(1.4,(R-L-12)/originalW,(BOTTOM-183-12)/originalH);
-      const drawW=originalW*enlargement;
-      const drawH=originalH*enlargement;
-      const originalX=L+clamp(Number(layout.x)||0,0,100-widthPercent)/100*(R-L);
-      const x=clamp(originalX-(drawW-originalW)/2,L,R-drawW);
-      let top=bodyStartY+clamp(Number(layout.y)||0,0,85)/100*boardHeight*screenToPaper
-        -(drawH-originalH)/2;
-      top=Math.max(183,top);
-      let pageIndex=bodyStartPage;
-      while(top>=BOTTOM){
-        top=183+(top-BOTTOM);pageIndex++;
-      }
-      // Keep a sticker whole if it would cross an A4 page boundary.
-      if(top+drawH>BOTTOM){pageIndex++;top=183;}
-      while(pages.length<=pageIndex)page();
-      const pen=pages[pageIndex].getContext('2d');
-      pen.save();
-      pen.translate(x+drawW/2,top+drawH/2);
-      pen.rotate(clamp(Number(layout.rotation)||0,-720,720)*Math.PI/180);
-      pen.drawImage(img,-drawW/2,-drawH/2,drawW,drawH);
-      pen.restore();
-      if(pageIndex>lastStickerPage){lastStickerPage=pageIndex;lastStickerBottom=top+drawH;}
-      else if(pageIndex===lastStickerPage)lastStickerBottom=Math.max(lastStickerBottom,top+drawH);
-    }
-
-    }
+    y+=22;
     const visible=attached.filter(file=>file.id!==entry.coverAttachmentId&&
       !/^달력_썸네일_|^일기_미리보기_/.test(file.name||''));
     const photos=visible.filter(file=>file.type.startsWith('image/')&&entry.photoLayout?.[file.id]?.mode!=='sticker');
@@ -1957,11 +1866,6 @@
     const crops=new Map(attached.filter(file=>/^일기_미리보기_/.test(file.name||''))
       .map(file=>[file.name,file]));
     if(photos.length){
-      // Photos follow the writing surface; do not print on top of placed stickers.
-      if(stickerFiles.length){
-        if(lastStickerPage===pages.length-1)y=Math.max(y,lastStickerBottom+22);
-        if(y+460>BOTTOM)page();
-      }
       section('PHOTO MEMORIES   /   사진 기록');
       const firstX=L+12,secondX=L+508;
       for(let i=0;i<photos.length;i+=2){
